@@ -166,6 +166,7 @@ private fun HomeScaffold(
         currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
         roomListState = roomListState,
     )
+    val showBottomBar = !ixHomeUi.shouldShowIxSpaceNav
 
     BackHandler(enabled = state.isBackHandlerEnabled) {
         if (state.currentHomeNavigationBarItem != HomeNavigationBarItem.Chats) {
@@ -211,7 +212,7 @@ private fun HomeScaffold(
             )
         },
         floatingActionButton = {
-            if (state.showNavigationBar && !ixHomeUi.shouldShowIxSpaceNav) {
+            if (showBottomBar) {
                 val coroutineScope = rememberCoroutineScope()
                 HomeBottomBar(
                     currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
@@ -230,16 +231,11 @@ private fun HomeScaffold(
                                 scrollBehavior.state.heightOffset = 0f
                                 lazyListStateTarget.animateScrollToItem(0)
                             }
-                            // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
-                            scrollBehavior.state.heightOffset = 0f
-                            lazyListStateTarget.animateScrollToItem(0)
+                        } else {
+                            state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
                         }
-                    } else {
-                        state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
-                    }
-                },
-                floatingActionButton = {
-                    when (state.currentHomeNavigationBarItem) {
+                    },
+                    floatingActionButton = when (state.currentHomeNavigationBarItem) {
                         HomeNavigationBarItem.Chats -> {
                             if (ixHomeUi.showStartChatInTopBar) {
                                 null
@@ -250,7 +246,9 @@ private fun HomeScaffold(
                             }
                         }
                         HomeNavigationBarItem.Spaces -> {
-                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            {
+                                HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            }
                         }
                     },
                 )
@@ -260,7 +258,7 @@ private fun HomeScaffold(
                 }
             }
         },
-        floatingActionButtonPosition = if (state.showNavigationBar && !ixHomeUi.shouldShowIxSpaceNav) FabPosition.Center else FabPosition.End,
+        floatingActionButtonPosition = if (showBottomBar) FabPosition.Center else FabPosition.End,
         content = { padding ->
             val contentPadding = PaddingValues(
                 bottom = if (ixHomeUi.shouldShowIxSpaceNav) 168.dp else 96.dp,
@@ -274,7 +272,7 @@ private fun HomeScaffold(
                         contentPadding = contentPadding,
                         hazeState = hazeState,
                         shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,
-                        showNavigationBar = state.showNavigationBar,
+                        showNavigationBar = showBottomBar,
                         onSetUpRecoveryClick = onSetUpRecoveryClick,
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                         onRoomClick = ::onRoomClick,
