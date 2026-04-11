@@ -57,6 +57,14 @@ sealed interface TextEditorState {
         }
     }
 
+    suspend fun insertText(text: String) {
+        when (this) {
+            is Markdown -> state.insertText(text)
+            is Rich -> richTextEditorState.setMarkdown(richTextEditorState.messageMarkdown + text)
+        }
+        requestFocus()
+    }
+
     suspend fun reset() {
         when (this) {
             is Markdown -> {

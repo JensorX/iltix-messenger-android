@@ -12,12 +12,21 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import de.iltix.lib.preferences.IxPreferencesStore
+import de.iltix.lib.preferences.IxPrefs
+import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerEvent
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerState
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerStateProvider
@@ -25,6 +34,9 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
+import io.element.android.libraries.designsystem.theme.LocalBuildMeta
+import io.element.android.libraries.designsystem.theme.components.Icon
+import io.element.android.libraries.designsystem.theme.components.IconButton
 import io.element.android.libraries.textcomposer.TextComposer
 import io.element.android.libraries.textcomposer.model.Suggestion
 import io.element.android.libraries.textcomposer.model.VoiceMessagePlayerEvent
@@ -35,9 +47,23 @@ import kotlinx.coroutines.launch
 internal fun MessageComposerView(
     state: MessageComposerState,
     voiceMessageState: VoiceMessageComposerState,
+    showEmojiButton: Boolean = false,
+    showEmojiPanel: Boolean = false,
+    onToggleEmojiPanel: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
+    val context = LocalContext.current.applicationContext
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val ixPreferencesStore = remember(isIltixBuild, context) {
+        if (isIltixBuild) IxPreferencesStore(context) else null
+    }
+    val moveUnencryptedIndicatorToTopBar by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
+    }?.collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }
+
     fun sendMessage() {
         state.eventSink(MessageComposerEvent.SendMessage)
     }
@@ -115,6 +141,22 @@ internal fun MessageComposerView(
         onError = ::onError,
         onTyping = ::onTyping,
         onSelectRichContent = ::sendUri,
+        showNotEncryptedBadge = !moveUnencryptedIndicatorToTopBar,
+        extraLeadingContent = if (showEmojiButton) {
+            {
+                IconButton(
+                    modifier = Modifier.size(48.dp),
+                    onClick = onToggleEmojiPanel,
+                ) {
+                    Icon(
+                        imageVector = if (showEmojiPanel) CompoundIcons.Keyboard() else CompoundIcons.ReactionAdd(),
+                        contentDescription = null,
+                    )
+                }
+            }
+        } else {
+            null
+        },
     )
 
     AsyncActionView(

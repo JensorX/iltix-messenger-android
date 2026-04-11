@@ -50,19 +50,19 @@ class DefaultRoomGroupMessageCreator(
         imageLoader: ImageLoader,
         existingNotification: Notification?,
     ): Notification {
-        val lastKnownRoomEvent = events.last()
-        val roomName = lastKnownRoomEvent.roomName ?: lastKnownRoomEvent.senderDisambiguatedDisplayName ?: "Room name (${roomId.value.take(8)}…)"
-        val roomIsGroup = !lastKnownRoomEvent.roomIsDm
+        val latestEvent = events.maxBy { it.timestamp }
+        val roomName = latestEvent.roomName ?: latestEvent.senderDisambiguatedDisplayName ?: "Room name (${roomId.value.take(8)}…)"
+        val roomIsGroup = !latestEvent.roomIsDm
 
         val tickerText = if (roomIsGroup) {
-            stringProvider.getString(R.string.notification_ticker_text_group, roomName, events.last().senderDisambiguatedDisplayName, events.last().description)
+            stringProvider.getString(R.string.notification_ticker_text_group, roomName, latestEvent.senderDisambiguatedDisplayName, latestEvent.description)
         } else {
-            stringProvider.getString(R.string.notification_ticker_text_dm, events.last().senderDisambiguatedDisplayName, events.last().description)
+            stringProvider.getString(R.string.notification_ticker_text_dm, latestEvent.senderDisambiguatedDisplayName, latestEvent.description)
         }
 
         val largeBitmap = getRoomBitmap(events, imageLoader)
 
-        val lastMessageTimestamp = events.last().timestamp
+        val lastMessageTimestamp = latestEvent.timestamp
         val smartReplyErrors = events.filter { it.isSmartReplyError() }
         val roomIsDm = !roomIsGroup
         return notificationCreator.createMessagesListNotification(
@@ -74,8 +74,8 @@ class DefaultRoomGroupMessageCreator(
                 isDm = roomIsDm,
                 hasSmartReplyError = smartReplyErrors.isNotEmpty(),
                 shouldBing = events.any { it.noisy },
-                customSound = events.last().soundName,
-                isUpdated = events.last().let { it.isUpdated || it.outGoingMessage },
+                customSound = latestEvent.soundName,
+                isUpdated = latestEvent.let { it.isUpdated || it.outGoingMessage },
             ),
             threadId = threadId,
             largeIcon = largeBitmap,

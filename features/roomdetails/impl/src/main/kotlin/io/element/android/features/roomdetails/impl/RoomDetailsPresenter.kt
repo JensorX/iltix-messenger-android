@@ -17,6 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import de.iltix.lib.preferences.IxPreferencesStore
+import de.iltix.lib.preferences.IxPrefs
+import de.iltix.lib.preferences.IxRoomMediaAutoDownloadStore
 import dev.zacsweers.metro.Inject
 import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.knockrequests.api.KnockRequestPermissions
@@ -35,6 +38,7 @@ import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.designsystem.utils.snackbar.LocalSnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
+import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -62,6 +66,7 @@ import kotlinx.coroutines.launch
 
 @Inject
 class RoomDetailsPresenter(
+    @ApplicationContext private val appContext: android.content.Context,
     private val client: MatrixClient,
     private val room: JoinedRoom,
     private val featureFlagService: FeatureFlagService,
@@ -77,6 +82,8 @@ class RoomDetailsPresenter(
     @Composable
     override fun present(): RoomDetailsState {
         val scope = rememberCoroutineScope()
+        val ixPreferencesStore = remember(appContext) { IxPreferencesStore(appContext) }
+        val roomMediaAutoDownloadStore = remember(appContext) { IxRoomMediaAutoDownloadStore(appContext) }
         val leaveRoomState = leaveRoomPresenter.present()
         val roomInfo by room.roomInfoFlow.collectAsState()
         val roomAvatar by remember { derivedStateOf { roomInfo.avatarUrl } }
@@ -131,7 +138,10 @@ class RoomDetailsPresenter(
         }.collectAsState(initial = false)
 
         val roomNotificationSettingsState by room.roomNotificationSettingsStateFlow.collectAsState()
-
+        val isMediaAutoDownloadModuleEnabled by remember(ixPreferencesStore) {
+            ixPreferencesStore.settingFlow(IxPrefs.MEDIA_AUTO_DOWNLOAD)
+        }.collectAsState(initial = IxPrefs.MEDIA_AUTO_DOWNLOAD.defaultValue)
+        val mediaAutoDownloadEnabled by roomMediaAutoDownloadStore.enabledFlow(room.roomId.value).collectAsState(initial = false)
         val snackbarDispatcher = LocalSnackbarDispatcher.current
         val snackbarMessage by snackbarDispatcher.collectSnackbarMessageAsState()
 
@@ -151,6 +161,11 @@ class RoomDetailsPresenter(
                     }
                 }
                 is RoomDetailsEvent.SetFavorite -> scope.setFavorite(event.isFavorite)
+                is RoomDetailsEvent.SetMediaAutoDownload -> {
+                    scope.launch(dispatchers.io) {
+                        roomMediaAutoDownloadStore.setEnabled(room.roomId.value, event.enabled)
+                    }
+                }
                 is RoomDetailsEvent.CopyToClipboard -> {
                     clipboardHelper.copyPlainText(event.text)
                     snackbarDispatcher.post(SnackbarMessage(CommonStrings.common_copied_to_clipboard))
@@ -201,6 +216,8 @@ class RoomDetailsPresenter(
             roomVersion = roomInfo.roomVersion,
             enableKeyShareOnInvite = enableKeyShareOnInvite,
             roomHistoryVisibility = roomInfo.historyVisibility,
+            isMediaAutoDownloadModuleEnabled = isMediaAutoDownloadModuleEnabled,
+            mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
             eventSink = ::handleEvent,
         )
     }

@@ -170,8 +170,13 @@ allprojects {
 
 // Register quality check tasks.
 tasks.register("runQualityChecks") {
+    val qualityTask = this
     dependsOn(":tests:konsist:testDebugUnitTest")
-    dependsOn(":app:lintGplayDebug")
+    project(":app").tasks.configureEach {
+        if (name in setOf("lintGplayDebug", "lintGplayElementDebug", "lintGplayIxDebug")) {
+            qualityTask.dependsOn(this)
+        }
+    }
     project.subprojects {
         tasks.findByPath("$path:lintDebug")?.let { dependsOn(it) }
         tasks.findByName("detekt")?.let { dependsOn(it) }

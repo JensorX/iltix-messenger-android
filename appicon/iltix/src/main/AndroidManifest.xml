@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright (c) 2025 Iltix Contributors.
+ 
+ SPDX-License-Identifier: AGPL-3.0-only
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="de.iltix.appicon">
+
+</manifest>
