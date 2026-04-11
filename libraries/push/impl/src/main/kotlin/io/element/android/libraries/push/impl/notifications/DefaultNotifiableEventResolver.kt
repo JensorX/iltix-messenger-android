@@ -395,7 +395,13 @@ class DefaultNotifiableEventResolver(
                     null
                 }
             }
-            is VideoMessageType -> null // Use the thumbnail here?
+            is VideoMessageType -> {
+                notificationMediaRepoFactory.create(client).getMediaFile(
+                    mediaSource = messageType.source,
+                    mimeType = messageType.info?.mimetype,
+                    filename = messageType.filename,
+                )
+            }
             else -> null
         }
             ?: return null
@@ -414,7 +420,7 @@ class DefaultNotifiableEventResolver(
     private fun NotificationContent.MessageLike.RoomMessage.getImageMimetype(): String? {
         return when (val messageType = messageType) {
             is ImageMessageType -> messageType.info?.mimetype
-            is VideoMessageType -> null // Use the thumbnail here?
+            is VideoMessageType -> messageType.info?.mimetype
             else -> null
         }
     }

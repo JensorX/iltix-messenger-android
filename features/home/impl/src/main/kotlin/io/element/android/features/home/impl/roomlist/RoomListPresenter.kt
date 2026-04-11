@@ -23,6 +23,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import de.iltix.home.IxRoomPrefsSource
+import de.iltix.lib.preferences.IxPrefs
 import dev.zacsweers.metro.Inject
 import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.announcement.api.Announcement
@@ -90,6 +92,7 @@ class RoomListPresenter(
     private val announcementService: AnnouncementService,
     private val coldStartWatcher: AnalyticsColdStartWatcher,
     private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
+    private val ixRoomPrefsSource: IxRoomPrefsSource,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -112,6 +115,8 @@ class RoomListPresenter(
                 announcements.contains(Announcement.NewNotificationSound)
             }
         }.collectAsState(false)
+        val pinFavorites by ixRoomPrefsSource.pinFavoritesFlow()
+            .collectAsState(initial = IxPrefs.PIN_FAVORITES.defaultValue)
 
         // Avatar indicator
         val hideInvitesAvatar by client.rememberHideInvitesAvatar()
@@ -168,6 +173,7 @@ class RoomListPresenter(
         val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
+            pinFavorites,
         )
 
         val canReportRoom by produceState(false) { value = client.canReportRoom() }
@@ -226,6 +232,7 @@ class RoomListPresenter(
     private fun roomListContentState(
         securityBannerDismissed: Boolean,
         showNewNotificationSoundBanner: Boolean,
+        pinFavorites: Boolean,
     ): RoomListContentState {
         val roomSummaries by produceState(initialValue = AsyncData.Loading()) {
             roomListDataSource.roomSummariesFlow.collect { value = AsyncData.Success(it) }
@@ -250,13 +257,21 @@ class RoomListPresenter(
             showSkeleton -> RoomListContentState.Skeleton(count = 16)
             else -> {
                 coldStartWatcher.onRoomListVisible()
+                val displaySummaries = roomSummaries.dataOrNull().orEmpty().let { summaries ->
+                    if (pinFavorites) {
+                        val (favorites, others) = summaries.partition { it.isFavorite }
+                        favorites + others
+                    } else {
+                        summaries
+                    }
+                }.toImmutableList()
 
                 RoomListContentState.Rooms(
                     securityBannerState = securityBannerState,
                     showNewNotificationSoundBanner = showNewNotificationSoundBanner,
                     fullScreenIntentPermissionsState = fullScreenIntentPermissionsPresenter.present(),
                     batteryOptimizationState = batteryOptimizationPresenter.present(),
-                    summaries = roomSummaries.dataOrNull().orEmpty().toImmutableList(),
+                    summaries = displaySummaries,
                     seenRoomInvites = seenRoomInvites.toImmutableSet(),
                 )
             }

@@ -8,6 +8,7 @@
 
 package io.element.android.libraries.matrix.ui.messages.sender
 
+import de.iltix.components.nicknames.rememberIxResolvedDisplayName
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -24,6 +25,7 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
+import io.element.android.libraries.matrix.api.timeline.item.event.getDisplayName
 
 // https://www.figma.com/file/Ni6Ii8YKtmXCKYNE90cC67/Timeline-(new)?type=design&node-id=917-80169&mode=design&t=A0CJCBbMqR8NOwUQ-0
 @Composable
@@ -33,6 +35,10 @@ fun SenderName(
     senderNameMode: SenderNameMode,
     modifier: Modifier = Modifier,
 ) {
+    val localDisplayName = rememberIxResolvedDisplayName(
+        userId = senderId.value,
+        fallbackName = senderProfile.getDisplayName(),
+    )
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -42,15 +48,15 @@ fun SenderName(
             is ProfileDetails.Error,
             ProfileDetails.Pending,
             ProfileDetails.Unavailable -> {
-                MainText(text = senderId.value, mode = senderNameMode)
+                MainText(text = localDisplayName ?: senderId.value, mode = senderNameMode)
             }
             is ProfileDetails.Ready -> {
-                val displayName = senderProfile.displayName
+                val displayName = localDisplayName
                 if (displayName.isNullOrEmpty()) {
                     MainText(text = senderId.value, mode = senderNameMode)
                 } else {
                     MainText(text = displayName, mode = senderNameMode)
-                    if (senderProfile.displayNameAmbiguous) {
+                    if (senderProfile.displayNameAmbiguous && displayName == senderProfile.displayName) {
                         SecondaryText(text = senderId.value, mode = senderNameMode)
                     }
                 }

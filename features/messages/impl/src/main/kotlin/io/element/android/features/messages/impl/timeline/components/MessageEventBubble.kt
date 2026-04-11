@@ -29,8 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.layer.CompositingStrategy
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import de.iltix.theme.LocalIxBubbleStyle
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
 import io.element.android.features.messages.impl.timeline.model.bubble.BubbleState
@@ -43,14 +45,12 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.text.toDp
 import io.element.android.libraries.designsystem.text.toPx
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.messageFromMeBackground
-import io.element.android.libraries.designsystem.theme.messageFromOtherBackground
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.utils.graphics.drawInLayer
 import io.element.android.libraries.ui.utils.time.isTalkbackActive
 
-private val BUBBLE_RADIUS = 12.dp
+private val DEFAULT_BUBBLE_RADIUS = 12.dp
 private val avatarRadius = AvatarSize.TimelineSender.dp / 2
 
 private val MIN_BUBBLE_WIDTH = 80.dp
@@ -78,9 +78,20 @@ fun MessageEventBubble(
     }
 
     val cutTopStart = state.cutTopStart
+    val bubbleStyle = LocalIxBubbleStyle.current
     // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine)
-    val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }
+    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(
+        isMine = state.isMine,
+        bubbleStyle = bubbleStyle,
+    )
+    val bubbleShape = remember(state, bubbleStyle.cornerRadius) {
+        MessageEventBubbleDefaults.shape(
+            cutTopStart = state.cutTopStart,
+            groupPosition = state.groupPosition,
+            isMine = state.isMine,
+            bubbleRadius = bubbleStyle.cornerRadius,
+        )
+    }
     val radiusPx = (avatarRadius + SENDER_AVATAR_BORDER_WIDTH).toPx()
     val yOffsetPx = -(NEGATIVE_MARGIN_FOR_BUBBLE + avatarRadius).toPx()
     BoxWithConstraints(
@@ -138,40 +149,44 @@ fun MessageEventBubble(
 }
 
 object MessageEventBubbleDefaults {
-    fun shape(cutTopStart: Boolean, groupPosition: TimelineItemGroupPosition, isMine: Boolean): Shape {
-        val topLeftCorner = if (cutTopStart) 0.dp else BUBBLE_RADIUS
+    fun shape(
+        cutTopStart: Boolean,
+        groupPosition: TimelineItemGroupPosition,
+        isMine: Boolean,
+        bubbleRadius: Dp = DEFAULT_BUBBLE_RADIUS,
+    ): Shape {
+        val topLeftCorner = if (cutTopStart) 0.dp else bubbleRadius
         return when (groupPosition) {
             TimelineItemGroupPosition.First -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp, BUBBLE_RADIUS)
+                RoundedCornerShape(bubbleRadius, bubbleRadius, 0.dp, bubbleRadius)
             } else {
-                RoundedCornerShape(topLeftCorner, BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp)
+                RoundedCornerShape(topLeftCorner, bubbleRadius, bubbleRadius, 0.dp)
             }
             TimelineItemGroupPosition.Middle -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, 0.dp, 0.dp, BUBBLE_RADIUS)
+                RoundedCornerShape(bubbleRadius, 0.dp, 0.dp, bubbleRadius)
             } else {
-                RoundedCornerShape(0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp)
+                RoundedCornerShape(0.dp, bubbleRadius, bubbleRadius, 0.dp)
             }
             TimelineItemGroupPosition.Last -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, 0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                RoundedCornerShape(bubbleRadius, 0.dp, bubbleRadius, bubbleRadius)
             } else {
-                RoundedCornerShape(0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                RoundedCornerShape(0.dp, bubbleRadius, bubbleRadius, bubbleRadius)
             }
             TimelineItemGroupPosition.None ->
                 RoundedCornerShape(
                     topLeftCorner,
-                    BUBBLE_RADIUS,
-                    BUBBLE_RADIUS,
-                    BUBBLE_RADIUS
+                    bubbleRadius,
+                    bubbleRadius,
+                    bubbleRadius
                 )
         }
     }
 
-    @Composable
-    fun backgroundBubbleColor(isMine: Boolean): Color {
+    fun backgroundBubbleColor(isMine: Boolean, bubbleStyle: de.iltix.theme.IxBubbleStyle): Color {
         return if (isMine) {
-            ElementTheme.colors.messageFromMeBackground
+            bubbleStyle.ownBackgroundColor
         } else {
-            ElementTheme.colors.messageFromOtherBackground
+            bubbleStyle.otherBackgroundColor
         }
     }
 

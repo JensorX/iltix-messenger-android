@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_onboarding_welcome_title">The modular Messenger upgrade</string>
+    <string name="screen_onboarding_welcome_message">Welcome to Iltix. Modular by design: tailor chat, notifications, and UI behavior to your workflow.</string>
+</resources>

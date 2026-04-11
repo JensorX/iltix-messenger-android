@@ -48,9 +48,11 @@ class DefaultSummaryGroupMessageCreator(
         val summaryIsNoisy = roomNotifications.any { it.shouldBing } ||
             invitationNotifications.any { it.isNoisy } ||
             simpleNotifications.any { it.isNoisy }
-        val lastMessageTimestamp = roomNotifications.lastOrNull()?.latestTimestamp
-            ?: invitationNotifications.lastOrNull()?.timestamp
-            ?: simpleNotifications.last().timestamp
+        val lastMessageTimestamp = buildList {
+            addAll(roomNotifications.map { it.latestTimestamp })
+            addAll(invitationNotifications.map { it.timestamp })
+            addAll(simpleNotifications.map { it.timestamp })
+        }.maxOrNull() ?: System.currentTimeMillis()
         val nbEvents = roomNotifications.size + invitationNotifications.size + simpleNotifications.size
         val sumTitle = stringProvider.getQuantityString(R.plurals.notification_compat_summary_title, nbEvents, nbEvents)
         return notificationCreator.createSummaryListNotification(

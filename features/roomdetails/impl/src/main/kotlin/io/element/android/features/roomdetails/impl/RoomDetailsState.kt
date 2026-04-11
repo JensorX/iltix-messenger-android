@@ -53,6 +53,8 @@ data class RoomDetailsState(
     val roomVersion: String?,
     val enableKeyShareOnInvite: Boolean,
     val roomHistoryVisibility: RoomHistoryVisibility,
+    val isMediaAutoDownloadModuleEnabled: Boolean = true,
+    val mediaAutoDownloadEnabled: Boolean,
     val eventSink: (RoomDetailsEvent) -> Unit
 ) {
     val roomBadges = buildList {

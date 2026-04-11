@@ -28,9 +28,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import io.element.android.compound.tokens.CompoundTypographyTokens
 import io.element.android.compound.tokens.compoundTypography
+import io.element.android.compound.tokens.defaultCompoundTypographyTokens
 import io.element.android.compound.tokens.generated.SemanticColors
-import io.element.android.compound.tokens.generated.TypographyTokens
 import io.element.android.compound.tokens.generated.compoundColorsDark
 import io.element.android.compound.tokens.generated.compoundColorsLight
 
@@ -60,7 +61,10 @@ object ElementTheme {
     /**
      * Compound [Typography] tokens. In Figma, these have the `Android/font/` prefix.
      */
-    val typography: TypographyTokens = TypographyTokens
+    val typography: CompoundTypographyTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalCompoundTypographyTokens.current
 
     /**
      * Returns whether the theme version used is the light or the dark one.
@@ -73,6 +77,7 @@ object ElementTheme {
 
 // Global variables (application level)
 internal val LocalCompoundColors = staticCompositionLocalOf { compoundColorsLight }
+internal val LocalCompoundTypographyTokens = staticCompositionLocalOf { defaultCompoundTypographyTokens }
 
 /**
  * Sets up the theme for the application, or a part of it.
@@ -87,6 +92,7 @@ internal val LocalCompoundColors = staticCompositionLocalOf { compoundColorsLigh
  * @param materialColorsLight the Material 3 [ColorScheme] to use in light theme.
  * @param materialColorsDark the Material 3 [ColorScheme] to use in dark theme.
  * @param typography the Material 3 [Typography] tokens to use. It'll use [compoundTypography] by default.
+ * @param typographyTokens the Compound typography tokens to use for [ElementTheme.typography].
  * @param content the content to apply the theme to.
  */
 @Composable
@@ -101,6 +107,7 @@ fun ElementTheme(
     materialColorsLight: ColorScheme = compoundLight.toMaterialColorScheme(),
     materialColorsDark: ColorScheme = compoundDark.toMaterialColorScheme(),
     typography: Typography = compoundTypography,
+    typographyTokens: CompoundTypographyTokens = defaultCompoundTypographyTokens,
     content: @Composable () -> Unit,
 ) {
     val currentCompoundColor = when {
@@ -149,6 +156,7 @@ fun ElementTheme(
     }
     CompositionLocalProvider(
         LocalCompoundColors provides currentCompoundColor,
+        LocalCompoundTypographyTokens provides typographyTokens,
         LocalContentColor provides colorScheme.onSurface,
     ) {
         MaterialTheme(

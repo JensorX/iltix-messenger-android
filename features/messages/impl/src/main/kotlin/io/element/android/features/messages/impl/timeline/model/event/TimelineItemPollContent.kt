@@ -10,7 +10,10 @@ package io.element.android.features.messages.impl.timeline.model.event
 
 import io.element.android.features.poll.api.pollcontent.PollAnswerItem
 import io.element.android.libraries.matrix.api.core.EventId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.poll.PollKind
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 
 data class TimelineItemPollContent(
     val isMine: Boolean,
@@ -18,6 +21,7 @@ data class TimelineItemPollContent(
     val eventId: EventId?,
     val question: String,
     val answerItems: List<PollAnswerItem>,
+    val votes: ImmutableMap<String, ImmutableList<UserId>>,
     val pollKind: PollKind,
     val isEnded: Boolean,
     override val isEdited: Boolean,

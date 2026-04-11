@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import de.iltix.theme.IxElementThemeApp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -37,7 +38,6 @@ import io.element.android.features.lockscreen.api.handleSecureFlag
 import io.element.android.libraries.architecture.appyx.DebugNavStateNodeHost
 import io.element.android.libraries.architecture.bindings
 import io.element.android.libraries.core.log.logger.LoggerTag
-import io.element.android.libraries.designsystem.theme.ElementThemeApp
 import io.element.android.libraries.designsystem.utils.snackbar.LocalSnackbarDispatcher
 import io.element.android.services.analytics.compose.LocalAnalyticsService
 import io.element.android.x.di.AppBindings
@@ -69,11 +69,10 @@ class MainActivity : NodeActivity() {
         val colors by remember {
             appBindings.enterpriseService().semanticColorsFlow(sessionId = null)
         }.collectAsState(SemanticColorsLightDark.default)
-        ElementThemeApp(
+        IxElementThemeApp(
             appPreferencesStore = appBindings.preferencesStore(),
-            compoundLight = colors.light,
-            compoundDark = colors.dark,
-            buildMeta = appBindings.buildMeta()
+            baseSemanticColors = colors,
+            buildMeta = appBindings.buildMeta(),
         ) {
             CompositionLocalProvider(
                 LocalSnackbarDispatcher provides appBindings.snackbarDispatcher(),

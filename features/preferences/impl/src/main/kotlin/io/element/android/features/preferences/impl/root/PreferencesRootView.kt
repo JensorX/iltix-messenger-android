@@ -65,6 +65,7 @@ fun PreferencesRootView(
     onOpenNotificationSettings: () -> Unit,
     onOpenUserProfile: (MatrixUser) -> Unit,
     onOpenBlockedUsers: () -> Unit,
+    onOpenIltixModules: () -> Unit,
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -115,6 +116,7 @@ fun PreferencesRootView(
             onOpenAdvancedSettings = onOpenAdvancedSettings,
             onOpenDeveloperSettings = onOpenDeveloperSettings,
             onOpenLabs = onOpenLabs,
+            onOpenIltixModules = onOpenIltixModules,
             onSignOutClick = onSignOutClick,
             onDeactivateClick = onDeactivateClick,
         )
@@ -245,6 +247,7 @@ private fun ColumnScope.GeneralSection(
     onOpenAdvancedSettings: () -> Unit,
     onOpenLabs: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
+    onOpenIltixModules: () -> Unit,
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
 ) {
@@ -271,6 +274,12 @@ private fun ColumnScope.GeneralSection(
         headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Settings())),
         onClick = onOpenAdvancedSettings,
+    )
+    
+    ListItem(
+        headlineContent = { Text(stringResource(id = de.iltix.lib.R.string.iltix_modules_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Resource(de.iltix.lib.R.drawable.ic_iltix)),
+        onClick = onOpenIltixModules,
     )
 
     if (state.showLabsItem) {
@@ -368,6 +377,7 @@ private fun ContentToPreview(matrixUser: MatrixUser) {
         onOpenLockScreenSettings = {},
         onOpenUserProfile = {},
         onOpenBlockedUsers = {},
+        onOpenIltixModules = {},
         onSignOutClick = {},
         onDeactivateClick = {},
     )

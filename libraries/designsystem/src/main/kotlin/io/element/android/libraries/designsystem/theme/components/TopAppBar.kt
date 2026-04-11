@@ -22,11 +22,11 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.compound.tokens.aliasScreenTitle
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.preview.ElementThemedPreview
 import io.element.android.libraries.designsystem.preview.PreviewGroup
-import io.element.android.libraries.designsystem.theme.aliasScreenTitle
 
 /**
  * A top app bar that displays a title string, navigation icon, and actions.

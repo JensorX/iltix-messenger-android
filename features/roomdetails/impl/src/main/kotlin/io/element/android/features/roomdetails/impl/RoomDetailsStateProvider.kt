@@ -123,6 +123,7 @@ fun aRoomDetailsState(
     showDebugInfo: Boolean = false,
     enableKeyShareOnInvite: Boolean = false,
     roomHistoryVisibility: RoomHistoryVisibility = RoomHistoryVisibility.Shared,
+    mediaAutoDownloadEnabled: Boolean = false,
     eventSink: (RoomDetailsEvent) -> Unit = {},
 ) = RoomDetailsState(
     roomId = roomId,
@@ -155,6 +156,7 @@ fun aRoomDetailsState(
     roomVersion = "12",
     enableKeyShareOnInvite = enableKeyShareOnInvite,
     roomHistoryVisibility = roomHistoryVisibility,
+    mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
     eventSink = eventSink,
 )
 
