@@ -42,6 +42,7 @@ include(":appnav")
 include(":appconfig")
 include(":appicon:element")
 include(":appicon:enterprise")
+include(":appicon:iltix")
 include(":tests:detekt-rules")
 include(":tests:konsist")
 include(":tests:uitests")
@@ -68,6 +69,7 @@ includeProjects(File(rootDir, "enterprise"), ":enterprise", maxDepth = 2)
 includeProjects(File(rootDir, "features"), ":features")
 includeProjects(File(rootDir, "libraries"), ":libraries")
 includeProjects(File(rootDir, "services"), ":services")
+includeProjects(File(rootDir, "iltix"), ":iltix")
 
 // Uncomment to include the compound-android module as a local dependency so you can work on it locally.
 // You will also need to clone it in the specified folder.

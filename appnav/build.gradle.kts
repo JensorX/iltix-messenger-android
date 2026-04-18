@@ -55,6 +55,8 @@ dependencies {
     implementation(projects.services.appnavstate.api)
     implementation(projects.services.analytics.api)
 
+    implementation(projects.iltix.theme)
+
     testCommonDependencies(libs)
     testImplementation(projects.features.login.test)
     testImplementation(projects.features.share.test)

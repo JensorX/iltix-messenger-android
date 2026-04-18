@@ -11,6 +11,7 @@ package io.element.android.libraries.push.impl.notifications.conversations
 import android.content.Context
 import android.content.pm.ShortcutInfo
 import android.os.Build
+import androidx.core.app.Person
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -78,6 +79,7 @@ class DefaultNotificationConversationService(
         roomId: RoomId,
         roomName: String,
         roomIsDirect: Boolean,
+        roomIsFavorite: Boolean,
         roomAvatarUrl: String?,
     ) {
         if (lockScreenService.isPinSetup().first()) {
@@ -104,19 +106,40 @@ class DefaultNotificationConversationService(
             targetSize = defaultShortcutIconSize.toLong()
         )?.let(IconCompat::createWithBitmap)
 
-        val shortcutInfo = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))
+        val isIltixBuild = context.packageName.contains("iltix")
+        val shortcutBuilder = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))
             .setShortLabel(roomName)
             .setIcon(icon)
             .setIntent(intentProvider.getViewRoomIntent(sessionId, roomId, threadId = null, eventId = null))
             .setCategories(categories)
-            .setLongLived(true)
+            .setIsConversation()
             .let {
                 when (roomIsDirect) {
                     true -> it.addCapabilityBinding("actions.intent.SEND_MESSAGE")
                     false -> it.addCapabilityBinding("actions.intent.SEND_MESSAGE", "message.recipient.@type", listOf("Audience"))
                 }
             }
-            .build()
+            .let {
+                if (roomIsDirect) {
+                    it.setPerson(
+                        Person.Builder()
+                            .setName(roomName)
+                            .setImportant(isIltixBuild && roomIsFavorite)
+                            .build()
+                    )
+                } else {
+                    it
+                }
+            }
+            .let {
+                if (isIltixBuild) {
+                    it.setRank(if (roomIsFavorite) 0 else 1)
+                } else {
+                    it
+                }
+            }
+
+        val shortcutInfo = shortcutBuilder.build()
 
         runCatchingExceptions { ShortcutManagerCompat.pushDynamicShortcut(context, shortcutInfo) }
             .onFailure {

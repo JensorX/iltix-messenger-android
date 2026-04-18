@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -239,6 +240,7 @@ private fun OnBoardingContent(state: OnBoardingState) {
 
 @Composable
 private fun OnBoardingLogo(
+    state: OnBoardingState,
     onBoardingLogoResId: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -248,10 +250,31 @@ private fun OnBoardingLogo(
             .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Image(
-            painter = painterResource(id = onBoardingLogoResId),
-            contentDescription = null
-        )
+        Column(
+            horizontalAlignment = CenterHorizontally,
+        ) {
+            Image(
+                painter = painterResource(id = onBoardingLogoResId),
+                contentDescription = null,
+                modifier = Modifier.size(196.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(id = R.string.screen_onboarding_welcome_title),
+                color = ElementTheme.colors.textPrimary,
+                style = ElementTheme.typography.fontHeadingLgBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
+                color = ElementTheme.colors.textSecondary,
+                style = ElementTheme.typography.fontBodyLgRegular.copy(fontSize = 17.sp),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

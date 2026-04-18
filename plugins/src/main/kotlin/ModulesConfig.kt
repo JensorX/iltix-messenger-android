@@ -16,7 +16,10 @@ object ModulesConfig {
         includeUnifiedPush = BuildTimeConfig.PUSH_CONFIG_INCLUDE_UNIFIED_PUSH,
     )
 
-    val analyticsConfig: AnalyticsConfig = if (isEnterpriseBuild) {
+    val analyticsConfig: AnalyticsConfig = if (isIltixBuild) {
+        println("Analytics disabled (Iltix build)")
+        AnalyticsConfig.Disabled
+    } else if (isEnterpriseBuild) {
         // Is Posthog configuration available?
         val withPosthog = BuildTimeConfig.SERVICES_POSTHOG_APIKEY.isNullOrEmpty().not() &&
             BuildTimeConfig.SERVICES_POSTHOG_HOST.isNullOrEmpty().not()

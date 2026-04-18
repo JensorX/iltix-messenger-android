@@ -28,6 +28,7 @@ setupDependencyInjection()
 dependencies {
     implementation(projects.libraries.di)
     implementation(projects.libraries.architecture)
+    implementation(projects.iltix.components)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixmedia.api)

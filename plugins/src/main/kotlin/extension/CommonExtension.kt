@@ -24,6 +24,8 @@ fun CommonExtension<*, *, *, *, *, *>.androidConfig(project: Project) {
             useSupportLibrary = true
             generatedDensities()
         }
+        missingDimensionStrategy("app", "element")
+        missingDimensionStrategy("store", "gplay")
     }
 
     compileOptions {

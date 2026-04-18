@@ -8,6 +8,8 @@
 
 package io.element.android.features.userprofile.shared
 
+import de.iltix.components.nicknames.IxLocalNicknameAction
+import de.iltix.components.nicknames.rememberIxResolvedDisplayName
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -60,6 +62,10 @@ fun UserProfileView(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = rememberSnackbarHostState(snackbarMessage = state.snackbarMessage)
+    val resolvedUserName = rememberIxResolvedDisplayName(
+        userId = state.userId.value,
+        fallbackName = state.userName,
+    )
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -76,10 +82,10 @@ fun UserProfileView(
             UserProfileHeaderSection(
                 avatarUrl = state.avatarUrl,
                 userId = state.userId,
-                userName = state.userName,
+                userName = resolvedUserName,
                 verificationState = state.verificationState,
                 openAvatarPreview = { avatarUrl ->
-                    openAvatarPreview(state.userName ?: state.userId.value, avatarUrl)
+                    openAvatarPreview(resolvedUserName ?: state.userId.value, avatarUrl)
                 },
                 onUserIdClick = {
                     state.eventSink(UserProfileEvents.CopyToClipboard(state.userId.value))
@@ -93,6 +99,12 @@ fun UserProfileView(
                 onStartDM = { state.eventSink(UserProfileEvents.StartDM) },
                 onCall = { intent -> state.dmRoomId?.let { onStartCall(it, intent) } }
             )
+            if (!state.isCurrentUser) {
+                IxLocalNicknameAction(
+                    userId = state.userId.value,
+                    fallbackName = state.userName,
+                )
+            }
             Spacer(modifier = Modifier.height(26.dp))
             if (!state.isCurrentUser) {
                 VerifyUserSection(state, onVerifyClick = { onVerifyClick(state.userId) })

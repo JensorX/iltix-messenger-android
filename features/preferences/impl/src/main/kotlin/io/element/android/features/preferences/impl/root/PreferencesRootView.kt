@@ -61,6 +61,7 @@ fun PreferencesRootView(
     onOpenNotificationSettings: () -> Unit,
     onOpenUserProfile: (MatrixUser) -> Unit,
     onOpenBlockedUsers: () -> Unit,
+    onOpenIltixModules: () -> Unit,
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -113,6 +114,7 @@ fun PreferencesRootView(
             onOpenAdvancedSettings = onOpenAdvancedSettings,
             onOpenDeveloperSettings = onOpenDeveloperSettings,
             onOpenLabs = onOpenLabs,
+            onOpenIltixModules = onOpenIltixModules,
             onSignOutClick = onSignOutClick,
             onDeactivateClick = onDeactivateClick,
         )
@@ -235,6 +237,7 @@ private fun ColumnScope.GeneralSection(
     onOpenAdvancedSettings: () -> Unit,
     onOpenLabs: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
+    onOpenIltixModules: () -> Unit,
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
 ) {
@@ -360,6 +363,7 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onOpenLockScreenSettings = {},
         onOpenUserProfile = {},
         onOpenBlockedUsers = {},
+        onOpenIltixModules = {},
         onSignOutClick = {},
         onDeactivateClick = {},
     )

@@ -10,6 +10,8 @@
 
 package io.element.android.features.home.impl
 
+import de.iltix.home.IxHomeChatsContent
+import de.iltix.home.rememberIxHomeUiConfig
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,8 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FabPosition
@@ -28,6 +32,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -157,6 +162,11 @@ private fun HomeScaffold(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(appBarState)
     val snackbarHostState = rememberSnackbarHostState(snackbarMessage = state.snackbarMessage)
     val roomListState: RoomListState = state.roomListState
+    val ixHomeUi = rememberIxHomeUiConfig(
+        currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+        roomListState = roomListState,
+    )
+    val showBottomBar = !ixHomeUi.shouldShowIxSpaceNav
 
     BackHandler(enabled = state.isBackHandlerEnabled) {
         if (state.currentHomeNavigationBarItem != HomeNavigationBarItem.Chats) {
@@ -181,6 +191,7 @@ private fun HomeScaffold(
                 currentUserAndNeighbors = state.currentUserAndNeighbors,
                 showAvatarIndicator = state.showAvatarIndicator,
                 areSearchResultsDisplayed = roomListState.searchState.isSearchActive,
+                useIltixTheme = ixHomeUi.useIltixTheme,
                 onToggleSearch = { roomListState.eventSink(RoomListEvent.ToggleSearchResults) },
                 onMenuActionClick = onMenuActionClick,
                 onOpenSettings = onOpenSettings,
@@ -192,6 +203,8 @@ private fun HomeScaffold(
                 filtersState = roomListState.filtersState,
                 spaceFiltersState = roomListState.spaceFiltersState,
                 canReportBug = state.canReportBug,
+                showStartChatInTopBar = ixHomeUi.showStartChatInTopBar,
+                onStartChatClick = onStartChatClick,
                 modifier = Modifier.hazeEffect(
                     state = hazeState,
                     style = HazeMaterials.thick(),
@@ -199,19 +212,24 @@ private fun HomeScaffold(
             )
         },
         floatingActionButton = {
-            val coroutineScope = rememberCoroutineScope()
-            HomeBottomBar(
-                currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
-                onItemClick = { item ->
-                    // scroll to top if selecting the same item
-                    if (item == state.currentHomeNavigationBarItem) {
-                        val lazyListStateTarget = when (item) {
-                            HomeNavigationBarItem.Chats -> roomsLazyListState
-                            HomeNavigationBarItem.Spaces -> spacesLazyListState
-                        }
-                        coroutineScope.launch {
-                            if (lazyListStateTarget.firstVisibleItemIndex > 10) {
-                                lazyListStateTarget.scrollToItem(10)
+            if (showBottomBar) {
+                val coroutineScope = rememberCoroutineScope()
+                HomeBottomBar(
+                    currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+                    onItemClick = { item ->
+                        // scroll to top if selecting the same item
+                        if (item == state.currentHomeNavigationBarItem) {
+                            val lazyListStateTarget = when (item) {
+                                HomeNavigationBarItem.Chats -> roomsLazyListState
+                                HomeNavigationBarItem.Spaces -> spacesLazyListState
+                            }
+                            coroutineScope.launch {
+                                if (lazyListStateTarget.firstVisibleItemIndex > 10) {
+                                    lazyListStateTarget.scrollToItem(10)
+                                }
+                                // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
+                                scrollBehavior.state.heightOffset = 0f
+                                lazyListStateTarget.animateScrollToItem(0)
                             }
                             // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
                             scrollBehavior.state.heightOffset = 0f
@@ -224,46 +242,47 @@ private fun HomeScaffold(
                 floatingActionButton = {
                     when (state.currentHomeNavigationBarItem) {
                         HomeNavigationBarItem.Chats -> {
-                            HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                            if (ixHomeUi.showStartChatInTopBar) {
+                                null
+                            } else {
+                                {
+                                    HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                                }
+                            }
                         }
                         HomeNavigationBarItem.Spaces -> {
-                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            {
+                                HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            } else {
+                if (!ixHomeUi.showStartChatInTopBar) {
+                    HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                }
+            }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = if (showBottomBar) FabPosition.Center else FabPosition.End,
         content = { padding ->
             val contentPadding = PaddingValues(
-                bottom = 96.dp,
+                bottom = if (ixHomeUi.shouldShowIxSpaceNav) 168.dp else 96.dp,
             )
             when (state.currentHomeNavigationBarItem) {
                 HomeNavigationBarItem.Chats -> {
-                    RoomListContentView(
-                        contentState = roomListState.contentState,
-                        filtersState = roomListState.filtersState,
-                        spaceFiltersState = roomListState.spaceFiltersState,
-                        lazyListState = roomsLazyListState,
-                        hideInvitesAvatars = roomListState.hideInvitesAvatars,
-                        eventSink = roomListState.eventSink,
+                    IxHomeChatsContent(
+                        roomListState = roomListState,
+                        roomsLazyListState = roomsLazyListState,
+                        outerPadding = padding,
+                        contentPadding = contentPadding,
+                        hazeState = hazeState,
+                        shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,
+                        showNavigationBar = showBottomBar,
                         onSetUpRecoveryClick = onSetUpRecoveryClick,
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                         onRoomClick = ::onRoomClick,
+                        onOpenSpace = onRoomClick,
                         onCreateRoomClick = onStartChatClick,
-                        contentPadding = contentPadding,
-                        modifier = Modifier
-                            .padding(
-                                PaddingValues(
-                                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
-                                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
-                                    // Remove these two lines once https://issuetracker.google.com/issues/436432313 has been fixed
-                                    bottom = padding.calculateBottomPadding(),
-                                    top = padding.calculateTopPadding()
-                                )
-                            )
-                            .consumeWindowInsets(padding)
-                            .hazeSource(state = hazeState)
                     )
                     SpaceFiltersView(roomListState.spaceFiltersState)
                 }

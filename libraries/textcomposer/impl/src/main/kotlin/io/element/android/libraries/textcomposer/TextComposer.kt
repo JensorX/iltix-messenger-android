@@ -123,6 +123,8 @@ fun TextComposer(
     resolveAtRoomMentionDisplay: () -> TextDisplay,
     modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
+    showNotEncryptedBadge: Boolean = true,
+    extraLeadingContent: (@Composable () -> Unit)? = null,
 ) {
     val markdown = when (state) {
         is TextEditorState.Markdown -> state.state.text.value()
@@ -376,6 +378,7 @@ fun TextComposer(
         TextFormattingLayout(
             modifier = layoutModifier,
             isRoomEncrypted = state.isRoomEncrypted,
+            showNotEncryptedBadge = showNotEncryptedBadge,
             textInput = textInput,
             dismissTextFormattingButton = {
                 IconColorButton(
@@ -393,6 +396,7 @@ fun TextComposer(
             composerMode = composerMode,
             voiceMessageState = voiceMessageState,
             isRoomEncrypted = state.isRoomEncrypted,
+            showNotEncryptedBadge = showNotEncryptedBadge,
             modifier = layoutModifier,
             textInput = textInput,
             endButtonParams = endButtonParams,
@@ -444,6 +448,7 @@ private fun StandardLayout(
     composerMode: MessageComposerMode,
     voiceMessageState: VoiceMessageState,
     isRoomEncrypted: Boolean?,
+    showNotEncryptedBadge: Boolean,
     textInput: @Composable () -> Unit,
     voiceRecording: @Composable () -> Unit,
     endButtonParams: EndButtonParams,
@@ -452,9 +457,10 @@ private fun StandardLayout(
     onVoiceRecorderEvent: (VoiceMessageRecorderEvent) -> Unit,
     onResetComposerMode: () -> Unit,
     modifier: Modifier = Modifier,
+    extraLeadingContent: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier) {
-        if (isRoomEncrypted == false) {
+        if (showNotEncryptedBadge && isRoomEncrypted == false) {
             Spacer(Modifier.height(16.dp))
             NotEncryptedBadge()
             Spacer(Modifier.height(4.dp))
@@ -508,6 +514,13 @@ private fun StandardLayout(
                             }
                         }
                     }
+                }
+            }
+            if (extraLeadingContent != null && voiceMessageState is VoiceMessageState.Idle) {
+                Box(
+                    modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                ) {
+                    extraLeadingContent()
                 }
             }
             Box(
@@ -571,6 +584,7 @@ private fun NotEncryptedBadge() {
 @Composable
 private fun TextFormattingLayout(
     isRoomEncrypted: Boolean?,
+    showNotEncryptedBadge: Boolean,
     textInput: @Composable () -> Unit,
     dismissTextFormattingButton: @Composable () -> Unit,
     textFormatting: @Composable () -> Unit,
@@ -581,7 +595,7 @@ private fun TextFormattingLayout(
         modifier = modifier.padding(vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        if (isRoomEncrypted == false) {
+        if (showNotEncryptedBadge && isRoomEncrypted == false) {
             NotEncryptedBadge()
             Spacer(Modifier.height(8.dp))
         }

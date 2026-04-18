@@ -46,6 +46,7 @@ import io.element.android.appnav.room.RoomFlowNode
 import io.element.android.appnav.room.RoomNavigationTarget
 import io.element.android.appnav.room.joined.JoinedRoomLoadedFlowNode
 import io.element.android.compound.colors.SemanticColorsLightDark
+import de.iltix.theme.IxElementThemeApp
 import io.element.android.features.createroom.api.CreateRoomEntryPoint
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.SessionEnterpriseService
@@ -73,7 +74,6 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.architecture.waitForChildAttached
 import io.element.android.libraries.architecture.waitForNavTargetAttached
 import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.designsystem.theme.ElementThemeApp
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
@@ -671,7 +671,7 @@ class LoggedInFlowNode(
         val colors by remember {
             enterpriseService.semanticColorsFlow(sessionId = matrixClient.sessionId)
         }.collectAsState(SemanticColorsLightDark.default)
-        ElementThemeApp(
+        IxElementThemeApp(
             appPreferencesStore = appPreferencesStore,
             featureFlagService = featureFlagService,
             compoundLight = colors.light,

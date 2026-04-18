@@ -1,0 +1,81 @@
+name: Iltix Release Build
+
+on:
+  push:
+    branches:
+      - iltix-develop
+
+permissions:
+  contents: write
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx8g -XX:MaxMetaspaceSize=2g -Dfile.encoding=UTF-8" -Dorg.gradle.daemon=false
+
+jobs:
+  build-and-release:
+    name: Build and publish Iltix release APKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        with:
+          persist-credentials: false
+          lfs: true
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4
+
+      - name: Build gplay ix release APKs
+        run: |
+          ./gradlew \
+            --no-daemon \
+            --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx8g -XX:MaxMetaspaceSize=2g -Dfile.encoding=UTF-8" \
+            :app:assembleGplayIxRelease
+
+      - name: Collect version info
+        id: version
+        run: |
+          APK_DIR="app/build/outputs/apk/gplayIx/release"
+          # extract versionName from one of the APKs via aapt2
+          UNIVERSAL_APK=$(find "$APK_DIR" -name "*universal*.apk" | head -1)
+          if [[ -n "$UNIVERSAL_APK" ]]; then
+            VERSION_NAME=$(${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools | sort -V | tail -1)/aapt2 \
+              dump badging "$UNIVERSAL_APK" 2>/dev/null \
+              | grep "^package:" | sed "s/.*versionName='\([^']*\)'.*/\1/")
+          fi
+          VERSION_NAME="${VERSION_NAME:-$(date +'%Y.%m.%d')}"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          TAG="iltix-${VERSION_NAME}-${SHORT_SHA}"
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "apk_dir=${APK_DIR}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Iltix ${{ steps.version.outputs.version_name }}"
+          body: |
+            Automated release from `iltix-develop` branch.
+            Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          files: ${{ steps.version.outputs.apk_dir }}/*.apk
