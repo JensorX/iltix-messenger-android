@@ -183,8 +183,6 @@ class RoomDetailsPresenter(
 
         val canReportRoom by produceState(false) { value = client.canReportRoom() }
 
-        val enableKeyShareOnInvite by featureFlagService.isFeatureEnabledFlow(FeatureFlags.EnableKeyShareOnInvite).collectAsState(initial = false)
-
         return RoomDetailsState(
             roomId = room.roomId,
             roomName = roomName,
@@ -214,7 +212,6 @@ class RoomDetailsPresenter(
             isTombstoned = roomInfo.successorRoom != null,
             showDebugInfo = isDeveloperModeEnabled,
             roomVersion = roomInfo.roomVersion,
-            enableKeyShareOnInvite = enableKeyShareOnInvite,
             roomHistoryVisibility = roomInfo.historyVisibility,
             isMediaAutoDownloadModuleEnabled = isMediaAutoDownloadModuleEnabled,
             mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,

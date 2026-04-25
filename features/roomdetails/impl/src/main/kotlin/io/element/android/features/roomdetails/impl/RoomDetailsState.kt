@@ -51,7 +51,6 @@ data class RoomDetailsState(
     val isTombstoned: Boolean,
     val showDebugInfo: Boolean,
     val roomVersion: String?,
-    val enableKeyShareOnInvite: Boolean,
     val roomHistoryVisibility: RoomHistoryVisibility,
     val isMediaAutoDownloadModuleEnabled: Boolean = true,
     val mediaAutoDownloadEnabled: Boolean,
@@ -66,7 +65,7 @@ data class RoomDetailsState(
         if (isPublic) {
             add(RoomBadge.PUBLIC)
         }
-        if (enableKeyShareOnInvite && isEncrypted) {
+        if (isEncrypted) {
             when (roomHistoryVisibility) {
                 RoomHistoryVisibility.Invited, RoomHistoryVisibility.Joined -> add(RoomBadge.SHARED_HISTORY_HIDDEN)
                 RoomHistoryVisibility.Shared -> add(RoomBadge.SHARED_HISTORY_SHARED)
