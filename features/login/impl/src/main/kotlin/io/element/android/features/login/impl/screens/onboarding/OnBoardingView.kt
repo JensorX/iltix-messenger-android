@@ -135,6 +135,7 @@ private fun AddFirstAccountScaffold(
             ) {
                 if (state.onBoardingLogoResId != null) {
                     OnBoardingLogo(
+                        state = state,
                         onBoardingLogoResId = state.onBoardingLogoResId,
                     )
                 } else {

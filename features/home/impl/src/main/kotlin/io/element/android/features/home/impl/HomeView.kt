@@ -231,32 +231,27 @@ private fun HomeScaffold(
                                 scrollBehavior.state.heightOffset = 0f
                                 lazyListStateTarget.animateScrollToItem(0)
                             }
-                            // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
-                            scrollBehavior.state.heightOffset = 0f
-                            lazyListStateTarget.animateScrollToItem(0)
-                        }
-                    } else {
-                        state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
-                    }
-                },
-                floatingActionButton = {
-                    when (state.currentHomeNavigationBarItem) {
-                        HomeNavigationBarItem.Chats -> {
-                            if (ixHomeUi.showStartChatInTopBar) {
-                                null
-                            } else {
-                                {
-                                    HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
-                                }
-                            }
-                        }
-                        HomeNavigationBarItem.Spaces -> {
-                            {
-                                HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
-                            }
+                        } else {
+                            state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
                         }
                     },
-                )
+                floatingActionButton = when (state.currentHomeNavigationBarItem) {
+                    HomeNavigationBarItem.Chats -> {
+                        if (ixHomeUi.showStartChatInTopBar) {
+                            null
+                        } else {
+                            {
+                                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                            }
+                        }
+                    }
+                    HomeNavigationBarItem.Spaces -> {
+                        {
+                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                        }
+                    }
+                }
+            )
             } else {
                 if (!ixHomeUi.showStartChatInTopBar) {
                     HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
