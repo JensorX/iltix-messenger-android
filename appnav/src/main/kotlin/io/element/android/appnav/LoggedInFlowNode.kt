@@ -77,6 +77,7 @@ import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -144,6 +145,7 @@ class LoggedInFlowNode(
     private val syncService: SyncService,
     private val enterpriseService: EnterpriseService,
     private val appPreferencesStore: AppPreferencesStore,
+    private val featureFlagService: FeatureFlagService,
     private val buildMeta: BuildMeta,
     snackbarDispatcher: SnackbarDispatcher,
     private val analyticsService: AnalyticsService,
@@ -671,7 +673,9 @@ class LoggedInFlowNode(
         }.collectAsState(SemanticColorsLightDark.default)
         IxElementThemeApp(
             appPreferencesStore = appPreferencesStore,
-            baseSemanticColors = colors,
+            featureFlagService = featureFlagService,
+            compoundLight = colors.light,
+            compoundDark = colors.dark,
             buildMeta = buildMeta,
         ) {
             val isOnline by syncService.isOnline.collectAsState()

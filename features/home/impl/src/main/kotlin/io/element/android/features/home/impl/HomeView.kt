@@ -231,11 +231,16 @@ private fun HomeScaffold(
                                 scrollBehavior.state.heightOffset = 0f
                                 lazyListStateTarget.animateScrollToItem(0)
                             }
-                        } else {
-                            state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
+                            // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
+                            scrollBehavior.state.heightOffset = 0f
+                            lazyListStateTarget.animateScrollToItem(0)
                         }
-                    },
-                    floatingActionButton = when (state.currentHomeNavigationBarItem) {
+                    } else {
+                        state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
+                    }
+                },
+                floatingActionButton = {
+                    when (state.currentHomeNavigationBarItem) {
                         HomeNavigationBarItem.Chats -> {
                             if (ixHomeUi.showStartChatInTopBar) {
                                 null

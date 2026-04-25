@@ -71,8 +71,10 @@ class MainActivity : NodeActivity() {
         }.collectAsState(SemanticColorsLightDark.default)
         IxElementThemeApp(
             appPreferencesStore = appBindings.preferencesStore(),
-            baseSemanticColors = colors,
-            buildMeta = appBindings.buildMeta(),
+            featureFlagService = appBindings.featureFlagService(),
+            compoundLight = colors.light,
+            compoundDark = colors.dark,
+            buildMeta = appBindings.buildMeta()
         ) {
             CompositionLocalProvider(
                 LocalSnackbarDispatcher provides appBindings.snackbarDispatcher(),

@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,6 +28,7 @@ import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.PinUnpinAction
 import io.element.android.appconfig.MessageComposerConfig
 import io.element.android.features.messages.api.timeline.HtmlConverterProvider
+import io.element.android.features.messages.impl.MessagesState.Threads
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
@@ -85,8 +87,11 @@ import io.element.android.libraries.recentemojis.api.AddRecentEmoji
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -160,6 +165,13 @@ class MessagesPresenter(
         val pinnedMessagesBannerState = pinnedMessagesBannerPresenter.present()
         val roomCallState = roomCallStatePresenter.present()
         val roomMemberModerationState = roomMemberModerationPresenter.present()
+        val threadsList by produceState(persistentListOf()) {
+            room.threadsListService.subscribeToItemUpdates()
+                .onStart { room.threadsListService.paginate() }
+                .collectLatest { value = it.toImmutableList() }
+        }
+
+        val canOpenThreadList by featureFlagService.isFeatureEnabledFlow(FeatureFlags.RoomThreadList).collectAsState(initial = false)
 
         val userEventPermissions by room.permissionsAsState(UserEventPermissions.DEFAULT) { perms ->
             perms.userEventPermissions()
@@ -205,12 +217,10 @@ class MessagesPresenter(
         val dmRoomMember by room.getDirectRoomMember(membersState)
         val roomMemberIdentityStateChanges = identityChangeState.roomMemberIdentityStateChanges
 
-        val isKeyShareOnInviteEnabled by featureFlagService.isFeatureEnabledFlow(FeatureFlags.EnableKeyShareOnInvite).collectAsState(initial = false)
         // The top bar should show a "history" icon if:
-        //   * History sharing is enabled,
         //   * The room is encrypted, and:
         //   * The room's history_visibility allows future users to see content.
-        val topBarSharedHistoryIcon = if (isKeyShareOnInviteEnabled) roomInfo.sharedHistoryIcon() else SharedHistoryIcon.NONE
+        val topBarSharedHistoryIcon = roomInfo.sharedHistoryIcon()
 
         LifecycleResumeEffect(dmRoomMember, roomInfo.isEncrypted) {
             if (roomInfo.isEncrypted == true) {
@@ -294,6 +304,11 @@ class MessagesPresenter(
             roomMemberModerationState = roomMemberModerationState,
             topBarSharedHistoryIcon = topBarSharedHistoryIcon,
             successorRoom = roomInfo.successorRoom,
+            threads = Threads(
+                hasThreads = canOpenThreadList && threadsList.isNotEmpty(),
+                // TODO calculate this properly based on the thread list and the read state of each thread
+                hasUnreadThreads = false,
+            ),
             eventSink = ::handleEvent,
         )
     }

@@ -110,6 +110,7 @@ internal fun MessageComposerView(
 
     val onSendVoiceMessage = {
         voiceMessageState.eventSink(VoiceMessageComposerEvent.SendVoiceMessage)
+        state.eventSink(MessageComposerEvent.CloseSpecialMode)
     }
 
     val onDeleteVoiceMessage = {

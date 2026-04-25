@@ -121,7 +121,6 @@ fun aRoomDetailsState(
     canReportRoom: Boolean = true,
     isTombstoned: Boolean = false,
     showDebugInfo: Boolean = false,
-    enableKeyShareOnInvite: Boolean = false,
     roomHistoryVisibility: RoomHistoryVisibility = RoomHistoryVisibility.Shared,
     mediaAutoDownloadEnabled: Boolean = false,
     eventSink: (RoomDetailsEvent) -> Unit = {},
@@ -154,7 +153,6 @@ fun aRoomDetailsState(
     isTombstoned = isTombstoned,
     showDebugInfo = showDebugInfo,
     roomVersion = "12",
-    enableKeyShareOnInvite = enableKeyShareOnInvite,
     roomHistoryVisibility = roomHistoryVisibility,
     mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
     eventSink = eventSink,
@@ -197,6 +195,5 @@ fun aSharedHistoryRoomDetailsState(
     roomHistoryVisibility: RoomHistoryVisibility
 ) = aRoomDetailsState(
     isEncrypted = true,
-    enableKeyShareOnInvite = true,
     roomHistoryVisibility = roomHistoryVisibility,
 )
