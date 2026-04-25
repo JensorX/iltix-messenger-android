@@ -17,6 +17,7 @@ dependencies {
     api(projects.libraries.compound)
     implementation(projects.libraries.core)
     implementation(projects.libraries.designsystem)
+    implementation(projects.libraries.featureflag.api)
     implementation(projects.libraries.preferences.api)
     implementation(projects.libraries.androidutils)
 
