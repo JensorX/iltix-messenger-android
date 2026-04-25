@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.preferences.impl.R
+import de.iltix.lib.R as IltixR
 import io.element.android.features.preferences.impl.user.UserPreferences
 import io.element.android.libraries.architecture.coverage.ExcludeFromCoverage
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
@@ -245,6 +246,11 @@ private fun ColumnScope.GeneralSection(
         headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Settings())),
         onClick = onOpenAdvancedSettings,
+    )
+    ListItem(
+        headlineContent = { Text(stringResource(id = IltixR.string.iltix_modules_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Extensions())),
+        onClick = onOpenIltixModules,
     )
     if (state.showLabsItem) {
         ListItem(
