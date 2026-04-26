@@ -412,6 +412,7 @@ fun TextComposer(
             onDeleteVoiceMessage = onDeleteVoiceMessage,
             onVoiceRecorderEvent = onVoiceRecorderEvent,
             onResetComposerMode = onResetComposerMode,
+            extraLeadingContent = extraLeadingContent,
         )
     }
 
