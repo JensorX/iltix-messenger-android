@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import org.matrix.rustcomponents.sdk.LiveLocationShareUpdate
-import org.matrix.rustcomponents.sdk.LiveLocationsListener
+import org.matrix.rustcomponents.sdk.LiveLocationShareListener
 import org.matrix.rustcomponents.sdk.RoomInterface
 import org.matrix.rustcomponents.sdk.LiveLocationShare as RustLiveLocationShare
 
@@ -41,9 +41,9 @@ fun RoomInterface.liveLocationSharesFlow(): Flow<List<LiveLocationShare>> {
         }
     }
     return callbackFlow {
-        val liveLocationShares = liveLocationsObserver()
+        val liveLocationShares = liveLocationShares()
         val shares: MutableList<LiveLocationShare> = ArrayList()
-        val taskHandle = liveLocationShares.subscribe(object : LiveLocationsListener {
+        val taskHandle = liveLocationShares.subscribe(object : LiveLocationShareListener {
             override fun onUpdate(updates: List<LiveLocationShareUpdate>) {
                 for (update in updates) {
                     shares.applyUpdate(update)

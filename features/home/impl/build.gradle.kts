@@ -28,6 +28,8 @@ setupDependencyInjection()
 
 dependencies {
     implementation(projects.appconfig)
+    implementation(projects.iltix.lib)
+    implementation(projects.iltix.components)
     implementation(projects.libraries.core)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)

@@ -198,7 +198,7 @@ interface JoinedRoom : BaseRoom {
      * @param durationMillis How long to share location (in milliseconds).
      * @return Result containing the [EventId] of the beacon state event on success or an error on failure.
      */
-    suspend fun startLiveLocationShare(durationMillis: Long): Result<EventId>
+    suspend fun startLiveLocationShare(durationMillis: Long): Result<Unit>
 
     /**
      * Stop sharing live location in this room.

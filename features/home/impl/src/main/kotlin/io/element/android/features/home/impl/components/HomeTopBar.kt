@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.element.android.appconfig.RoomListConfig
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.compound.tokens.aliasScreenTitle
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.home.impl.HomeNavigationBarItem
 import io.element.android.features.home.impl.R
@@ -58,7 +59,6 @@ import io.element.android.libraries.designsystem.modifiers.backgroundVerticalGra
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.preview.USER_NAME_ALICE
-import io.element.android.libraries.designsystem.theme.aliasScreenTitle
 import io.element.android.libraries.designsystem.theme.components.DropdownMenu
 import io.element.android.libraries.designsystem.theme.components.DropdownMenuItem
 import io.element.android.libraries.designsystem.theme.components.Icon

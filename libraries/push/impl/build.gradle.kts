@@ -27,6 +27,7 @@ android {
 setupDependencyInjection()
 
 dependencies {
+    implementation(projects.iltix.lib)
     implementation(libs.androidx.corektx)
     implementation(libs.androidx.datastore.preferences)
     implementation(platform(libs.network.retrofit.bom))

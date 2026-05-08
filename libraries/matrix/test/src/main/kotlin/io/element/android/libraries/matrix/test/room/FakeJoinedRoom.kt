@@ -239,8 +239,8 @@ class FakeJoinedRoom(
         return liveLocationSharesFlow
     }
 
-    override suspend fun startLiveLocationShare(durationMillis: Long): Result<EventId> = simulateLongTask {
-        startLiveLocationShareResult(durationMillis).map { AN_EVENT_ID }
+    override suspend fun startLiveLocationShare(durationMillis: Long): Result<Unit> = simulateLongTask {
+        startLiveLocationShareResult(durationMillis)
     }
 
     override suspend fun stopLiveLocationShare(): Result<Unit> = simulateLongTask {

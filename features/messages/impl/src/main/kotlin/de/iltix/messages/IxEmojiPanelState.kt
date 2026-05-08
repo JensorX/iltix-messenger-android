@@ -87,7 +87,7 @@ fun rememberIxEmojiPanelState(
         }
     }
 
-    val showEmojiButton = emojiPickerEnabled && composerState.emojibaseStore != null
+    val showEmojiButton = emojiPickerEnabled
 
     return IxEmojiPanelState(
         emojiPickerEnabled = emojiPickerEnabled,

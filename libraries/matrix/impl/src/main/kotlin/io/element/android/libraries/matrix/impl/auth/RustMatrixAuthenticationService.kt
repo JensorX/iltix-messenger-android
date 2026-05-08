@@ -262,8 +262,8 @@ class RustMatrixAuthenticationService(
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
                 val client = currentClient ?: error("You need to call `setHomeserver()` first")
-                val oAuthAuthorizationData = client.urlForOauth(
-                    oauthConfiguration = oAuthConfigurationProvider.get(),
+                val oAuthAuthorizationData = client.urlForOidc(
+                    oidcConfiguration = oAuthConfigurationProvider.get(),
                     prompt = prompt.toRustPrompt(),
                     loginHint = loginHint,
                     // If we want to restore a previous session for which we have encryption keys, we can pass the deviceId here. At the moment, we don't
@@ -290,7 +290,7 @@ class RustMatrixAuthenticationService(
         return withContext(coroutineDispatchers.io) {
             runCatchingExceptions {
                 pendingOAuthAuthorizationData?.use {
-                    currentClient?.abortOauthAuth(it)
+                    currentClient?.abortOidcAuth(it)
                 }
                 pendingOAuthAuthorizationData = null
             }.mapFailure { failure ->
@@ -312,7 +312,7 @@ class RustMatrixAuthenticationService(
             runCatchingExceptions {
                 val client = currentClient ?: error("You need to call `setHomeserver()` first")
                 val currentSessionPaths = sessionPaths ?: error("You need to call `setHomeserver()` first")
-                client.loginWithOauthCallback(
+                client.loginWithOidcCallback(
                     callbackUrl = callbackUrl,
                 )
                 // Free the pending data since we won't use it to abort the flow anymore
@@ -376,7 +376,7 @@ class RustMatrixAuthenticationService(
                     qrCodeData = sdkQrCodeLoginData,
                 )
                 client.newLoginWithQrCodeHandler(
-                    oauthConfiguration = oAuthConfiguration,
+                    oidcConfiguration = oAuthConfiguration,
                 ).use {
                     it.scan(
                         qrCodeData = qrCodeData.rustQrCodeData,

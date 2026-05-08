@@ -27,6 +27,8 @@ setupDependencyInjection()
 
 dependencies {
     api(projects.features.messages.api)
+    implementation(projects.iltix.lib)
+    implementation(projects.iltix.theme)
     implementation(projects.appconfig)
     implementation(projects.features.call.api)
     implementation(projects.features.enterprise.api)

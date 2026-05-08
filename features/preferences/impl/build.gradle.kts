@@ -47,6 +47,7 @@ android {
 setupDependencyInjection()
 
 dependencies {
+    implementation(projects.iltix.lib)
     implementation(projects.libraries.androidutils)
     implementation(projects.appconfig)
     implementation(projects.libraries.core)

@@ -11,10 +11,10 @@ import de.iltix.lib.preferences.IxPrefs
 import io.element.android.features.home.impl.HomeNavigationBarItem
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersEvent
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
-import io.element.android.features.home.impl.spacefilters.availableFilters
 import io.element.android.features.home.impl.spacefilters.selectedFilter
 import io.element.android.features.home.impl.roomlist.RoomListState
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.spaces.SpaceServiceFilter
 
 data class IxHomeUiConfig(
     val showStartChatInTopBar: Boolean,
@@ -40,7 +40,7 @@ fun rememberIxHomeUiConfig(
     }.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue)
     val shouldShowIxSpaceNav = spaceNavMode != "none" &&
         currentHomeNavigationBarItem == HomeNavigationBarItem.Chats &&
-        roomListState.spaceFiltersState.availableFilters().isNotEmpty()
+        roomListState.spaceFiltersState.ixAvailableFilters().isNotEmpty()
 
     return IxHomeUiConfig(
         showStartChatInTopBar = showStartChatInTopBar,
@@ -55,7 +55,7 @@ fun IxFloatingSpaceNav(
     onNavigateToSpace: (RoomId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filters = state.availableFilters()
+    val filters = state.ixAvailableFilters()
     if (filters.isEmpty()) return
 
     IxSpaceNavBar(
@@ -69,12 +69,20 @@ fun IxFloatingSpaceNav(
         },
         onSelectFilter = { filter ->
             when (state) {
-                is SpaceFiltersState.Unselected -> state.eventSink(SpaceFiltersEvent.Unselected.SelectFilter(filter))
-                is SpaceFiltersState.Selected -> state.eventSink(SpaceFiltersEvent.Selected.SelectFilter(filter))
                 is SpaceFiltersState.Selecting -> state.eventSink(SpaceFiltersEvent.Selecting.SelectFilter(filter))
+                is SpaceFiltersState.Unselected -> state.eventSink(SpaceFiltersEvent.Unselected.ShowFilters)
+                is SpaceFiltersState.Selected -> Unit
                 SpaceFiltersState.Disabled -> Unit
             }
         },
         onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
     )
+}
+
+private fun SpaceFiltersState.ixAvailableFilters(): List<SpaceServiceFilter> {
+    return when (this) {
+        is SpaceFiltersState.Selecting -> availableFilters
+        is SpaceFiltersState.Selected -> listOf(selectedFilter)
+        else -> emptyList()
+    }
 }
