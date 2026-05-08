@@ -8,9 +8,6 @@
 
 package io.element.android.features.messages.impl.topbars
 
-import de.iltix.components.nicknames.rememberIxResolvedDisplayName
-import de.iltix.lib.preferences.IxPreferencesStore
-import de.iltix.lib.preferences.IxPrefs
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,17 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -53,7 +43,7 @@ import io.element.android.libraries.designsystem.components.avatar.anAvatarData
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
-import io.element.android.libraries.designsystem.theme.LocalBuildMeta
+import io.element.android.libraries.designsystem.preview.ROOM_NAME
 import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -72,7 +62,6 @@ internal fun MessagesViewTopBar(
     roomName: String?,
     roomAvatar: AvatarData,
     isTombstoned: Boolean,
-    isRoomEncrypted: Boolean?,
     heroes: ImmutableList<AvatarData>,
     dmUserIdentityState: IdentityState?,
     sharedHistoryIcon: SharedHistoryIcon,
@@ -81,22 +70,6 @@ internal fun MessagesViewTopBar(
     modifier: Modifier = Modifier,
     menuActions: @Composable RowScope.() -> Unit,
 ) {
-    val context = LocalContext.current.applicationContext
-    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
-    val ixPreferencesStore = remember(isIltixBuild, context) {
-        if (isIltixBuild) IxPreferencesStore(context) else null
-    }
-    val useIltixTheme by remember(ixPreferencesStore) {
-        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME)
-    }?.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue) ?: remember {
-        mutableStateOf(false)
-    }
-    val moveUnencryptedIndicatorToTopBar by remember(ixPreferencesStore) {
-        ixPreferencesStore?.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
-    }?.collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue) ?: remember {
-        mutableStateOf(false)
-    }
-
     TopAppBar(
         modifier = modifier,
         navigationIcon = {
@@ -120,18 +93,12 @@ internal fun MessagesViewTopBar(
                     modifier = titleModifier
                 )
 
-                if (moveUnencryptedIndicatorToTopBar && isRoomEncrypted == false) {
-                    Icon(
-                        modifier = Modifier.size(12.dp),
-                        imageVector = CompoundIcons.LockOff(),
-                        tint = ElementTheme.colors.iconInfoPrimary,
-                        contentDescription = stringResource(CommonStrings.common_not_encrypted),
-                    )
-                }
+                val iconModifier = Modifier.size(16.dp)
 
                 when (dmUserIdentityState) {
                     IdentityState.Verified -> {
                         Icon(
+                            modifier = iconModifier,
                             imageVector = CompoundIcons.Verified(),
                             tint = ElementTheme.colors.iconSuccessPrimary,
                             contentDescription = null,
@@ -139,6 +106,7 @@ internal fun MessagesViewTopBar(
                     }
                     IdentityState.VerificationViolation -> {
                         Icon(
+                            modifier = iconModifier,
                             imageVector = CompoundIcons.ErrorSolid(),
                             tint = ElementTheme.colors.iconCriticalPrimary,
                             contentDescription = null,
@@ -150,11 +118,13 @@ internal fun MessagesViewTopBar(
                 when (sharedHistoryIcon) {
                     SharedHistoryIcon.NONE -> Unit
                     SharedHistoryIcon.SHARED -> Icon(
+                        modifier = iconModifier,
                         imageVector = CompoundIcons.History(),
                         tint = ElementTheme.colors.iconInfoPrimary,
                         contentDescription = stringResource(CommonStrings.common_shared_history),
                     )
                     SharedHistoryIcon.WORLD_READABLE -> Icon(
+                        modifier = iconModifier,
                         imageVector = CompoundIcons.UserProfileSolid(),
                         tint = ElementTheme.colors.iconInfoPrimary,
                         contentDescription = stringResource(CommonStrings.common_world_readable_history),
@@ -175,11 +145,6 @@ private fun RoomAvatarAndNameRow(
     isTombstoned: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val localNicknameUserId = heroes.singleOrNull()?.id
-    val resolvedRoomName = rememberIxResolvedDisplayName(
-        userId = localNicknameUserId,
-        fallbackName = roomName,
-    )
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -193,13 +158,13 @@ private fun RoomAvatarAndNameRow(
         )
         Text(
             modifier = Modifier
-                .padding(horizontal = 8.dp)
+                .padding(start = 8.dp)
                 .semantics {
                     heading()
                 },
-            text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+            text = roomName ?: stringResource(CommonStrings.common_no_room_name),
             style = ElementTheme.typography.fontBodyLgMedium,
-            fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },
+            fontStyle = FontStyle.Italic.takeIf { roomName == null },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -211,13 +176,12 @@ private fun RoomAvatarAndNameRow(
 internal fun MessagesViewTopBarPreview() = ElementPreview {
     @Composable
     fun AMessagesViewTopBar(
-        roomName: String? = "Room name",
+        roomName: String? = ROOM_NAME,
         roomAvatar: AvatarData = anAvatarData(
-            name = "Room name",
+            name = ROOM_NAME,
             size = AvatarSize.TimelineRoom,
         ),
         isTombstoned: Boolean = false,
-        isRoomEncrypted: Boolean? = true,
         heroes: ImmutableList<AvatarData> = persistentListOf(),
         roomCallState: RoomCallState = RoomCallState.Unavailable,
         dmUserIdentityState: IdentityState? = null,
@@ -227,7 +191,6 @@ internal fun MessagesViewTopBarPreview() = ElementPreview {
         roomName = roomName,
         roomAvatar = roomAvatar,
         isTombstoned = isTombstoned,
-        isRoomEncrypted = isRoomEncrypted,
         heroes = heroes,
         dmUserIdentityState = dmUserIdentityState,
         sharedHistoryIcon = sharedHistoryIcon,

@@ -27,7 +27,6 @@ import io.element.android.libraries.push.impl.notifications.fixtures.aNotifiable
 import io.element.android.libraries.push.impl.notifications.fixtures.aSimpleNotifiableEvent
 import io.element.android.libraries.push.impl.notifications.fixtures.anInviteNotifiableEvent
 import io.element.android.libraries.push.impl.notifications.model.NotifiableEvent
-import io.element.android.libraries.push.test.notifications.conversations.FakeNotificationConversationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.services.analytics.test.FakeAnalyticsService
@@ -122,14 +121,12 @@ class NotificationRendererTest {
 fun createNotificationRenderer(
     notificationDisplayer: NotificationDisplayer = FakeNotificationDisplayer(),
     notificationDataFactory: NotificationDataFactory = FakeNotificationDataFactory(),
-    notificationConversationService: FakeNotificationConversationService = FakeNotificationConversationService(),
     enterpriseService: EnterpriseService = FakeEnterpriseService(),
     sessionStore: SessionStore = InMemorySessionStore(),
     analyticsService: FakeAnalyticsService = FakeAnalyticsService(),
 ) = NotificationRenderer(
     notificationDisplayer = notificationDisplayer,
     notificationDataFactory = notificationDataFactory,
-    notificationConversationService = notificationConversationService,
     enterpriseService = enterpriseService,
     sessionStore = sessionStore,
     analyticsService = analyticsService,

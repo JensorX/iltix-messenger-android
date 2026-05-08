@@ -36,7 +36,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import de.iltix.lib.R as IltixR
 import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
@@ -58,7 +57,6 @@ import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.components.button.MainActionButton
 import io.element.android.libraries.designsystem.components.list.ListItemContent
 import io.element.android.libraries.designsystem.components.preferences.PreferenceCategory
-import io.element.android.libraries.designsystem.components.preferences.PreferenceSwitch
 import io.element.android.libraries.designsystem.components.preferences.PreferenceSwitch
 import io.element.android.libraries.designsystem.modifiers.niceClickable
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -251,16 +249,6 @@ fun RoomDetailsView(
                 MediaGalleryItem(
                     onClick = openMediaGallery
                 )
-                if (state.isMediaAutoDownloadModuleEnabled) {
-                    PreferenceSwitch(
-                        title = stringResource(id = IltixR.string.iltix_media_auto_download_room_title),
-                        subtitle = stringResource(id = IltixR.string.iltix_media_auto_download_room_subtitle),
-                        isChecked = state.mediaAutoDownloadEnabled,
-                        onCheckedChange = { enabled ->
-                            state.eventSink(RoomDetailsEvent.SetMediaAutoDownload(enabled))
-                        },
-                    )
-                }
             }
 
             if (state.roomType is RoomDetailsType.Dm && state.roomMemberDetailsState != null) {

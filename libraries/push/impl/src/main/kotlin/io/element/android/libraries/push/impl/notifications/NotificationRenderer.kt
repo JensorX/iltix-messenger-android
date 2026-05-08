@@ -16,7 +16,6 @@ import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.push.api.notifications.NotificationIdProvider
-import io.element.android.libraries.push.api.notifications.conversations.NotificationConversationService
 import io.element.android.libraries.push.impl.notifications.factories.NotificationAccountParams
 import io.element.android.libraries.push.impl.notifications.factories.NotificationCreator
 import io.element.android.libraries.push.impl.notifications.model.FallbackNotifiableEvent
@@ -38,7 +37,6 @@ private val loggerTag = LoggerTag("NotificationRenderer", LoggerTag.Notification
 class NotificationRenderer(
     private val notificationDisplayer: NotificationDisplayer,
     private val notificationDataFactory: NotificationDataFactory,
-    private val notificationConversationService: NotificationConversationService,
     private val enterpriseService: EnterpriseService,
     private val sessionStore: SessionStore,
     private val analyticsService: AnalyticsService,
@@ -58,7 +56,6 @@ class NotificationRenderer(
             showSessionId = numberOfAccounts > 1,
         )
         val groupedEvents = eventsToProcess.groupByType()
-        syncConversationShortcuts(groupedEvents.roomEvents)
         val roomNotifications = notificationDataFactory.toNotifications(groupedEvents.roomEvents, imageLoader, notificationAccountParams)
         val invitationNotifications = notificationDataFactory.toNotifications(groupedEvents.invitationEvents, notificationAccountParams)
         val simpleNotifications = notificationDataFactory.toNotifications(groupedEvents.simpleEvents, notificationAccountParams)
@@ -136,28 +133,6 @@ class NotificationRenderer(
             // Finish long-running transaction
             val uploaded = analyticsService.finishLongRunningTransaction(AnalyticsLongRunningTransaction.PushToNotification(event.eventId.value))
             Timber.d("Push-to-notification for event ${event.eventId} uploaded: $uploaded")
-        }
-    }
-
-    private suspend fun syncConversationShortcuts(roomEvents: List<NotifiableMessageEvent>) {
-        val latestEventsByRoom = roomEvents
-            .groupBy { it.roomId }
-            .mapValues { (_, events) -> events.maxBy { it.timestamp } }
-
-        for (event in latestEventsByRoom.values) {
-            val roomName = event.roomName ?: event.senderDisambiguatedDisplayName ?: event.roomId.value
-            runCatching {
-                notificationConversationService.onSendMessage(
-                    sessionId = event.sessionId,
-                    roomId = event.roomId,
-                    roomName = roomName,
-                    roomIsDirect = event.roomIsDm,
-                    roomIsFavorite = false,
-                    roomAvatarUrl = event.roomAvatarPath,
-                )
-            }.onFailure {
-                Timber.tag(loggerTag.value).w(it, "Unable to sync conversation shortcut for room ${event.roomId}")
-            }
         }
     }
 }

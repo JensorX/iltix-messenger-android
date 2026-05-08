@@ -8,23 +8,14 @@
 
 package io.element.android.features.messages.impl.topbars
 
-import de.iltix.components.nicknames.rememberIxResolvedDisplayName
-import de.iltix.lib.preferences.IxPreferencesStore
-import de.iltix.lib.preferences.IxPrefs
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -61,17 +52,6 @@ internal fun ThreadTopBar(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current.applicationContext
-    val ixPreferencesStore = remember(context) { IxPreferencesStore(context) }
-    val useIltixTheme by remember(ixPreferencesStore) {
-        ixPreferencesStore.settingFlow(IxPrefs.ILTIX_THEME)
-    }.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue)
-
-    val localNicknameUserId = heroes.singleOrNull()?.id
-    val resolvedRoomName = rememberIxResolvedDisplayName(
-        userId = localNicknameUserId,
-        fallbackName = roomName,
-    )
     TopAppBar(
         modifier = modifier,
         navigationIcon = {
@@ -99,20 +79,16 @@ internal fun ThreadTopBar(
                         style = ElementTheme.typography.fontBodyLgMedium,
                     )
                     Text(
-                        text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+                        text = roomName ?: stringResource(CommonStrings.common_no_room_name),
                         style = ElementTheme.typography.fontBodySmRegular,
-                        fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },
+                        fontStyle = FontStyle.Italic.takeIf { roomName == null },
                         color = ElementTheme.colors.textSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (useIltixTheme) ElementTheme.colors.bgCanvasDefault else Color.Transparent,
-            scrolledContainerColor = if (useIltixTheme) ElementTheme.colors.bgCanvasDefault else Color.Transparent,
-        ),
+        }
     )
 }
 

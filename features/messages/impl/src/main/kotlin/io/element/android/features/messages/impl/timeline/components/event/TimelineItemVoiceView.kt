@@ -8,8 +8,6 @@
 
 package io.element.android.features.messages.impl.timeline.components.event
 
-import de.iltix.messages.IxVoiceMessageBody
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -42,9 +38,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import de.iltix.theme.LocalIxBubbleStyle
-import de.iltix.messages.IxVoiceMessageView
-import de.iltix.messages.rememberIxVoiceMessageUiConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.timeline.components.layout.ContentAvoidingLayoutData
@@ -86,7 +79,7 @@ fun TimelineItemVoiceView(
             VoiceMessageState.ButtonType.Disabled -> CommonStrings.error_unknown
         }
     )
-    Box(
+    Row(
         modifier = modifier
             .clearAndSetSemantics {
                 contentDescription = a11y
@@ -106,12 +99,45 @@ fun TimelineItemVoiceView(
                         contentHeight = it.height,
                     )
                 )
-            }
+            },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        IxVoiceMessageBody(
-            state = state,
-            content = content,
-            onPlayPause = ::playPause,
+        if (!isTalkbackActive()) {
+            when (state.buttonType) {
+                VoiceMessageState.ButtonType.Play -> PlayButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Pause -> PauseButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Downloading -> ProgressButton()
+                VoiceMessageState.ButtonType.Retry -> RetryButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Disabled -> PlayButton(onClick = {}, enabled = false)
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            PlaybackSpeedButton(
+                speed = state.playbackSpeed,
+                onClick = { state.eventSink(VoiceMessageEvent.ChangePlaybackSpeed) },
+            )
+            Text(
+                text = state.time,
+                color = ElementTheme.colors.textSecondary,
+                style = ElementTheme.typography.fontBodySmMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        WaveformPlaybackView(
+            showCursor = state.showCursor,
+            playbackProgress = state.progress,
+            waveform = content.waveform,
+            modifier = Modifier
+                .weight(1f)
+                .height(34.dp),
+            seekEnabled = !isTalkbackActive(),
+            onSeek = { state.eventSink(VoiceMessageEvent.Seek(it)) },
         )
     }
 }

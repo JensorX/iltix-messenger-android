@@ -35,7 +35,6 @@ sealed interface MessageComposerEvent {
     data class TypingNotice(val isTyping: Boolean) : MessageComposerEvent
     data class SuggestionReceived(val suggestion: Suggestion?) : MessageComposerEvent
     data class InsertSuggestion(val resolvedSuggestion: ResolvedSuggestion) : MessageComposerEvent
-    data class InsertEmoji(val emoji: String) : MessageComposerEvent
     data object SaveDraft : MessageComposerEvent
     data object ClearSlashError : MessageComposerEvent
 }

@@ -24,7 +24,6 @@ interface NotificationConversationService {
         roomId: RoomId,
         roomName: String,
         roomIsDirect: Boolean,
-        roomIsFavorite: Boolean,
         roomAvatarUrl: String?,
     )
 

@@ -33,7 +33,6 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.LinearProgressIndicator
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.progressIndicatorTrackColor
 import io.element.android.libraries.designsystem.toEnabledColor
 import io.element.android.libraries.designsystem.utils.CommonDrawables
@@ -43,8 +42,6 @@ import io.element.android.libraries.ui.strings.CommonStrings
 @Composable
 internal fun PollAnswerView(
     answerItem: PollAnswerItem,
-    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
-    viewVotesLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val nbVotesText = pluralStringResource(
@@ -146,14 +143,6 @@ internal fun PollAnswerView(
                 trackColor = ElementTheme.colors.progressIndicatorTrackColor,
                 strokeCap = StrokeCap.Round,
             )
-            if (answerItem.showVotes && answerItem.votesCount > 0 && onViewVotes != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                TextButton(
-                    text = viewVotesLabel ?: stringResource(CommonStrings.action_view),
-                    onClick = { onViewVotes(answerItem) },
-                    modifier = Modifier.align(Alignment.End),
-                )
-            }
         }
     }
 }
@@ -163,7 +152,6 @@ internal fun PollAnswerView(
 internal fun PollAnswerViewDisclosedNotSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = true, isSelected = false),
-        onViewVotes = null,
     )
 }
 
@@ -172,7 +160,6 @@ internal fun PollAnswerViewDisclosedNotSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewDisclosedSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = true, isSelected = true),
-        onViewVotes = null,
     )
 }
 
@@ -181,7 +168,6 @@ internal fun PollAnswerViewDisclosedSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewUndisclosedNotSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = false, isSelected = false),
-        onViewVotes = null,
     )
 }
 
@@ -190,7 +176,6 @@ internal fun PollAnswerViewUndisclosedNotSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewUndisclosedSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = false, isSelected = true),
-        onViewVotes = null,
     )
 }
 
@@ -199,7 +184,6 @@ internal fun PollAnswerViewUndisclosedSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewEndedWinnerNotSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = true, isSelected = false, isEnabled = false, isWinner = true),
-        onViewVotes = null,
     )
 }
 
@@ -208,7 +192,6 @@ internal fun PollAnswerViewEndedWinnerNotSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewEndedWinnerSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = true, isSelected = true, isEnabled = false, isWinner = true),
-        onViewVotes = null,
     )
 }
 
@@ -217,6 +200,5 @@ internal fun PollAnswerViewEndedWinnerSelectedPreview() = ElementPreview {
 internal fun PollAnswerViewEndedSelectedPreview() = ElementPreview {
     PollAnswerView(
         answerItem = aPollAnswerItem(showVotes = true, isSelected = true, isEnabled = false, isWinner = false),
-        onViewVotes = null,
     )
 }
