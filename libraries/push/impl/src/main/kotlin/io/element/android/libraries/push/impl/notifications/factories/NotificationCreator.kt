@@ -17,10 +17,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.MessagingStyle
 import androidx.core.app.Person
 import coil3.ImageLoader
-import de.iltix.push.resolveIxNotificationRoute
-import de.iltix.push.resolveIxRankingTimestamp
-import de.iltix.push.resolveIxSummaryNotificationRoute
-import de.iltix.push.resolveIxNotificationSenderName
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.core.meta.BuildMeta
@@ -153,15 +149,8 @@ class DefaultNotificationCreator(
             )
         }
         val containsMissedCall = events.any { it.type == EventType.RTC_NOTIFICATION }
-        val ixNotificationRoute = if (containsMissedCall) null else resolveIxNotificationRoute(
-            context = context,
-            buildMeta = buildMeta,
-            roomInfo = roomInfo,
-        )
         val channelId = if (containsMissedCall) {
             notificationChannels.getChannelForIncomingCall(false)
-        } else if (ixNotificationRoute != null) {
-            ixNotificationRoute.channelId
         } else {
             notificationChannels.getChannelIdForMessage(
                 sessionId = roomInfo.sessionId,
@@ -177,32 +166,10 @@ class DefaultNotificationCreator(
         } else {
             NotificationCompat.CATEGORY_MESSAGE
         }
-        val rankingTimestamp = resolveIxRankingTimestamp(
-            baseTimestamp = lastMessageTimestamp,
-            ixRoute = ixNotificationRoute,
-        )
-        val latestIncomingSender = events
-            .lastOrNull { !it.outGoingMessage }
-            ?.let {
-                createSenderPerson(
-                    event = it,
-                    imageLoader = imageLoader,
-                    isImportant = ixNotificationRoute != null && (roomInfo.isDm || it.hasMentionOrReply),
-                )
-            }
         val builder = if (existingNotification != null) {
             NotificationCompat.Builder(context, existingNotification)
                 // Clear existing actions
                 .clearActions()
-                .apply {
-                    // When Iltix priority is active, ensure the high-importance channel is used
-                    // even when updating an existing notification (which would otherwise inherit
-                    // the default-importance channel from the original notification).
-                    if (ixNotificationRoute != null) setChannelId(channelId)
-                    if (threadId == null) {
-                        setShortcutId(createShortcutId(roomInfo.sessionId, roomInfo.roomId))
-                    }
-                }
         } else {
             NotificationCompat.Builder(context, channelId)
                 // ID of the corresponding shortcut, for conversation features under API 30+
@@ -229,17 +196,12 @@ class DefaultNotificationCreator(
             isThread = threadId != null,
             roomIsGroup = !roomInfo.isDm,
         )
-        messagingStyle.addMessagesFromEvents(
-            events = events,
-            imageLoader = imageLoader,
-            ixConversationHintsEnabled = ixNotificationRoute != null,
-            roomIsDm = roomInfo.isDm,
-        )
+        messagingStyle.addMessagesFromEvents(events, imageLoader)
         return builder
             .setCategory(category)
             .setNumber(events.size)
-            .setOnlyAlertOnce(if (ixNotificationRoute != null) false else roomInfo.isUpdated)
-            .setWhen(rankingTimestamp)
+            .setOnlyAlertOnce(roomInfo.isUpdated)
+            .setWhen(lastMessageTimestamp)
             // MESSAGING_STYLE sets title and content for API 16 and above devices.
             .setStyle(messagingStyle)
             .configureWith(notificationAccountParams)
@@ -252,12 +214,7 @@ class DefaultNotificationCreator(
                 // Sets priority for 25 and below. For 26 and above, 'priority' is deprecated for
                 // 'importance' which is set in the NotificationChannel. The integers representing
                 // 'priority' are different from 'importance', so make sure you don't mix them.
-                if (ixNotificationRoute != null) {
-                    priority = ixNotificationRoute.priority
-                    if (ixNotificationRoute.shouldSetLights) {
-                        setLights(notificationAccountParams.color, 500, 500)
-                    }
-                } else if (roomInfo.shouldBing) {
+                if (roomInfo.shouldBing) {
                     priority = NotificationCompat.PRIORITY_DEFAULT
                     setLights(notificationAccountParams.color, 500, 500)
                 } else {
@@ -267,12 +224,6 @@ class DefaultNotificationCreator(
                 if (!roomInfo.hasSmartReplyError) {
                     val latestEventId = events.lastOrNull()?.eventId
                     addAction(quickReplyActionFactory.create(roomInfo, latestEventId, threadId))
-                }
-            }
-            .apply {
-                // Extra conversation ranking hint (API-dependent) to get closer to FluffyChat behavior.
-                if (ixNotificationRoute != null && latestIncomingSender != null) {
-                    addPerson(latestIncomingSender)
                 }
             }
             .setTicker(tickerText)
@@ -402,33 +353,20 @@ class DefaultNotificationCreator(
         lastMessageTimestamp: Long,
     ): Notification {
         val userId = notificationAccountParams.user.userId
-        val ixSummaryRoute = resolveIxSummaryNotificationRoute(
-            context = context,
-            buildMeta = buildMeta,
-        )
-        val channelId = ixSummaryRoute?.channelId ?: notificationChannels.getChannelIdForMessage(
+        val channelId = notificationChannels.getChannelIdForMessage(
             sessionId = userId,
             noisy = noisy,
-        )
-        val rankingTimestamp = resolveIxRankingTimestamp(
-            baseTimestamp = lastMessageTimestamp,
-            ixRoute = ixSummaryRoute,
         )
         return NotificationCompat.Builder(context, channelId)
             .setOnlyAlertOnce(true)
             // used in compat < N, after summary is built based on child notifications
-            .setWhen(rankingTimestamp)
+            .setWhen(lastMessageTimestamp)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             // set this notification as the summary for the group
             .setGroupSummary(true)
             .configureWith(notificationAccountParams)
             .apply {
-                if (ixSummaryRoute != null) {
-                    priority = ixSummaryRoute.priority
-                    if (ixSummaryRoute.shouldSetLights) {
-                        setLights(notificationAccountParams.color, 500, 500)
-                    }
-                } else if (noisy) {
+                if (noisy) {
                     // Compat
                     priority = NotificationCompat.PRIORITY_DEFAULT
                     setLights(notificationAccountParams.color, 500, 500)
@@ -481,18 +419,38 @@ class DefaultNotificationCreator(
     private suspend fun MessagingStyle.addMessagesFromEvents(
         events: List<NotifiableMessageEvent>,
         imageLoader: ImageLoader,
-        ixConversationHintsEnabled: Boolean,
-        roomIsDm: Boolean,
     ) {
         events.forEach { event ->
             val senderPerson = if (event.outGoingMessage) {
                 null
             } else {
-                createSenderPerson(
-                    event = event,
-                    imageLoader = imageLoader,
-                    isImportant = ixConversationHintsEnabled && (roomIsDm || event.hasMentionOrReply),
-                )
+                val senderName = event.senderDisambiguatedDisplayName.orEmpty()
+                // If the notification is for a mention or reply, we create a fake `Person` with a custom name and key
+                val displayName = if (event.hasMentionOrReply) {
+                    stringProvider.getString(R.string.notification_sender_mention_reply, senderName)
+                } else {
+                    senderName
+                }
+                val key = if (event.hasMentionOrReply) {
+                    "mention-or-reply:${event.eventId.value}"
+                } else {
+                    event.senderId.value
+                }
+                Person.Builder()
+                    .setName(displayName.annotateForDebug(70))
+                    .setIcon(
+                        bitmapLoader.getUserIcon(
+                            avatarData = AvatarData(
+                                id = event.senderId.value,
+                                name = senderName,
+                                url = event.senderAvatarPath,
+                                size = AvatarSize.UserHeader,
+                            ),
+                            imageLoader = imageLoader,
+                        )
+                    )
+                    .setKey(key)
+                    .build()
             }
             when {
                 event.isSmartReplyError() -> addMessage(
@@ -536,41 +494,6 @@ class DefaultNotificationCreator(
                 }
             }
         }
-    }
-
-    private suspend fun createSenderPerson(
-        event: NotifiableMessageEvent,
-        imageLoader: ImageLoader,
-        isImportant: Boolean,
-    ): Person {
-        val senderName = resolveIxNotificationSenderName(context, buildMeta, event)
-        // If the notification is for a mention or reply, we create a fake Person with a custom name and key.
-        val displayName = if (event.hasMentionOrReply) {
-            stringProvider.getString(R.string.notification_sender_mention_reply, senderName)
-        } else {
-            senderName
-        }
-        val key = if (event.hasMentionOrReply) {
-            "mention-or-reply:${event.eventId.value}"
-        } else {
-            event.senderId.value
-        }
-        return Person.Builder()
-            .setName(displayName.annotateForDebug(70))
-            .setIcon(
-                bitmapLoader.getUserIcon(
-                    avatarData = AvatarData(
-                        id = event.senderId.value,
-                        name = senderName,
-                        url = event.senderAvatarPath,
-                        size = AvatarSize.UserHeader,
-                    ),
-                    imageLoader = imageLoader,
-                )
-            )
-            .setKey(key)
-            .setImportant(isImportant)
-            .build()
     }
 
     private suspend fun createMessagingStyleFromCurrentUser(

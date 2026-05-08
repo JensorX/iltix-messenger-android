@@ -71,9 +71,6 @@ import io.element.android.libraries.permissions.api.PermissionsEvent
 import io.element.android.libraries.permissions.api.PermissionsPresenter
 import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
 import io.element.android.libraries.push.api.notifications.conversations.NotificationConversationService
-import io.element.android.libraries.recentemojis.api.AddRecentEmoji
-import io.element.android.libraries.recentemojis.api.EmojibaseProvider
-import io.element.android.libraries.recentemojis.api.GetRecentEmojis
 import io.element.android.libraries.slashcommands.api.SlashCommand
 import io.element.android.libraries.slashcommands.api.SlashCommandService
 import io.element.android.libraries.slashcommands.api.message
@@ -91,7 +88,6 @@ import io.element.android.wysiwyg.compose.RichTextEditorState
 import io.element.android.wysiwyg.display.TextDisplay
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -136,9 +132,6 @@ class MessageComposerPresenter(
     private val suggestionsProcessor: SuggestionsProcessor,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
     private val notificationConversationService: NotificationConversationService,
-    private val emojibaseProvider: EmojibaseProvider,
-    private val getRecentEmojis: GetRecentEmojis,
-    private val addRecentEmoji: AddRecentEmoji,
     private val slashCommandService: SlashCommandService,
 ) : Presenter<MessageComposerState> {
     @AssistedFactory
@@ -199,15 +192,10 @@ class MessageComposerPresenter(
             mutableStateOf(false)
         }
         var showAttachmentSourcePicker: Boolean by remember { mutableStateOf(false) }
-        var recentEmojis by remember { mutableStateOf(persistentListOf<String>()) }
 
         val sendTypingNotifications by remember {
             sessionPreferencesStore.isSendTypingNotificationsEnabled()
         }.collectAsState(initial = true)
-
-        LaunchedEffect(Unit) {
-            recentEmojis = getRecentEmojis().getOrNull()?.toPersistentList() ?: persistentListOf()
-        }
 
         LaunchedEffect(cameraPermissionState.permissionGranted) {
             if (cameraPermissionState.permissionGranted) {
@@ -380,14 +368,6 @@ class MessageComposerPresenter(
                         }
                     }
                 }
-                is MessageComposerEvent.InsertEmoji -> {
-                    localCoroutineScope.launch {
-                        textEditorState.insertText(event.emoji)
-                        textEditorState.requestFocus()
-                        addRecentEmoji(event.emoji)
-                        recentEmojis = (listOf(event.emoji) + recentEmojis).distinct().toPersistentList()
-                    }
-                }
                 MessageComposerEvent.SaveDraft -> {
                     val draft = createDraftFromState(markdownTextEditorState, richTextEditorState)
                     sessionCoroutineScope.updateDraft(draft, isVolatile = false)
@@ -423,8 +403,6 @@ class MessageComposerPresenter(
             showAttachmentSourcePicker = showAttachmentSourcePicker,
             showTextFormatting = showTextFormatting,
             canShareLocation = canShareLocation.value,
-            emojibaseStore = emojibaseProvider.emojibaseStore,
-            recentEmojis = recentEmojis,
             suggestions = suggestions.toImmutableList(),
             resolveMentionDisplay = resolveMentionDisplay,
             resolveAtRoomMentionDisplay = resolveAtRoomMentionDisplay,
@@ -596,7 +574,6 @@ class MessageComposerPresenter(
             roomId = roomInfo.id,
             roomName = roomInfo.name ?: roomInfo.id.value,
             roomIsDirect = roomInfo.isDm,
-            roomIsFavorite = roomInfo.isFavorite,
             roomAvatarUrl = roomInfo.avatarUrl ?: roomMembers.getDirectRoomMember(roomInfo = roomInfo, sessionId = room.sessionId)?.avatarUrl,
         )
 

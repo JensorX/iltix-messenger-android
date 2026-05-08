@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,11 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
-import io.element.android.libraries.designsystem.theme.LocalBuildMeta
-import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.ui.utils.time.formatShort
 import kotlinx.collections.immutable.ImmutableList
@@ -50,46 +46,25 @@ internal fun VoiceMessageRecording(
     duration: Duration,
     modifier: Modifier = Modifier,
 ) {
-    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = if (isIltixBuild) ElementTheme.colors.bgSubtlePrimary else ElementTheme.colors.bgSubtleSecondary,
-                shape = if (isIltixBuild) RoundedCornerShape(20.dp) else MaterialTheme.shapes.medium,
+                color = ElementTheme.colors.bgSubtleSecondary,
+                shape = MaterialTheme.shapes.medium,
             )
-            .padding(
-                start = if (isIltixBuild) 10.dp else 12.dp,
-                end = if (isIltixBuild) 14.dp else 20.dp,
-                top = 8.dp,
-                bottom = 8.dp,
-            )
+            .padding(start = 12.dp, end = 20.dp, top = 8.dp, bottom = 8.dp)
             .heightIn(26.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (isIltixBuild) {
-            Box(
-                modifier = Modifier
-                    .background(color = ElementTheme.colors.bgAccentRest, shape = CircleShape)
-                    .size(28.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = CompoundIcons.MicOnSolid(),
-                    contentDescription = null,
-                    tint = ElementTheme.colors.iconOnSolidPrimary,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        } else {
-            RedRecordingDot()
-        }
+        RedRecordingDot()
 
         Spacer(Modifier.size(8.dp))
 
+        // Timer
         Text(
             text = duration.formatShort(),
-            color = if (isIltixBuild) ElementTheme.colors.textPrimary else ElementTheme.colors.textSecondary,
+            color = ElementTheme.colors.textSecondary,
             style = ElementTheme.typography.fontBodySmMedium
         )
 

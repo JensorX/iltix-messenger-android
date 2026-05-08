@@ -14,7 +14,6 @@ import io.element.android.features.poll.api.pollcontent.aPollAnswerItemList
 import io.element.android.features.poll.api.pollcontent.aPollQuestion
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.poll.PollKind
-import kotlinx.collections.immutable.persistentMapOf
 
 open class TimelineItemPollContentProvider : PreviewParameterProvider<TimelineItemPollContent> {
     override val values: Sequence<TimelineItemPollContent>
@@ -39,7 +38,6 @@ fun aTimelineItemPollContent(
         pollKind = PollKind.Disclosed,
         question = question,
         answerItems = answerItems,
-        votes = persistentMapOf(),
         isMine = isMine,
         isEditable = isEditable,
         isEnded = isEnded,

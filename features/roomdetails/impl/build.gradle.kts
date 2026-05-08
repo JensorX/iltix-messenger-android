@@ -27,7 +27,6 @@ setupDependencyInjection()
 
 dependencies {
     implementation(projects.appconfig)
-    implementation(projects.iltix.lib)
     implementation(projects.libraries.core)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.matrix.api)

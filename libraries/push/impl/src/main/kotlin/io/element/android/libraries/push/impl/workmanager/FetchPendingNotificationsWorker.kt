@@ -11,7 +11,6 @@ package io.element.android.libraries.push.impl.workmanager
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import de.iltix.push.IxMediaAutoDownloadService
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -57,7 +56,6 @@ class FetchPendingNotificationsWorker(
     private val eventResolver: NotifiableEventResolver,
     private val syncOnNotifiableEvent: SyncOnNotifiableEvent,
     private val resultProcessor: NotificationResultProcessor,
-    private val ixMediaAutoDownloadService: IxMediaAutoDownloadService,
     private val analyticsService: AnalyticsService,
     private val systemClock: SystemClock,
     private val fetchPushForegroundServiceManager: FetchPushForegroundServiceManager,
@@ -105,7 +103,6 @@ class FetchPendingNotificationsWorker(
                     }
                     // Update the resolved results in the queue
                     resultProcessor.emit(results)
-                    ixMediaAutoDownloadService.handleResolvedResults(results)
 
                     results
                 },

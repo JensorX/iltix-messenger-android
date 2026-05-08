@@ -91,6 +91,49 @@ When Iltix features require changes to Element's code, keep changes minimal:
 3. **Fallback strategy**: If conflicts arise, revert Iltix changes in Element files and re-apply them post-merge.
 4. **Script helpers**: Future `merge_helpers.sh` or `fix_merge.sh` can automate conflict resolution.
 
+## Merge Conflict Avoidance
+
+**Critical**: Do NOT modify upstream-only code paths. This causes unnecessary merge conflicts during upstream syncs.
+
+### Upstream-Only Paths (DO NOT MODIFY)
+
+These paths are maintained exclusively by upstream. Any local modifications here will conflict during merges:
+
+- `libraries/mediaviewer/impl/src/test/` - Upstream test suite
+- `libraries/mediaviewer/impl/src/main/kotlin/io/element/android/libraries/mediaviewer/impl/details/` - Media details components
+- `libraries/mediaviewer/impl/src/main/kotlin/io/element/android/libraries/mediaviewer/impl/viewer/` - Media viewer components
+- `libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrixui/components/` - Matrix UI components
+- `libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/` - Text composer
+- `tests/testutils/` - Test utilities
+- `libraries/matrix/impl/src/` - Matrix integration layer
+
+### Iltix-Safe Paths (MODIFY AS NEEDED)
+
+These are Iltix-owned and safe to modify without merge conflicts:
+
+- `iltix/` - All Iltix modules and code
+- `de.iltix.*` packages in `features/*/impl/src/main/kotlin/` - Feature integrations
+- `appicon/iltix/` - Iltix-specific icons
+- `appconfig/` - App configuration (already Iltix-focused)
+- Iltix-specific source sets (e.g., `src/ix/res/`)
+
+### When Upstream Code Must Be Modified
+
+If Iltix genuinely needs to change upstream code:
+
+1. **Document the change** in a comment: `// Iltix: [reason for modification]`
+2. **Keep the change minimal** - modify only what's necessary
+3. **Add a feature toggle** (see Feature Toggles section) so the change can be disabled if upstream changes
+4. **File an issue** to track if this should be contributed upstream instead
+
+### Prevention Tools
+
+- **`.git/hooks/pre-commit`** - Warning script triggers if you stage changes to upstream-only paths
+  - Shows which files you're modifying
+  - Use `git commit --no-verify` to bypass (only if intentional)
+- **`.gitignore` updates** - Auto-generated screenshot tests ignored to prevent accidental commits
+- **`.gitattributes` merge rules** - Ensures auto-generated files merge cleanly
+
 ## Naming Conventions
 
 - **Iltix classes**: Prefix with `Ix` (e.g., `IxUnreadBadge`, `IxSpaceNavBar`, `IxEmojiKeyboard`).

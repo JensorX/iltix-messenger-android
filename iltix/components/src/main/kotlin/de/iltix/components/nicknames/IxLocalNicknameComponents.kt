@@ -112,6 +112,7 @@ fun IxLocalNicknameAction(
     if (isSheetOpen) {
         ModalBottomSheet(
             onDismissRequest = { isSheetOpen = false },
+            scrollable = true,
         ) {
             Column(
                 modifier = Modifier

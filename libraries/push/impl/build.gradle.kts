@@ -69,8 +69,6 @@ dependencies {
     implementation(projects.services.appnavstate.api)
     implementation(projects.services.toolbox.api)
 
-    implementation(projects.iltix.lib)
-
     testCommonDependencies(libs)
     testImplementation(libs.coil.test)
     testImplementation(projects.libraries.matrix.test)

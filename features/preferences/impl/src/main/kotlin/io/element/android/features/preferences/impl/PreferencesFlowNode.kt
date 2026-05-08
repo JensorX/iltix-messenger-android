@@ -31,7 +31,6 @@ import io.element.android.features.preferences.impl.analytics.AnalyticsSettingsN
 import io.element.android.features.preferences.impl.blockedusers.BlockedUsersNode
 import io.element.android.features.preferences.impl.developer.DeveloperSettingsNode
 import io.element.android.features.preferences.impl.labs.LabsNode
-import de.iltix.preferences.IxModuleSettingsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
@@ -80,9 +79,6 @@ class PreferencesFlowNode(
 
         @Parcelize
         data object Labs : NavTarget
-
-        @Parcelize
-        data object IltixModules : NavTarget
 
         @Parcelize
         data object AnalyticsSettings : NavTarget
@@ -167,10 +163,6 @@ class PreferencesFlowNode(
                         backstack.push(NavTarget.Labs)
                     }
 
-                    override fun navigateToIltixModules() {
-                        backstack.push(NavTarget.IltixModules)
-                    }
-
                     override fun navigateToLinkNewDevice() {
                         callback.navigateToLinkNewDevice()
                     }
@@ -216,9 +208,6 @@ class PreferencesFlowNode(
                     }
                 }
                 createNode<LabsNode>(buildContext, listOf(callback))
-            }
-            NavTarget.IltixModules -> {
-                createNode<IxModuleSettingsNode>(buildContext)
             }
             NavTarget.About -> {
                 val callback = object : AboutNode.Callback {

@@ -19,7 +19,6 @@ import android.provider.Settings
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import de.iltix.push.createIxPriorityNotificationChannels
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
@@ -150,13 +149,6 @@ class DefaultNotificationChannels(
                 .setLightsEnabled(true)
                 .setLightColor(accentColor)
                 .build()
-        )
-
-        createIxPriorityNotificationChannels(
-            context = context,
-            notificationManager = notificationManager,
-            stringProvider = stringProvider,
-            accentColor = accentColor,
         )
 
         // Register a channel for incoming and in progress call notifications with no ringing

@@ -48,7 +48,6 @@ class DefaultNotificationConversationServiceTest {
             roomId = A_ROOM_ID,
             roomName = "Room title",
             roomIsDirect = false,
-            roomIsFavorite = false,
             roomAvatarUrl = null,
         )
 

@@ -115,3 +115,7 @@ lint/tmp/
 .DS_Store
 
 checkouts/**
+
+# === Auto-Generated Screenshot Tests (will regenerate locally) ===
+screenshots/de/
+tests/uitests/src/test/snapshots/images/

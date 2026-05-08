@@ -32,7 +32,6 @@ class TimelineItemContentPollFactory(
             eventId = eventId,
             question = pollContentState.question,
             answerItems = pollContentState.answerItems,
-            votes = content.votes,
             pollKind = pollContentState.pollKind,
             isEnded = pollContentState.isPollEnded,
             isEdited = content.isEdited

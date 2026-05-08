@@ -8,7 +8,6 @@
 
 package io.element.android.features.messages.impl
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -55,8 +54,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import de.iltix.messages.IxEmojiKeyboardPanel
-import de.iltix.messages.rememberIxEmojiPanelState
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerEvent
@@ -107,7 +104,6 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.text.toAnnotatedString
 import io.element.android.libraries.designsystem.text.toDp
-import io.element.android.libraries.designsystem.theme.LocalBuildMeta
 import io.element.android.libraries.designsystem.theme.components.BottomSheetDragHandle
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Scaffold
@@ -161,12 +157,6 @@ fun MessagesView(
 
     var maxComposerHeightPx by remember { mutableIntStateOf(120) }
 
-    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
-    val emojiPanelState = rememberIxEmojiPanelState(
-        composerState = state.composerState,
-        isIltixBuild = isIltixBuild,
-    )
-
     // This is needed because the composer is inside an AndroidView that can't be affected by the FocusManager in Compose
     val localView = LocalView.current
 
@@ -212,27 +202,18 @@ fun MessagesView(
         state.customReactionState.eventSink(CustomReactionEvent.ShowCustomReactionSheet(event))
     }
 
-    BackHandler(enabled = emojiPanelState.showEmojiPanel) {
-        emojiPanelState.hideEmojiPanel()
-    }
-
     val expandableState = rememberExpandableBottomSheetLayoutState()
-    Column(
+    ExpandableBottomSheetLayout(
         modifier = modifier
             .fillMaxSize()
+            .imePadding()
             .systemBarsPadding()
             .onSizeChanged { size ->
                 // Let the composer takes at max half of the available height.
                 // The value will be different if the soft keyboard is displayed
                 // or not.
                 maxComposerHeightPx = (size.height * 0.5f).toInt()
-            }
-    ) {
-        ExpandableBottomSheetLayout(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() },
+            },
         content = {
             Scaffold(
                 contentWindowInsets = WindowInsets.statusBars,
@@ -250,7 +231,6 @@ fun MessagesView(
                             roomName = state.roomName,
                             roomAvatar = state.roomAvatar,
                             isTombstoned = state.isTombstoned,
-                            isRoomEncrypted = state.composerState.textEditorState.isRoomEncrypted,
                             heroes = state.heroes,
                             dmUserIdentityState = state.dmUserVerificationState,
                             sharedHistoryIcon = state.topBarSharedHistoryIcon,
@@ -275,7 +255,6 @@ fun MessagesView(
                     ) {
                         MessagesViewContent(
                             state = state,
-                            applyImePadding = emojiPanelState.applyImePadding,
                             onContentClick = ::onContentClick,
                             onMessageLongClick = ::onMessageLongClick,
                             onUserDataClick = {
@@ -338,9 +317,6 @@ fun MessagesView(
                 onRoomSuccessorClick = { roomId ->
                     state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
                 },
-                showEmojiButton = emojiPanelState.showEmojiButton,
-                showEmojiPanel = emojiPanelState.showEmojiPanel,
-                onToggleEmojiPanel = emojiPanelState.onToggleEmojiPanel,
             )
         },
         sheetDragHandle = @Composable { toggleAction ->
@@ -378,19 +354,7 @@ fun MessagesView(
             RectangleShape
         },
         maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
-        )
-
-        if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled && state.composerState.emojibaseStore != null) {
-            IxEmojiKeyboardPanel(
-                emojibaseStore = state.composerState.emojibaseStore,
-                recentEmojis = state.composerState.recentEmojis,
-                panelHeight = emojiPanelState.panelHeight,
-                onSelectEmoji = { emoji ->
-                    state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji))
-                },
-            )
-        }
-    }
+    )
 
     var endPollConfirmingEvent: TimelineItem.Event? by remember { mutableStateOf(null) }
 
@@ -485,7 +449,6 @@ private fun ReinviteDialog(state: MessagesState) {
 @Composable
 private fun MessagesViewContent(
     state: MessagesState,
-    applyImePadding: Boolean,
     onContentClick: (TimelineItem.Event) -> Unit,
     onUserDataClick: (MatrixUser) -> Unit,
     onLinkClick: (Link, Boolean) -> Unit,
@@ -506,7 +469,7 @@ private fun MessagesViewContent(
         modifier = modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .let { base -> if (applyImePadding) base.imePadding() else base },
+            .imePadding(),
     ) {
         AttachmentsBottomSheet(
             state = state.composerState,
@@ -585,9 +548,6 @@ private fun MessagesViewComposerBottomSheetContents(
     state: MessagesState,
     onRoomSuccessorClick: (RoomId) -> Unit,
     onLinkClick: (String, Boolean) -> Unit,
-    showEmojiButton: Boolean,
-    showEmojiPanel: Boolean,
-    onToggleEmojiPanel: () -> Unit,
 ) {
     when {
         state.successorRoom != null -> {
@@ -612,9 +572,6 @@ private fun MessagesViewComposerBottomSheetContents(
                     MessageComposerView(
                         state = state.composerState,
                         voiceMessageState = state.voiceMessageComposerState,
-                        showEmojiButton = showEmojiButton,
-                        showEmojiPanel = showEmojiPanel,
-                        onToggleEmojiPanel = onToggleEmojiPanel,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
