@@ -180,15 +180,19 @@ class MediaViewerPresenter(
         // With newest-first ordering, backward loading indicator is at the last index
         val isRenderingLoadingBackward by remember {
             derivedStateOf {
-                currentIndex.intValue == data.value.lastIndex &&
+                currentIndex.intValue == 0 &&
                     data.value.size > 1 &&
-                    data.value.lastOrNull() is MediaViewerPageData.Loading
+                    data.value.firstOrNull() is MediaViewerPageData.Loading &&
+                    (data.value.firstOrNull() as? MediaViewerPageData.Loading)?.direction == Timeline.PaginationDirection.BACKWARDS
             }
         }
         if (isRenderingLoadingBackward) {
             LaunchedEffect(Unit) {
                 // Observe the loading data vanishing
-                snapshotFlow { data.value.lastOrNull() is MediaViewerPageData.Loading }
+                snapshotFlow {
+                    val first = data.value.firstOrNull()
+                    first is MediaViewerPageData.Loading && first.direction == Timeline.PaginationDirection.BACKWARDS
+                }
                     .distinctUntilChanged()
                     .filter { !it }
                     .onEach { showNoMoreItemsSnackbar() }
@@ -205,15 +209,19 @@ class MediaViewerPresenter(
         // With newest-first ordering, forward loading indicator is at the first index
         val isRenderingLoadingForward by remember {
             derivedStateOf {
-                currentIndex.intValue == 0 &&
+                currentIndex.intValue == data.value.lastIndex &&
                     data.value.size > 1 &&
-                    data.value.firstOrNull() is MediaViewerPageData.Loading
+                    data.value.lastOrNull() is MediaViewerPageData.Loading &&
+                    (data.value.lastOrNull() as? MediaViewerPageData.Loading)?.direction == Timeline.PaginationDirection.FORWARDS
             }
         }
         if (isRenderingLoadingForward) {
             LaunchedEffect(Unit) {
                 // Observe the loading data vanishing
-                snapshotFlow { data.value.firstOrNull() is MediaViewerPageData.Loading }
+                snapshotFlow {
+                    val last = data.value.lastOrNull()
+                    last is MediaViewerPageData.Loading && last.direction == Timeline.PaginationDirection.FORWARDS
+                }
                     .distinctUntilChanged()
                     .filter { !it }
                     .onEach { showNoMoreItemsSnackbar() }

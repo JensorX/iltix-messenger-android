@@ -122,6 +122,7 @@ fun aRoomDetailsState(
     isTombstoned: Boolean = false,
     showDebugInfo: Boolean = false,
     roomHistoryVisibility: RoomHistoryVisibility = RoomHistoryVisibility.Shared,
+    mediaAutoDownloadEnabled: Boolean = false,
     eventSink: (RoomDetailsEvent) -> Unit = {},
 ) = RoomDetailsState(
     roomId = roomId,
@@ -153,6 +154,7 @@ fun aRoomDetailsState(
     showDebugInfo = showDebugInfo,
     roomVersion = "12",
     roomHistoryVisibility = roomHistoryVisibility,
+    mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
     eventSink = eventSink,
 )
 

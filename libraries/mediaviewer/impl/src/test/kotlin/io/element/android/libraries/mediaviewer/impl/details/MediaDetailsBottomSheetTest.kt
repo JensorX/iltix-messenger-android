@@ -6,15 +6,12 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-@file:OptIn(ExperimentalTestApi::class)
-
 package io.element.android.libraries.mediaviewer.impl.details
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.AndroidComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -23,92 +20,97 @@ import io.element.android.tests.testutils.EnsureNeverCalledWithParam
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
 import io.element.android.tests.testutils.setSafeContent
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 class MediaDetailsBottomSheetTest {
+    @get:Rule
+    val rule = createAndroidComposeRule<ComponentActivity>()
+
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on View in timeline invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on View in timeline invokes expected callback`() {
         val state = aMediaBottomSheetStateDetails()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDetailsBottomSheet(
+            rule.setMediaDetailsBottomSheet(
                 state = state,
                 onViewInTimeline = callback,
             )
-            clickOn(CommonStrings.action_view_in_timeline)
+            rule.clickOn(CommonStrings.action_view_in_timeline)
         }
     }
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on Share invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Share invokes expected callback`() {
         val state = aMediaBottomSheetStateDetails()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDetailsBottomSheet(
+            rule.setMediaDetailsBottomSheet(
                 state = state,
                 onShare = callback,
             )
-            clickOn(CommonStrings.action_share)
+            rule.clickOn(CommonStrings.action_share)
         }
     }
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on Forward invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Forward invokes expected callback`() {
         val state = aMediaBottomSheetStateDetails()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDetailsBottomSheet(
+            rule.setMediaDetailsBottomSheet(
                 state = state,
                 onForward = callback,
             )
-            clickOn(CommonStrings.action_forward)
+            rule.clickOn(CommonStrings.action_forward)
         }
     }
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on Download invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Download invokes expected callback`() {
         val state = aMediaBottomSheetStateDetails()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDetailsBottomSheet(
+            rule.setMediaDetailsBottomSheet(
                 state = state,
                 onDownload = callback,
             )
-            clickOn(CommonStrings.action_download)
+            rule.clickOn(CommonStrings.action_download)
         }
     }
 
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `clicking on Delete invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Delete invokes expected callback`() {
         val state = aMediaBottomSheetStateDetails()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDetailsBottomSheet(
+            rule.setMediaDetailsBottomSheet(
                 state = state,
                 onDelete = callback,
             )
-            onNodeWithText(activity!!.getString(CommonStrings.action_delete)).assertExists()
-            clickOn(CommonStrings.action_delete)
+            rule.onNodeWithText(rule.activity.getString(CommonStrings.action_delete)).assertExists()
+            rule.clickOn(CommonStrings.action_delete)
         }
     }
 
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `Remove is not present if canDelete is false`() = runAndroidComposeUiTest {
+    fun `Remove is not present if canDelete is false`() {
         val state = aMediaBottomSheetStateDetails(
             canDelete = false,
         )
-        setMediaDetailsBottomSheet(
+        rule.setMediaDetailsBottomSheet(
             state = state,
         )
-        onNodeWithText(activity!!.getString(CommonStrings.action_remove)).assertDoesNotExist()
+        rule.onNodeWithText(rule.activity.getString(CommonStrings.action_remove)).assertDoesNotExist()
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMediaDetailsBottomSheet(
+private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setMediaDetailsBottomSheet(
     state: MediaBottomSheetState.Details,
     onViewInTimeline: (EventId) -> Unit = EnsureNeverCalledWithParam(),
     onShare: (EventId) -> Unit = EnsureNeverCalledWithParam(),

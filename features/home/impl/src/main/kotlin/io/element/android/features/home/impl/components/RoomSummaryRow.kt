@@ -8,6 +8,10 @@
 
 package io.element.android.features.home.impl.components
 
+import de.iltix.components.badges.IxUnreadBadge
+import de.iltix.components.nicknames.rememberIxResolvedDisplayName
+import de.iltix.components.roomlist.IxFavoriteStarIcon
+import de.iltix.home.rememberIxRoomSummaryConfig
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -26,10 +30,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -124,8 +128,10 @@ internal fun RoomSummaryRow(
                 ) {
                     NameAndTimestampRow(
                         name = room.name,
+                        localNicknameUserId = room.heroes.firstOrNull()?.id?.takeIf { room.isDm },
                         timestamp = room.timestamp,
-                        isHighlighted = room.isHighlighted
+                        isHighlighted = room.isHighlighted,
+                        isFavorite = room.isFavorite,
                     )
                     MessagePreviewAndIndicatorRow(room = room)
                 }
@@ -140,6 +146,7 @@ internal fun RoomSummaryRow(
                 ) {
                     NameAndTimestampRow(
                         name = room.name,
+                        localNicknameUserId = room.heroes.firstOrNull()?.id?.takeIf { room.isDm },
                         timestamp = null,
                         isHighlighted = room.isHighlighted
                     )
@@ -189,7 +196,7 @@ private fun RoomSummaryScaffoldRow(
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .then(clickModifier)
-            .padding(horizontal = 16.dp, vertical = 11.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .height(IntrinsicSize.Min),
     ) {
         Avatar(
@@ -215,25 +222,39 @@ private fun RoomSummaryScaffoldRow(
 @Composable
 private fun NameAndTimestampRow(
     name: String?,
+    localNicknameUserId: String?,
     timestamp: String?,
     isHighlighted: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
 ) {
+    val roomSummaryConfig = rememberIxRoomSummaryConfig()
+    val resolvedName = rememberIxResolvedDisplayName(
+        userId = localNicknameUserId,
+        fallbackName = name,
+    )
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = spacedBy(16.dp)
     ) {
-        Text(
-            modifier = Modifier
-                .weight(1f)
-                .clipToBounds(),
-            style = ElementTheme.typography.fontBodyLgMedium,
-            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
-            fontStyle = FontStyle.Italic.takeIf { name == null },
-            color = ElementTheme.colors.roomListRoomName,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Name
+            Text(
+                style = ElementTheme.typography.fontBodyLgMedium,
+                text = resolvedName?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
+                fontStyle = FontStyle.Italic.takeIf { resolvedName == null },
+                color = ElementTheme.colors.roomListRoomName,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (roomSummaryConfig.showFavoriteIndicator && isFavorite) {
+                Spacer(modifier = Modifier.width(4.dp))
+                IxFavoriteStarIcon()
+            }
+        }
         // Timestamp
         Text(
             text = timestamp ?: "",
@@ -260,12 +281,12 @@ private fun InviteSubtitle(
     }
     if (subtitle != null) {
         Text(
-            modifier = modifier.clipToBounds(),
             text = subtitle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = ElementTheme.typography.fontBodyMdRegular,
             color = ElementTheme.colors.roomListRoomMessage,
+            modifier = modifier,
         )
     }
 }
@@ -275,6 +296,7 @@ private fun MessagePreviewAndIndicatorRow(
     room: RoomListRoomSummary,
     modifier: Modifier = Modifier,
 ) {
+    val roomSummaryConfig = rememberIxRoomSummaryConfig()
     Row(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -324,9 +346,7 @@ private fun MessagePreviewAndIndicatorRow(
                 val messagePreview = room.latestEvent.content()
                 val annotatedMessagePreview = messagePreview as? AnnotatedString ?: AnnotatedString(text = messagePreview.orEmpty().toString())
                 Text(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clipToBounds(),
+                    modifier = Modifier.weight(1f),
                     text = annotatedMessagePreview,
                     color = ElementTheme.colors.roomListRoomMessage,
                     style = ElementTheme.typography.fontBodyMdRegular,
@@ -360,10 +380,18 @@ private fun MessagePreviewAndIndicatorRow(
             }
             if (room.hasNewContent) {
                 val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
-                UnreadIndicatorAtom(
-                    color = tint,
-                    contentDescription = contentDescription,
-                )
+                if (roomSummaryConfig.showUnreadCountBadge && room.numberOfUnreadMessages > 0) {
+                    IxUnreadBadge(
+                        count = room.numberOfUnreadMessages,
+                        backgroundColor = tint,
+                        contentDescription = contentDescription,
+                    )
+                } else {
+                    UnreadIndicatorAtom(
+                        color = tint,
+                        contentDescription = contentDescription,
+                    )
+                }
             }
         }
     }
@@ -381,9 +409,7 @@ private fun InviteNameAndIndicatorRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            modifier = Modifier
-                .weight(1f)
-                .clipToBounds(),
+            modifier = Modifier.weight(1f),
             style = ElementTheme.typography.fontBodyLgMedium,
             text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
             fontStyle = FontStyle.Italic.takeIf { name == null },

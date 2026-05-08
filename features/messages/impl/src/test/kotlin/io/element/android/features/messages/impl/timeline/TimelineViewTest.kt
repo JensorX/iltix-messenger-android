@@ -6,18 +6,15 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-@file:OptIn(ExperimentalTestApi::class)
-
 package io.element.android.features.messages.impl.timeline
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.AndroidComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
-import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
 import io.element.android.features.messages.impl.timeline.components.aCriticalShield
@@ -42,15 +39,19 @@ import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class TimelineViewTest {
+    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+
     @Test
-    fun `reaching the end of the timeline with more events to load emits a LoadMore event`() = runAndroidComposeUiTest {
+    fun `reaching the end of the timeline with more events to load emits a LoadMore event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf<TimelineItem>(
                     TimelineItem.Virtual(
@@ -65,9 +66,9 @@ class TimelineViewTest {
     }
 
     @Test
-    fun `reaching the end of the timeline does not send a LoadMore event`() = runAndroidComposeUiTest {
+    fun `reaching the end of the timeline does not send a LoadMore event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf(aTimelineItemEvent(content = aTimelineItemImageContent())),
                 eventSink = eventsRecorder,
@@ -77,9 +78,9 @@ class TimelineViewTest {
     }
 
     @Test
-    fun `scroll to bottom on live timeline does not emit the Event`() = runAndroidComposeUiTest {
+    fun `scroll to bottom on live timeline does not emit the Event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf(aTimelineItemEvent(content = aTimelineItemImageContent())),
                 isLive = true,
@@ -91,14 +92,14 @@ class TimelineViewTest {
         eventsRecorder.assertSingle(TimelineEvent.OnScrollFinished(firstIndex = 0))
         eventsRecorder.clear()
 
-        val contentDescription = activity!!.getString(CommonStrings.a11y_jump_to_bottom)
-        onNodeWithContentDescription(contentDescription).performClick()
+        val contentDescription = rule.activity.getString(CommonStrings.a11y_jump_to_bottom)
+        rule.onNodeWithContentDescription(contentDescription).performClick()
     }
 
     @Test
-    fun `scroll to bottom on detached timeline emits the expected Event`() = runAndroidComposeUiTest {
+    fun `scroll to bottom on detached timeline emits the expected Event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf(aTimelineItemEvent(content = aTimelineItemImageContent())),
                 isLive = false,
@@ -109,15 +110,15 @@ class TimelineViewTest {
         eventsRecorder.assertSingle(TimelineEvent.OnScrollFinished(firstIndex = 0))
         eventsRecorder.clear()
 
-        val contentDescription = activity!!.getString(CommonStrings.a11y_jump_to_bottom)
-        onNodeWithContentDescription(contentDescription).performClick()
+        val contentDescription = rule.activity.getString(CommonStrings.a11y_jump_to_bottom)
+        rule.onNodeWithContentDescription(contentDescription).performClick()
         eventsRecorder.assertSingle(TimelineEvent.JumpToLive)
     }
 
     @Test
-    fun `an empty timeline triggers a prefetch`() = runAndroidComposeUiTest {
+    fun `an empty timeline triggers a prefetch`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf(),
                 eventSink = eventsRecorder,
@@ -128,9 +129,9 @@ class TimelineViewTest {
     }
 
     @Test
-    fun `show shield dialog`() = runAndroidComposeUiTest {
+    fun `show shield dialog`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf<TimelineItem>(
                     aTimelineItemEvent(
@@ -142,8 +143,8 @@ class TimelineViewTest {
                 eventSink = eventsRecorder,
             ),
         )
-        val contentDescription = activity!!.getString(CommonStrings.a11y_encryption_details)
-        onNodeWithContentDescription(contentDescription).performClick()
+        val contentDescription = rule.activity.getString(CommonStrings.a11y_encryption_details)
+        rule.onNodeWithContentDescription(contentDescription).performClick()
         eventsRecorder.assertList(
             listOf(
                 TimelineEvent.OnScrollFinished(0),
@@ -153,9 +154,9 @@ class TimelineViewTest {
     }
 
     @Test
-    fun `hide shield dialog`() = runAndroidComposeUiTest {
+    fun `hide shield dialog`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = persistentListOf(aTimelineItemEvent(content = aTimelineItemImageContent())),
                 isLive = false,
@@ -166,16 +167,16 @@ class TimelineViewTest {
         eventsRecorder.assertSingle(TimelineEvent.OnScrollFinished(firstIndex = 0))
         eventsRecorder.clear()
 
-        clickOn(CommonStrings.action_ok)
+        rule.clickOn(CommonStrings.action_ok)
         eventsRecorder.assertSingle(TimelineEvent.HideShieldDialog)
     }
 
     @Ignore(
         "performScrollToIndex in compose tests no longer sets LazyListState.isScrollInProgress to true, so the LoadMore event is not emitted." +
-            "This needs to be reworked to use a different approach to check the LoadMore event was emitted."
+        "This needs to be reworked to use a different approach to check the LoadMore event was emitted."
     )
     @Test
-    fun `scrolling near to the start of the loaded items triggers a pre-fetch`() = runAndroidComposeUiTest {
+    fun `scrolling near to the start of the loaded items triggers a pre-fetch`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
         val items = List<TimelineItem>(200) {
             aTimelineItemEvent(
@@ -184,7 +185,7 @@ class TimelineViewTest {
             )
         }.toImmutableList()
 
-        setTimelineView(
+        rule.setTimelineView(
             state = aTimelineState(
                 timelineItems = items,
                 eventSink = eventsRecorder,
@@ -193,9 +194,9 @@ class TimelineViewTest {
             ),
         )
 
-        onNodeWithTag("timeline").performScrollToIndex(180)
+        rule.onNodeWithTag("timeline").performScrollToIndex(180)
 
-        mainClock.advanceTimeBy(1000)
+        rule.mainClock.advanceTimeBy(1000)
 
         eventsRecorder.assertList(
             listOf(
@@ -206,7 +207,7 @@ class TimelineViewTest {
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setTimelineView(
+private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setTimelineView(
     state: TimelineState,
     timelineProtectionState: TimelineProtectionState = aTimelineProtectionState(),
     onUserDataClick: (MatrixUser) -> Unit = EnsureNeverCalledWithParam(),

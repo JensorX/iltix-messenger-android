@@ -9,6 +9,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+import com.android.build.api.variant.ResValue
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.android.build.gradle.tasks.GenerateBuildConfig
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
@@ -191,6 +192,7 @@ android {
         buildConfig = true
     }
     flavorDimensions += "store"
+    flavorDimensions += "app"
     productFlavors {
         create("gplay") {
             dimension = "store"
@@ -202,6 +204,16 @@ android {
             dimension = "store"
             buildConfigFieldStr("SHORT_FLAVOR_DESCRIPTION", "F")
             buildConfigFieldStr("FLAVOR_DESCRIPTION", "FDroid")
+        }
+        create("element") {
+            dimension = "app"
+            isDefault = true
+            buildConfigFieldStr("APP_VARIANT", "Element")
+        }
+        create("ix") {
+            dimension = "app"
+            applicationId = BuildTimeConfig.ILTIX_APPLICATION_ID
+            buildConfigFieldStr("APP_VARIANT", "Iltix")
         }
     }
 
@@ -239,6 +251,21 @@ androidComponents {
             // for only the output APK, not for the variant itself.
             output.versionCode.set((output.versionCode.orNull ?: 0) * 10 + abiCode)
         }
+
+        // Override app_name for Iltix (ix) variants, since the buildTypes block sets it to
+        // BuildTimeConfig.APPLICATION_NAME ("Element X") which overrides the static strings.xml.
+        if (variant.productFlavors.any { (_, flavor) -> flavor == "ix" }) {
+            val iltixBaseAppName = BuildTimeConfig.ILTIX_APPLICATION_NAME
+            val iltixAppName = when (variant.buildType) {
+                "debug" -> "$iltixBaseAppName dbg"
+                "nightly" -> "$iltixBaseAppName nightly"
+                else -> iltixBaseAppName
+            }
+            variant.resValues.put(
+                variant.makeResValueKey("string", "app_name"),
+                ResValue(iltixAppName),
+            )
+        }
     }
 
     val reportingExtension: ReportingExtension = project.extensions.getByType(ReportingExtension::class.java)
@@ -252,10 +279,14 @@ dependencies {
     allServicesImpl()
     if (isEnterpriseBuild) {
         allEnterpriseImpl(project)
-        implementation(projects.appicon.enterprise)
+        "elementImplementation"(projects.appicon.enterprise)
     } else {
         implementation(projects.features.enterprise.implFoss)
-        implementation(projects.appicon.element)
+        implementation(projects.iltix.theme)
+        "elementImplementation"(projects.appicon.element)
+        "ixImplementation"(projects.appicon.iltix)
+        "ixImplementation"(projects.iltix.lib)
+        "ixImplementation"(projects.iltix.components)
     }
     allFeaturesImpl(project)
     implementation(projects.features.migration.api)

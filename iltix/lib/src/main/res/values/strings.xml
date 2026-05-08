@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright (c) 2025 Iltix Contributors.
+ 
+ SPDX-License-Identifier: AGPL-3.0-only
+-->
+<resources>
+    <!-- Iltix Modules Settings -->
+    <string name="iltix_modules_title">Iltix Modules</string>
+    <string name="iltix_modules_subtitle">Customize your Iltix experience</string>
+    <string name="iltix_modules_action_deactivate_all">Deactivate All</string>
+    <string name="iltix_modules_action_reset_defaults">Reset Defaults</string>
+    <string name="iltix_modules_categories_title">Categories</string>
+    <string name="iltix_modules_category_general_title">General</string>
+    <string name="iltix_modules_category_general_subtitle">Local names, auto-download</string>
+    <string name="iltix_modules_category_overview_title">Overview</string>
+    <string name="iltix_modules_category_overview_subtitle">Space nav, badges, favorites</string>
+    <string name="iltix_modules_category_chat_title">Chat</string>
+    <string name="iltix_modules_category_chat_subtitle">Emoji, polls, notifications</string>
+    <string name="iltix_modules_category_theme_title">Theme</string>
+    <string name="iltix_modules_category_theme_subtitle">Colors, bubbles, font</string>
+    <string name="iltix_modules_general_settings_title">General Settings</string>
+    <string name="iltix_modules_auto_download_section_title">Auto Download</string>
+    <string name="iltix_modules_overview_settings_title">Chat Overview</string>
+    <string name="iltix_modules_chat_settings_title">Chat Features</string>
+    <string name="iltix_modules_theme_settings_title">Theme Settings</string>
+    
+    <!-- General Features -->
+    <string name="iltix_local_usernames_title">Local Usernames</string>
+    <string name="iltix_local_usernames_subtitle">Assign local nicknames to contacts</string>
+    <string name="iltix_local_nickname_set_title">Set local nickname</string>
+    <string name="iltix_local_nickname_edit_title">Edit local nickname</string>
+    <string name="iltix_local_nickname_sheet_title">Local nickname</string>
+    <string name="iltix_local_nickname_field_label">Nickname</string>
+    <string name="iltix_local_nickname_field_placeholder">Enter a local nickname</string>
+    
+    <!-- Chat Overview Features -->
+    <string name="iltix_space_nav_all_label">All</string>
+    <string name="iltix_space_nav_title">Space Navigation</string>
+    <string name="iltix_space_nav_subtitle">Tap to filter chats, long-press a space to open it directly</string>
+    <string name="iltix_space_nav_mode_none">Off</string>
+    <string name="iltix_space_nav_mode_filter">Tap to Filter, Long-Press to Open</string>
+    <string name="iltix_space_nav_mode_full">Tap to Filter, Long-Press to Open</string>
+    
+    <string name="iltix_number_badge_title">Number Badge</string>
+    <string name="iltix_number_badge_subtitle">Show unread message counts in badges</string>
+    
+    <string name="iltix_start_button_toolbar_title">Start Button in Toolbar</string>
+    <string name="iltix_start_button_toolbar_subtitle">Move new chat button to top toolbar</string>
+    
+    <string name="iltix_pin_favorites_title">Pin Favorites</string>
+    <string name="iltix_pin_favorites_subtitle">Pin favorite chats to the top</string>
+    
+    <!-- Theme Features -->
+    <string name="iltix_theme_category_title">Iltix Theme</string>
+    <string name="iltix_theme_toggle_title">Enable Iltix Theme</string>
+    <string name="iltix_theme_toggle_subtitle">Use Iltix color styling for the app</string>
+
+    <string name="iltix_material_you_theme_title">Material You Theme</string>
+    <string name="iltix_material_you_theme_subtitle">Dynamic colors based on system theme</string>
+
+    <string name="iltix_rounded_bubbles_title">Rounded Chat Bubbles</string>
+    <string name="iltix_rounded_bubbles_subtitle">Enable rounded message bubbles</string>
+
+    <string name="iltix_card_room_rows_title">Card Room Rows</string>
+    <string name="iltix_card_room_rows_subtitle">Display chat rooms as rounded cards</string>
+
+    <string name="iltix_font_title">Iltix Font</string>
+    <string name="iltix_font_subtitle">Use Roboto as app-wide font</string>
+    
+    <!-- Chat View Features -->
+    <string name="iltix_emoji_picker_title">Emoji Picker</string>
+    <string name="iltix_emoji_picker_subtitle">System-like emoji keyboard</string>
+    
+    <string name="iltix_poll_vote_viewer_title">Poll Vote Viewer</string>
+    <string name="iltix_poll_vote_viewer_subtitle">Show who voted for what option</string>
+    <string name="iltix_poll_view_votes_button">Show votes</string>
+
+    <string name="iltix_priority_notification_title">Priority Notifications</string>
+    <string name="iltix_priority_notification_subtitle">Show new messages at the top of the notification shade</string>
+    <string name="iltix_unencrypted_topbar_icon_title">Top-bar unencrypted indicator</string>
+    <string name="iltix_unencrypted_topbar_icon_subtitle">Show only the unencrypted icon in the room header instead of the composer hint text</string>
+
+    <string name="iltix_media_auto_download_title">Media Auto Download</string>
+    <string name="iltix_media_auto_download_subtitle">Automatically download new chat media in the background</string>
+    <string name="iltix_media_auto_download_network_title">Network</string>
+    <string name="iltix_media_auto_download_network_subtitle">Choose when automatic downloads are allowed</string>
+    <string name="iltix_media_auto_download_network_wifi_and_mobile">WIFI and mobile data</string>
+    <string name="iltix_media_auto_download_network_wifi_only">WIFI only</string>
+    <string name="iltix_media_auto_download_videos_wifi_only_title">Videos only on WIFI</string>
+    <string name="iltix_media_auto_download_videos_wifi_only_subtitle">Queue video downloads on mobile data until WIFI is available</string>
+    <string name="iltix_media_auto_download_mobile_video_limit_title">Mobile video limit (MB)</string>
+    <string name="iltix_media_auto_download_mobile_video_limit_subtitle">Maximum video size for auto-download on mobile data</string>
+    <string name="iltix_media_auto_download_mobile_video_limit_invalid">Please enter a value between 1 and 4096</string>
+    <string name="iltix_media_auto_download_room_title">Auto download media in this chat</string>
+    <string name="iltix_media_auto_download_room_subtitle">Save incoming images and videos to Download/Iltix</string>
+    <string name="iltix_pending_downloads_notification_title">Iltix</string>
+    <string name="iltix_pending_downloads_notification_text">%1$d media waiting for Wi-Fi</string>
+</resources>

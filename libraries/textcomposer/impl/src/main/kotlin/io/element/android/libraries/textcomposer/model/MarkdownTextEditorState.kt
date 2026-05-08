@@ -88,6 +88,16 @@ class MarkdownTextEditorState(
         }
     }
 
+    fun insertText(insertedText: String) {
+        val currentText = SpannableStringBuilder(text.value())
+        val start = selection.first.coerceAtLeast(0)
+        val end = selection.last.coerceAtLeast(start)
+        currentText.replace(start, end, insertedText)
+        text.update(currentText, true)
+        val cursor = start + insertedText.length
+        selection = cursor..cursor
+    }
+
     fun getMessageMarkdown(permalinkBuilder: PermalinkBuilder): String {
         val charSequence = text.value()
         return if (charSequence is Spanned) {

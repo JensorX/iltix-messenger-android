@@ -6,15 +6,12 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-@file:OptIn(ExperimentalTestApi::class)
-
 package io.element.android.libraries.mediaviewer.impl.details
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.AndroidComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -24,38 +21,43 @@ import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
 import io.element.android.tests.testutils.setSafeContent
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class MediaDeleteConfirmationBottomSheetTest {
+    @get:Rule
+    val rule = createAndroidComposeRule<ComponentActivity>()
+
     @Test
-    fun `clicking on Cancel invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Cancel invokes expected callback`() {
         val state = aMediaBottomSheetStateDeleteConfirmation()
         ensureCalledOnce { callback ->
-            setMediaDeleteConfirmationBottomSheet(
+            rule.setMediaDeleteConfirmationBottomSheet(
                 state = state,
                 onDismiss = callback,
             )
-            clickOn(CommonStrings.action_cancel)
+            rule.clickOn(CommonStrings.action_cancel)
         }
     }
 
     @Test
-    fun `clicking on Remove invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on Remove invokes expected callback`() {
         val state = aMediaBottomSheetStateDeleteConfirmation()
         ensureCalledOnceWithParam(state.eventId) { callback ->
-            setMediaDeleteConfirmationBottomSheet(
+            rule.setMediaDeleteConfirmationBottomSheet(
                 state = state,
                 onDelete = callback,
             )
-            onNodeWithText(activity!!.getString(CommonStrings.action_remove)).assertExists()
-            clickOn(CommonStrings.action_remove)
+            rule.onNodeWithText(rule.activity.getString(CommonStrings.action_remove)).assertExists()
+            rule.clickOn(CommonStrings.action_remove)
         }
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMediaDeleteConfirmationBottomSheet(
+private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setMediaDeleteConfirmationBottomSheet(
     state: MediaBottomSheetState.DeleteConfirmation,
     onDelete: (EventId) -> Unit = EnsureNeverCalledWithParam(),
     onDismiss: () -> Unit = EnsureNeverCalled(),

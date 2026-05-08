@@ -55,6 +55,9 @@ open class StartChatStateProvider : PreviewParameterProvider<StartChatState> {
             aCreateRoomRootState(
                 startDmAction = aConfirmingStartDmWithMatrixUser()
             ),
+            aCreateRoomRootState(
+                isRoomDirectorySearchEnabled = true,
+            ),
         )
 }
 
@@ -72,10 +75,12 @@ fun aCreateRoomRootState(
     applicationName: String = "Element X Preview",
     userListState: UserListState = aUserListState(),
     startDmAction: AsyncAction<RoomId> = AsyncAction.Uninitialized,
+    isRoomDirectorySearchEnabled: Boolean = false,
     eventSink: (StartChatEvents) -> Unit = {},
 ) = StartChatState(
     applicationName = applicationName,
     userListState = userListState,
     startDmAction = startDmAction,
+    isRoomDirectorySearchEnabled = isRoomDirectorySearchEnabled,
     eventSink = eventSink,
 )

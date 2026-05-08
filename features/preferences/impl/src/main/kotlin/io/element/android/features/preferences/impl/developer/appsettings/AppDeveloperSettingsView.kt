@@ -87,6 +87,14 @@ fun AppDeveloperSettingsView(
                 onClick = onOpenShowkase
             )
         }
+        PreferenceCategory(title = "Crash") {
+            ListItem(
+                headlineContent = {
+                    Text("Crash the app 💥")
+                },
+                onClick = { error("This crash is a test.") }
+            )
+        }
         RageshakePreferencesView(
             state = state.rageshakeState,
         )

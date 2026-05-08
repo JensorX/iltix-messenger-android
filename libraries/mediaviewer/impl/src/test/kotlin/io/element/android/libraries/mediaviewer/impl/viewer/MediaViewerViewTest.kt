@@ -6,21 +6,18 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-@file:OptIn(ExperimentalTestApi::class)
-
 package io.element.android.libraries.mediaviewer.impl.viewer
 
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.ui.test.AndroidComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
-import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.mediaviewer.impl.details.aMediaBottomSheetStateDetails
@@ -33,26 +30,30 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.setSafeContent
 import io.mockk.mockk
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 class MediaViewerViewTest {
+    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+
     private val mockMediaUrl: Uri = mockk("localMediaUri")
 
     @Test
-    fun `clicking on back invokes expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on back invokes expected callback`() {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
         val state = aMediaViewerState(
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMediaViewerView(
+            rule.setMediaViewerView(
                 state = state,
                 onBackClick = callback,
             )
-            pressBack()
+            rule.pressBack()
         }
         eventsRecorder.assertList(
             listOf(
@@ -102,16 +103,16 @@ class MediaViewerViewTest {
         data: MediaViewerPageData.MediaViewerData,
         @StringRes contentDescriptionRes: Int,
         expectedEvent: MediaViewerEvent,
-    ) = runAndroidComposeUiTest {
+    ) {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
-        setMediaViewerView(
+        rule.setMediaViewerView(
             aMediaViewerState(
                 listData = listOf(data),
                 eventSink = eventsRecorder
             ),
         )
-        val contentDescription = activity!!.getString(contentDescriptionRes)
-        onNodeWithContentDescription(contentDescription).performClick()
+        val contentDescription = rule.activity.getString(contentDescriptionRes)
+        rule.onNodeWithContentDescription(contentDescription).performClick()
         eventsRecorder.assertList(
             listOf(
                 MediaViewerEvent.OnNavigateTo(0),
@@ -158,16 +159,16 @@ class MediaViewerViewTest {
         data: MediaViewerPageData.MediaViewerData,
         @StringRes textRes: Int,
         expectedEvent: MediaViewerEvent,
-    ) = runAndroidComposeUiTest {
+    ) {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
-        setMediaViewerView(
+        rule.setMediaViewerView(
             aMediaViewerState(
                 listData = listOf(data),
                 mediaBottomSheetState = aMediaBottomSheetStateDetails(),
                 eventSink = eventsRecorder
             ),
         )
-        clickOn(textRes)
+        rule.clickOn(textRes)
         eventsRecorder.assertList(
             listOf(
                 MediaViewerEvent.OnNavigateTo(0),
@@ -178,25 +179,24 @@ class MediaViewerViewTest {
     }
 
     @Test
-    fun `clicking on image hides the overlay`() = runAndroidComposeUiTest {
+    fun `clicking on image hides the overlay`() {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
         val state = aMediaViewerState(
             eventSink = eventsRecorder
         )
-        setMediaViewerView(
+        rule.setMediaViewerView(
             state = state,
         )
         // Ensure that the action are visible
-        val resources = activity!!.resources
-        val contentDescription = resources.getString(CommonStrings.action_share)
-        onNodeWithContentDescription(contentDescription)
+        val contentDescription = rule.activity.getString(CommonStrings.action_share)
+        rule.onNodeWithContentDescription(contentDescription)
             .assertExists()
             .assertHasClickAction()
-        val imageContentDescription = resources.getString(CommonStrings.common_image)
-        onNodeWithContentDescription(imageContentDescription).performClick()
+        val imageContentDescription = rule.activity.getString(CommonStrings.common_image)
+        rule.onNodeWithContentDescription(imageContentDescription).performClick()
         // Give time for the animation (? since even by removing AnimatedVisibility it still fails)
-        mainClock.advanceTimeBy(1_000)
-        onNodeWithContentDescription(contentDescription)
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithContentDescription(contentDescription)
             .assertDoesNotExist()
         eventsRecorder.assertList(
             listOf(
@@ -207,19 +207,19 @@ class MediaViewerViewTest {
     }
 
     @Test
-    fun `clicking swipe on the image invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `clicking swipe on the image invokes the expected callback`() {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
         val state = aMediaViewerState(
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMediaViewerView(
+            rule.setMediaViewerView(
                 state = state,
                 onBackClick = callback,
             )
-            val imageContentDescription = activity!!.getString(CommonStrings.common_image)
-            onNodeWithContentDescription(imageContentDescription).performTouchInput { swipeDown(startY = centerY) }
-            mainClock.advanceTimeBy(1_000)
+            val imageContentDescription = rule.activity.getString(CommonStrings.common_image)
+            rule.onNodeWithContentDescription(imageContentDescription).performTouchInput { swipeDown(startY = centerY) }
+            rule.mainClock.advanceTimeBy(1_000)
         }
         eventsRecorder.assertList(
             listOf(
@@ -230,18 +230,18 @@ class MediaViewerViewTest {
     }
 
     @Test
-    fun `error case, click on retry emits the expected Event`() = runAndroidComposeUiTest {
+    fun `error case, click on retry emits the expected Event`() {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
         val data = aMediaViewerPageData(
             downloadedMedia = AsyncData.Failure(IllegalStateException("error")),
         )
-        setMediaViewerView(
+        rule.setMediaViewerView(
             aMediaViewerState(
                 listData = listOf(data),
                 eventSink = eventsRecorder
             ),
         )
-        clickOn(CommonStrings.action_retry)
+        rule.clickOn(CommonStrings.action_retry)
         eventsRecorder.assertList(
             listOf(
                 MediaViewerEvent.OnNavigateTo(0),
@@ -252,18 +252,18 @@ class MediaViewerViewTest {
     }
 
     @Test
-    fun `error case, click on cancel emits the expected Event`() = runAndroidComposeUiTest {
+    fun `error case, click on cancel emits the expected Event`() {
         val eventsRecorder = EventsRecorder<MediaViewerEvent>()
         val data = aMediaViewerPageData(
             downloadedMedia = AsyncData.Failure(IllegalStateException("error")),
         )
-        setMediaViewerView(
+        rule.setMediaViewerView(
             aMediaViewerState(
                 listData = listOf(data),
                 eventSink = eventsRecorder
             ),
         )
-        clickOn(CommonStrings.action_cancel)
+        rule.clickOn(CommonStrings.action_cancel)
         eventsRecorder.assertList(
             listOf(
                 MediaViewerEvent.OnNavigateTo(0),
@@ -274,7 +274,7 @@ class MediaViewerViewTest {
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMediaViewerView(
+private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setMediaViewerView(
     state: MediaViewerState,
     onBackClick: () -> Unit = EnsureNeverCalled(),
 ) {

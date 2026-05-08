@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -50,7 +52,6 @@ import io.element.android.features.home.impl.spacefilters.anUnselectedSpaceFilte
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
-import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.utils.OnVisibleRangeChangeEffect
@@ -118,12 +119,9 @@ private fun SkeletonView(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        repeat(count) { index ->
+        repeat(count) {
             item {
                 RoomSummaryPlaceholderRow()
-                if (index != count - 1) {
-                    HorizontalDivider()
-                }
             }
         }
     }
@@ -220,6 +218,14 @@ private fun RoomsViewList(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val ixPreferencesStore = remember(context) {
+        de.iltix.lib.preferences.IxPreferencesStore(context)
+    }
+    val useCardRows by ixPreferencesStore
+        .settingFlow(de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS)
+        .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS.defaultValue)
+
     OnVisibleRangeChangeEffect(lazyListState) { visibleRange ->
         eventSink(RoomListEvent.UpdateVisibleRange(visibleRange))
     }
@@ -267,17 +273,21 @@ private fun RoomsViewList(
         itemsIndexed(
             items = state.summaries,
             contentType = { _, room -> room.contentType() },
-        ) { index, room ->
-            RoomSummaryRow(
-                room = room,
-                hideInviteAvatars = hideInvitesAvatars,
-                isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
-                    state.seenRoomInvites.contains(room.roomId),
-                onClick = onRoomClick,
-                eventSink = eventSink,
-            )
-            if (index != state.summaries.lastIndex) {
-                HorizontalDivider()
+        ) { _, room ->
+            val rowContent: @Composable () -> Unit = {
+                RoomSummaryRow(
+                    room = room,
+                    hideInviteAvatars = hideInvitesAvatars,
+                    isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
+                        state.seenRoomInvites.contains(room.roomId),
+                    onClick = onRoomClick,
+                    eventSink = eventSink,
+                )
+            }
+            if (useCardRows) {
+                de.iltix.components.roomlist.IxCardRoomWrapper { rowContent() }
+            } else {
+                rowContent()
             }
         }
     }

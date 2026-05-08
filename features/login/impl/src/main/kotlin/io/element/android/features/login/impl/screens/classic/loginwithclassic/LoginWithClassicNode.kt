@@ -21,7 +21,7 @@ import io.element.android.features.login.impl.util.openLearnMorePage
 import io.element.android.libraries.architecture.NodeInputs
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.inputs
-import io.element.android.libraries.matrix.api.auth.OAuthDetails
+import io.element.android.libraries.matrix.api.auth.OidcDetails
 import io.element.android.libraries.matrix.api.core.UserId
 
 @ContributesNode(AppScope::class)
@@ -35,7 +35,7 @@ class LoginWithClassicNode(
     interface Callback : Plugin {
         fun navigateToOtherOptions()
         fun navigateToLoginPassword()
-        fun navigateToOAuth(oAuthDetails: OAuthDetails)
+        fun navigateToOidc(oidcDetails: OidcDetails)
         fun navigateToCreateAccount(url: String)
         fun navigateToMissingKeyBackup()
     }
@@ -60,7 +60,7 @@ class LoginWithClassicNode(
             state = state,
             modifier = modifier,
             onOtherOptionsClick = callback::navigateToOtherOptions,
-            onOAuthDetails = callback::navigateToOAuth,
+            onOidcDetails = callback::navigateToOidc,
             onNeedLoginPassword = callback::navigateToLoginPassword,
             onLearnMoreClick = { openLearnMorePage(context) },
             onCreateAccountContinue = callback::navigateToCreateAccount,

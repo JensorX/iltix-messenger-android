@@ -19,31 +19,52 @@ android {
         buildConfig = true
     }
 
-    defaultConfig {
-        buildConfigFieldStr(
-            name = "URL_POLICY",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.URL_POLICY ?: ""
-            } else {
-                "https://element.io/cookie-policy"
-            },
-        )
-        buildConfigFieldStr(
-            name = "BUG_REPORT_URL",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.BUG_REPORT_URL ?: ""
-            } else {
-                "https://rageshakes.element.io/api/submit"
-            },
-        )
-        buildConfigFieldStr(
-            name = "BUG_REPORT_APP_NAME",
-            value = if (isEnterpriseBuild) {
-                BuildTimeConfig.BUG_REPORT_APP_NAME ?: ""
-            } else {
-                "element-x-android"
-            },
-        )
+    flavorDimensions += "app"
+
+    productFlavors {
+        create("element") {
+            dimension = "app"
+            isDefault = true
+            buildConfigFieldStr(
+                name = "URL_POLICY",
+                value = if (isEnterpriseBuild) {
+                    BuildTimeConfig.URL_POLICY ?: ""
+                } else {
+                    "https://element.io/cookie-policy"
+                },
+            )
+            buildConfigFieldStr(
+                name = "BUG_REPORT_URL",
+                value = if (isEnterpriseBuild) {
+                    BuildTimeConfig.BUG_REPORT_URL ?: ""
+                } else {
+                    "https://rageshakes.element.io/api/submit"
+                },
+            )
+            buildConfigFieldStr(
+                name = "BUG_REPORT_APP_NAME",
+                value = if (isEnterpriseBuild) {
+                    BuildTimeConfig.BUG_REPORT_APP_NAME ?: ""
+                } else {
+                    "element-x-android"
+                },
+            )
+        }
+        create("ix") {
+            dimension = "app"
+            buildConfigFieldStr(
+                name = "URL_POLICY",
+                value = "https://iltix.messenger",
+            )
+            buildConfigFieldStr(
+                name = "BUG_REPORT_URL",
+                value = "https://github.com/iltix/iltix-messenger-android/issues",
+            )
+            buildConfigFieldStr(
+                name = "BUG_REPORT_APP_NAME",
+                value = "iltix-messenger-android",
+            )
+        }
     }
 }
 

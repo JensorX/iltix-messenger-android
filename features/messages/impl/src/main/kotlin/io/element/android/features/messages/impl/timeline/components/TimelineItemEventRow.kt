@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstrainScope
 import androidx.constraintlayout.compose.ConstraintLayout
+import de.iltix.theme.LocalIxBubbleStyle
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.timeline.TimelineEvent
@@ -311,6 +312,7 @@ private fun ThreadSummaryView(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val bubbleStyle = LocalIxBubbleStyle.current
     BoxWithConstraints(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -319,7 +321,7 @@ private fun ThreadSummaryView(
                     shape = RoundedCornerShape(8.dp)
                     clip = true
                 }
-                .background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing))
+                .background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing, bubbleStyle))
                 .niceClickable(onClick)
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .widthIn(max = (maxWidth - 24.dp) * MessageEventBubbleDefaults.BUBBLE_WIDTH_RATIO),
@@ -635,6 +637,9 @@ private fun MessageEventBubbleContent(
     ) {
         @Suppress("NAME_SHADOWING")
         val content = remember { movableContentOf(content) }
+        val bubbleStyle = LocalIxBubbleStyle.current
+        val timestampExtraHorizontalPadding = if (bubbleStyle.cornerRadius > 12.dp) 4.dp else 0.dp
+        val timestampExtraVerticalPadding = if (bubbleStyle.cornerRadius > 12.dp) 2.dp else 0.dp
         when (timestampPosition) {
             TimestampPosition.Overlay ->
                 Box(modifier, contentAlignment = Alignment.Center) {
@@ -644,7 +649,10 @@ private fun MessageEventBubbleContent(
                         eventSink = eventSink,
                         modifier = Modifier
                             // Outer padding
-                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                            .padding(
+                                horizontal = 7.dp + (timestampExtraHorizontalPadding / 2),
+                                vertical = 7.dp + timestampExtraVerticalPadding,
+                            )
                             .background(ElementTheme.colors.bgSubtleSecondary, RoundedCornerShape(10.0.dp))
                             .align(Alignment.BottomEnd)
                             // Inner padding
@@ -664,7 +672,10 @@ private fun MessageEventBubbleContent(
                             event = event,
                             eventSink = eventSink,
                             modifier = Modifier
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(
+                                    horizontal = 9.dp + timestampExtraHorizontalPadding,
+                                    vertical = 5.dp + timestampExtraVerticalPadding,
+                                )
                         )
                     }
                 )
@@ -676,7 +687,10 @@ private fun MessageEventBubbleContent(
                         eventSink = eventSink,
                         modifier = Modifier
                             .align(Alignment.End)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(
+                                horizontal = 9.dp + timestampExtraHorizontalPadding,
+                                vertical = 5.dp + timestampExtraVerticalPadding,
+                            )
                     )
                 }
             TimestampPosition.Hidden -> Box(modifier) { content {} }
@@ -695,15 +709,27 @@ private fun MessageEventBubbleContent(
     ) {
         val timestampLayoutModifier =
             if (inReplyToDetails != null && timestampPosition == TimestampPosition.Overlay) {
-                Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                Modifier.padding(
+                    start = 9.dp,
+                    end = 9.dp + if (LocalIxBubbleStyle.current.cornerRadius > 12.dp) 4.dp else 0.dp,
+                    bottom = 9.dp + if (LocalIxBubbleStyle.current.cornerRadius > 12.dp) 2.dp else 0.dp,
+                )
             } else {
                 Modifier
             }
 
         val topPadding = if (inReplyToDetails != null) 0.dp else 8.dp
+        val bubbleStyle = LocalIxBubbleStyle.current
+        val textualExtraHorizontalPadding = if (bubbleStyle.cornerRadius > 12.dp) 4.dp else 0.dp
+        val textualExtraBottomPadding = if (bubbleStyle.cornerRadius > 12.dp) 2.dp else 0.dp
         val contentModifier = when (paddingBehaviour) {
             ContentPadding.Textual ->
-                Modifier.padding(start = 12.dp, end = 12.dp, top = topPadding, bottom = 8.dp)
+                Modifier.padding(
+                    start = 12.dp + textualExtraHorizontalPadding,
+                    end = 12.dp + textualExtraHorizontalPadding,
+                    top = topPadding,
+                    bottom = 8.dp + textualExtraBottomPadding,
+                )
             ContentPadding.Media -> {
                 if (inReplyToDetails == null) {
                     Modifier

@@ -6,15 +6,13 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-@file:OptIn(ExperimentalTestApi::class)
-
 package io.element.android.features.messages.impl
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.AndroidComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -27,7 +25,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
-import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.emojibasebindings.Emoji
@@ -81,78 +78,82 @@ import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.setSafeContent
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 class MessagesViewTest {
+    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
+
     @Test
-    fun `clicking on back invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on back invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onBackClick = callback,
             )
-            pressBack()
+            rule.pressBack()
         }
     }
 
     @Test
-    fun `clicking on room name invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on room name invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onRoomDetailsClick = callback,
             )
-            onNodeWithText(state.roomName.orEmpty(), useUnmergedTree = true).performClick()
+            rule.onNodeWithText(state.roomName.orEmpty(), useUnmergedTree = true).performClick()
         }
     }
 
     @Test
-    fun `clicking on join call invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on join call invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             eventSink = eventsRecorder
         )
         ensureCalledOnceWithParam(false) { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onJoinCallClick = callback,
             )
-            val joinCallContentDescription = activity!!.getString(CommonStrings.a11y_start_call)
-            onNodeWithContentDescription(joinCallContentDescription).performClick()
+            val joinCallContentDescription = rule.activity.getString(CommonStrings.a11y_start_call)
+            rule.onNodeWithContentDescription(joinCallContentDescription).performClick()
         }
     }
 
     @Test
-    fun `clicking on join voice call invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on join voice call invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             eventSink = eventsRecorder,
             roomCallState = aStandByCallState(isDM = true)
         )
         ensureCalledOnceWithParam(true) { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onJoinCallClick = callback,
             )
-            val joinVoiceCallContentDescription = activity!!.getString(CommonStrings.a11y_start_voice_call)
-            onNodeWithContentDescription(joinVoiceCallContentDescription).performClick()
+            val joinVoiceCallContentDescription = rule.activity.getString(CommonStrings.a11y_start_voice_call)
+            rule.onNodeWithContentDescription(joinVoiceCallContentDescription).performClick()
         }
     }
 
     @Test
-    fun `clicking on an Event invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on an Event invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -166,12 +167,12 @@ class MessagesViewTest {
             expectedParam2 = timelineItem,
             result = true,
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
             onEventClick = callback,
         )
         // Cannot perform click on "Text", it's not detected. Use tag instead
-        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performClick()
+        rule.onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performClick()
         callback.assertSuccess()
     }
 
@@ -201,7 +202,7 @@ class MessagesViewTest {
         userHasPermissionToRedactOther: Boolean = false,
         userHasPermissionToSendReaction: Boolean = false,
         userCanPinEvent: Boolean = false,
-    ) = runAndroidComposeUiTest {
+    ) {
         val eventsRecorder = EventsRecorder<ActionListEvent>()
         val state = aMessagesState(
             actionListState = anActionListState(
@@ -219,11 +220,11 @@ class MessagesViewTest {
             ),
         )
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
         // Cannot perform click on "Text", it's not detected. Use tag instead
-        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { longClick() }
+        rule.onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { longClick() }
         eventsRecorder.assertSingle(
             ActionListEvent.ComputeForMessage(
                 event = timelineItem,
@@ -234,7 +235,7 @@ class MessagesViewTest {
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on a read receipt list emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on a read receipt list emits the expected Event`() {
         val eventsRecorder = EventsRecorder<ReadReceiptBottomSheetEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -254,10 +255,10 @@ class MessagesViewTest {
             ),
         )
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
-        onNodeWithTag(TestTags.messageReadReceipts.value, useUnmergedTree = true).performClick()
+        rule.onNodeWithTag(TestTags.messageReadReceipts.value, useUnmergedTree = true).performClick()
         eventsRecorder.assertSingle(ReadReceiptBottomSheetEvent.EventSelected(timelineItem))
     }
 
@@ -271,7 +272,7 @@ class MessagesViewTest {
         swipeTest(userHasPermissionToSendMessage = false)
     }
 
-    private fun swipeTest(userHasPermissionToSendMessage: Boolean) = runAndroidComposeUiTest {
+    private fun swipeTest(userHasPermissionToSendMessage: Boolean) {
         val eventsRecorder = EventsRecorder<MessagesEvent>()
         val canBeRepliedEvent = aTimelineItemEvent(canBeRepliedTo = true)
         val cannotBeRepliedEvent = aTimelineItemEvent(canBeRepliedTo = false)
@@ -284,10 +285,10 @@ class MessagesViewTest {
             ),
             eventSink = eventsRecorder,
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
-        onAllNodesWithTag(TestTags.messageBubble.value).apply {
+        rule.onAllNodesWithTag(TestTags.messageBubble.value).apply {
             onFirst().performTouchInput { swipeRight(endX = 200f) }
             onLast().performTouchInput { swipeRight(endX = 200f) }
         }
@@ -299,7 +300,7 @@ class MessagesViewTest {
     }
 
     @Test
-    fun `clicking on send location invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on send location invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             composerState = aMessageComposerState(
@@ -308,16 +309,16 @@ class MessagesViewTest {
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onSendLocationClick = callback,
             )
-            clickOn(R.string.screen_room_attachment_source_location)
+            rule.clickOn(R.string.screen_room_attachment_source_location)
         }
     }
 
     @Test
-    fun `clicking on create poll invoke expected callback`() = runAndroidComposeUiTest {
+    fun `clicking on create poll invoke expected callback`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             composerState = aMessageComposerState(
@@ -326,25 +327,25 @@ class MessagesViewTest {
             eventSink = eventsRecorder
         )
         ensureCalledOnce { callback ->
-            setMessagesView(
+            rule.setMessagesView(
                 state = state,
                 onCreatePollClick = callback,
             )
             // Then click on the poll action
-            clickOn(R.string.screen_room_attachment_source_poll)
+            rule.clickOn(R.string.screen_room_attachment_source_poll)
         }
     }
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on the avatar of the sender of an Event emits the expected event`() = runAndroidComposeUiTest {
+    fun `clicking on the avatar of the sender of an Event emits the expected event`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>()
         val state = aMessagesState(
             eventSink = eventsRecorder
         )
         val timelineEvent = state.timelineState.timelineItems.filterIsInstance<TimelineItem.Event>().first()
-        setMessagesView(state = state)
-        onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
+        rule.setMessagesView(state = state)
+        rule.onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
         eventsRecorder.assertSingle(
             MessagesEvent.OnUserClicked(
                 MatrixUser(
@@ -358,12 +359,12 @@ class MessagesViewTest {
 
     @Test
     @Config(qualifiers = "h1024dp")
-    fun `clicking on the display name of the sender of an Event emits expected event`() = runAndroidComposeUiTest {
+    fun `clicking on the display name of the sender of an Event emits expected event`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>()
         val state = aMessagesState(eventSink = eventsRecorder)
         val timelineEvent = state.timelineState.timelineItems.filterIsInstance<TimelineItem.Event>().first()
-        setMessagesView(state = state)
-        onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
+        rule.setMessagesView(state = state)
+        rule.onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
         eventsRecorder.assertSingle(
             MessagesEvent.OnUserClicked(
                 MatrixUser(
@@ -376,7 +377,7 @@ class MessagesViewTest {
     }
 
     @Test
-    fun `selecting a action on a message emits the expected Event`() = runAndroidComposeUiTest {
+    fun `selecting a action on a message emits the expected Event`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>()
         val state = aMessagesState(
             eventSink = eventsRecorder
@@ -394,17 +395,17 @@ class MessagesViewTest {
                 )
             ),
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = stateWithMessageAction,
         )
-        clickOn(CommonStrings.action_edit)
+        rule.clickOn(CommonStrings.action_edit)
         // Give time for the close animation to complete
-        mainClock.advanceTimeBy(milliseconds = 1_000)
+        rule.mainClock.advanceTimeBy(milliseconds = 1_000)
         eventsRecorder.assertSingle(MessagesEvent.HandleAction(TimelineItemAction.Edit, timelineItem))
     }
 
     @Test
-    fun `clicking on a reaction emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on a reaction emits the expected Event`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -413,10 +414,10 @@ class MessagesViewTest {
             eventSink = eventsRecorder,
         )
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
-        onAllNodesWithText(
+        rule.onAllNodesWithText(
             text = "👍️",
             useUnmergedTree = true,
         ).onFirst().performClick()
@@ -424,7 +425,7 @@ class MessagesViewTest {
     }
 
     @Test
-    fun `long clicking on a reaction emits the expected Event`() = runAndroidComposeUiTest {
+    fun `long clicking on a reaction emits the expected Event`() {
         val eventsRecorder = EventsRecorder<ReactionSummaryEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -436,10 +437,10 @@ class MessagesViewTest {
             ),
         )
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
-        onAllNodesWithText(
+        rule.onAllNodesWithText(
             text = "👍️",
             useUnmergedTree = true,
         ).onFirst().performTouchInput { longClick() }
@@ -447,7 +448,7 @@ class MessagesViewTest {
     }
 
     @Test
-    fun `clicking on more reaction emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on more reaction emits the expected Event`() {
         val eventsRecorder = EventsRecorder<CustomReactionEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -458,16 +459,16 @@ class MessagesViewTest {
             ),
         )
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
         )
-        val moreReactionContentDescription = activity!!.getString(R.string.screen_room_timeline_add_reaction)
-        onAllNodesWithContentDescription(moreReactionContentDescription).onFirst().performClick()
+        val moreReactionContentDescription = rule.activity.getString(R.string.screen_room_timeline_add_reaction)
+        rule.onAllNodesWithContentDescription(moreReactionContentDescription).onFirst().performClick()
         eventsRecorder.assertSingle(CustomReactionEvent.ShowCustomReactionSheet(timelineItem))
     }
 
     @Test
-    fun `clicking on more reaction from action list emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on more reaction from action list emits the expected Event`() {
         val eventsRecorder = EventsRecorder<CustomReactionEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(
@@ -490,18 +491,18 @@ class MessagesViewTest {
                 eventSink = eventsRecorder
             ),
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = stateWithActionListState,
         )
-        val moreReactionContentDescription = activity!!.getString(CommonStrings.a11y_react_with_other_emojis)
-        onNodeWithContentDescription(moreReactionContentDescription).performClick()
+        val moreReactionContentDescription = rule.activity.getString(CommonStrings.a11y_react_with_other_emojis)
+        rule.onNodeWithContentDescription(moreReactionContentDescription).performClick()
         // Give time for the close animation to complete
-        mainClock.advanceTimeBy(milliseconds = 1_000)
+        rule.mainClock.advanceTimeBy(milliseconds = 1_000)
         eventsRecorder.assertSingle(CustomReactionEvent.ShowCustomReactionSheet(timelineItem))
     }
 
     @Test
-    fun `clicking on verified user send failure from action list emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on verified user send failure from action list emits the expected Event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
         val state = aMessagesState()
         val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
@@ -518,21 +519,21 @@ class MessagesViewTest {
             ),
             timelineState = aTimelineState(eventSink = eventsRecorder)
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = stateWithActionListState,
         )
         // Clear initial 'LoadMore' event emitted when setting the state
         eventsRecorder.clear()
 
-        val verifiedUserSendFailure = activity!!.getString(CommonStrings.screen_timeline_item_menu_send_failure_changed_identity, "Alice")
-        onNodeWithText(verifiedUserSendFailure).performClick()
+        val verifiedUserSendFailure = rule.activity.getString(CommonStrings.screen_timeline_item_menu_send_failure_changed_identity, "Alice")
+        rule.onNodeWithText(verifiedUserSendFailure).performClick()
         // Give time for the close animation to complete
-        mainClock.advanceTimeBy(milliseconds = 1_000)
+        rule.mainClock.advanceTimeBy(milliseconds = 1_000)
         eventsRecorder.assertSingle(TimelineEvent.ComputeVerifiedUserSendFailure(timelineItem))
     }
 
     @Test
-    fun `clicking on a custom emoji emits the expected Events`() = runAndroidComposeUiTest {
+    fun `clicking on a custom emoji emits the expected Events`() {
         val aUnicode = "🙈"
         val customReactionStateEventsRecorder = EventsRecorder<CustomReactionEvent>()
         val eventsRecorder = EventsRecorder<MessagesEvent>()
@@ -562,18 +563,18 @@ class MessagesViewTest {
                 eventSink = customReactionStateEventsRecorder
             ),
         )
-        setMessagesView(
+        rule.setMessagesView(
             state = stateWithCustomReactionState,
         )
-        onNodeWithText(aUnicode, useUnmergedTree = true).performClick()
+        rule.onNodeWithText(aUnicode, useUnmergedTree = true).performClick()
         // Give time for the close animation to complete
-        mainClock.advanceTimeBy(milliseconds = 1_000)
+        rule.mainClock.advanceTimeBy(milliseconds = 1_000)
         customReactionStateEventsRecorder.assertSingle(CustomReactionEvent.DismissCustomReactionSheet)
         eventsRecorder.assertSingle(MessagesEvent.ToggleReaction(aUnicode, timelineItem.eventOrTransactionId))
     }
 
     @Test
-    fun `clicking on pinned messages banner emits the expected Event`() = runAndroidComposeUiTest {
+    fun `clicking on pinned messages banner emits the expected Event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
         val state = aMessagesState(
             timelineState = aTimelineState(eventSink = eventsRecorder),
@@ -586,16 +587,16 @@ class MessagesViewTest {
                 ),
             ),
         )
-        setMessagesView(state = state)
+        rule.setMessagesView(state = state)
         // Clear initial 'LoadMore' event emitted when setting the state
         eventsRecorder.clear()
 
-        onNodeWithText("This is a pinned message").performClick()
+        rule.onNodeWithText("This is a pinned message").performClick()
         eventsRecorder.assertSingle(TimelineEvent.FocusOnEvent(AN_EVENT_ID, debounce = FOCUS_ON_PINNED_EVENT_DEBOUNCE_DURATION_IN_MILLIS.milliseconds))
     }
 
     @Test
-    fun `clicking on successor room button emits expected event`() = runAndroidComposeUiTest {
+    fun `clicking on successor room button emits expected event`() {
         val eventsRecorder = EventsRecorder<TimelineEvent>()
         val successorRoomId = RoomId("!successor:server.org")
         val state = aMessagesState(
@@ -605,18 +606,18 @@ class MessagesViewTest {
             ),
             timelineState = aTimelineState(eventSink = eventsRecorder)
         )
-        setMessagesView(state = state)
+        rule.setMessagesView(state = state)
         // Clear initial 'LoadMore' event emitted when setting the state
         eventsRecorder.clear()
 
-        val text = activity!!.getString(R.string.screen_room_timeline_tombstoned_room_action)
+        val text = rule.activity.getString(R.string.screen_room_timeline_tombstoned_room_action)
         // The bottomsheet subcompose seems to make the node to appear twice
-        onAllNodesWithText(text).onFirst().performClick()
+        rule.onAllNodesWithText(text).onFirst().performClick()
         eventsRecorder.assertSingle(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(successorRoomId))
     }
 
     @Test
-    fun `clicking on threads list button calls the expected function`() = runAndroidComposeUiTest {
+    fun `clicking on threads list button calls the expected function`() {
         val state = aMessagesState(
             threads = MessagesState.Threads(
                 hasThreads = true,
@@ -624,28 +625,28 @@ class MessagesViewTest {
             )
         )
         val onThreadsListClicked = lambdaRecorder<Unit> {}
-        setMessagesView(
+        rule.setMessagesView(
             state = state,
             onThreadsListClicked = onThreadsListClicked,
         )
-        onNodeWithContentDescription("Threads").performClick()
+        rule.onNodeWithContentDescription("Threads").performClick()
         onThreadsListClicked.assertions().isCalledOnce()
     }
 
     @Test
-    fun `no banner shown when there is no successor room`() = runAndroidComposeUiTest {
+    fun `no banner shown when there is no successor room`() {
         val eventsRecorder = EventsRecorder<MessagesEvent>(expectEvents = false)
         val state = aMessagesState(
             successorRoom = null,
             eventSink = eventsRecorder
         )
-        setMessagesView(state = state)
-        assertNoNodeWithText(R.string.screen_room_timeline_tombstoned_room_message)
-        assertNoNodeWithText(R.string.screen_room_timeline_tombstoned_room_action)
+        rule.setMessagesView(state = state)
+        rule.assertNoNodeWithText(R.string.screen_room_timeline_tombstoned_room_message)
+        rule.assertNoNodeWithText(R.string.screen_room_timeline_tombstoned_room_action)
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(
+private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setMessagesView(
     state: MessagesState,
     onBackClick: () -> Unit = EnsureNeverCalled(),
     onRoomDetailsClick: () -> Unit = EnsureNeverCalled(),

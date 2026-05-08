@@ -12,3 +12,8 @@ import java.io.File
  * Are we building with the enterprise sources?
  */
 val isEnterpriseBuild = File("enterprise/README.md").exists()
+
+/**
+ * Are we building the Iltix variant?
+ */
+val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()

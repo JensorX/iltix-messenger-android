@@ -20,11 +20,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,7 @@ import io.element.android.libraries.designsystem.components.media.WaveFormSample
 import io.element.android.libraries.designsystem.components.media.WaveformPlaybackView
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
+import io.element.android.libraries.designsystem.theme.LocalBuildMeta
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.IconButton
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -56,14 +59,26 @@ internal fun VoiceMessagePreview(
     modifier: Modifier = Modifier,
     playbackProgress: Float = 0f,
 ) {
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val containerShape = if (isIltixBuild) RoundedCornerShape(20.dp) else MaterialTheme.shapes.medium
+    val containerColor = if (isIltixBuild) ElementTheme.colors.bgSubtlePrimary else ElementTheme.colors.bgSubtleSecondary
+    val waveformBrush = if (isIltixBuild) SolidColor(ElementTheme.colors.iconPrimaryAlpha) else SolidColor(ElementTheme.colors.iconQuaternary)
+    val waveformProgressBrush = if (isIltixBuild) SolidColor(ElementTheme.colors.iconAccentPrimary) else SolidColor(ElementTheme.colors.iconSecondary)
+    val waveformCursorBrush = if (isIltixBuild) SolidColor(ElementTheme.colors.iconAccentTertiary) else SolidColor(ElementTheme.colors.iconAccentTertiary)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = ElementTheme.colors.bgSubtleSecondary,
-                shape = MaterialTheme.shapes.medium,
+                color = containerColor,
+                shape = containerShape,
             )
-            .padding(start = 8.dp, end = 20.dp, top = 6.dp, bottom = 6.dp)
+            .padding(
+                start = if (isIltixBuild) 10.dp else 8.dp,
+                end = if (isIltixBuild) 14.dp else 20.dp,
+                top = if (isIltixBuild) 8.dp else 6.dp,
+                bottom = if (isIltixBuild) 8.dp else 6.dp,
+            )
             .heightIn(26.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -71,11 +86,12 @@ internal fun VoiceMessagePreview(
             type = if (isPlaying) PlayerButtonType.Pause else PlayerButtonType.Play,
             onClick = if (isPlaying) onPauseClick else onPlayClick,
             enabled = isInteractive,
+            isIltixStyle = isIltixBuild,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = time.formatShort(),
-            color = ElementTheme.colors.textSecondary,
+            color = if (isIltixBuild) ElementTheme.colors.textPrimary else ElementTheme.colors.textSecondary,
             style = ElementTheme.typography.fontBodySmMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -90,6 +106,11 @@ internal fun VoiceMessagePreview(
             waveform = waveform,
             seekEnabled = true,
             onSeek = onSeek,
+            brush = waveformBrush,
+            progressBrush = waveformProgressBrush,
+            cursorBrush = waveformCursorBrush,
+            lineWidth = if (isIltixBuild) 3.dp else 2.dp,
+            linePadding = if (isIltixBuild) 2.dp else 2.dp,
         )
     }
 }
@@ -104,15 +125,19 @@ private fun PlayerButton(
     type: PlayerButtonType,
     enabled: Boolean,
     onClick: () -> Unit,
+    isIltixStyle: Boolean,
 ) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .background(color = ElementTheme.colors.bgCanvasDefault, shape = CircleShape)
-            .size(30.dp),
+            .background(
+                color = if (isIltixStyle) ElementTheme.colors.bgAccentRest else ElementTheme.colors.bgCanvasDefault,
+                shape = CircleShape,
+            )
+            .size(if (isIltixStyle) 34.dp else 30.dp),
         enabled = enabled,
         colors = IconButtonDefaults.iconButtonColors(
-            contentColor = ElementTheme.colors.iconSecondary,
+            contentColor = if (isIltixStyle) ElementTheme.colors.iconOnSolidPrimary else ElementTheme.colors.iconSecondary,
             disabledContentColor = ElementTheme.colors.iconDisabled,
         ),
     ) {

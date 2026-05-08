@@ -43,6 +43,8 @@ fun PollContentView(
     onSelectAnswer: (pollStartId: EventId, answerId: String) -> Unit,
     onEditPoll: (pollStartId: EventId) -> Unit,
     onEndPoll: (pollStartId: EventId) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     PollContentView(
@@ -56,6 +58,8 @@ fun PollContentView(
         onEditPoll = onEditPoll,
         onSelectAnswer = onSelectAnswer,
         onEndPoll = onEndPoll,
+        onViewVotes = onViewVotes,
+        viewVotesLabel = viewVotesLabel,
         modifier = modifier,
     )
 }
@@ -72,6 +76,8 @@ fun PollContentView(
     onSelectAnswer: (pollStartId: EventId, answerId: String) -> Unit,
     onEditPoll: (pollStartId: EventId) -> Unit,
     onEndPoll: (pollStartId: EventId) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val votesCount = remember(answerItems) { answerItems.sumOf { it.votesCount } }
@@ -107,7 +113,12 @@ fun PollContentView(
     ) {
         PollTitleView(title = question, isPollEnded = isPollEnded)
 
-        PollAnswers(answerItems = answerItems, onSelectAnswer = ::onSelectAnswer)
+        PollAnswers(
+            answerItems = answerItems,
+            onSelectAnswer = ::onSelectAnswer,
+            onViewVotes = onViewVotes,
+            viewVotesLabel = viewVotesLabel,
+        )
 
         if (isPollEnded || pollKind == PollKind.Disclosed) {
             DisclosedPollBottomNotice(votesCount = votesCount)
@@ -131,6 +142,8 @@ fun PollContentView(
 private fun PollAnswers(
     answerItems: ImmutableList<PollAnswerItem>,
     onSelectAnswer: (PollAnswer) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
 ) {
     Column(
         modifier = Modifier.selectableGroup(),
@@ -139,6 +152,8 @@ private fun PollAnswers(
         answerItems.forEach {
             PollAnswerView(
                 answerItem = it,
+                onViewVotes = onViewVotes,
+                viewVotesLabel = viewVotesLabel,
                 modifier = Modifier
                     .selectable(
                         selected = it.isSelected,
@@ -213,6 +228,7 @@ internal fun PollContentViewUndisclosedPreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
 
@@ -230,6 +246,7 @@ internal fun PollContentViewDisclosedPreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
 
@@ -247,6 +264,7 @@ internal fun PollContentViewEndedPreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
 
@@ -264,6 +282,7 @@ internal fun PollContentViewCreatorEditablePreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
 
@@ -281,6 +300,7 @@ internal fun PollContentViewCreatorPreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
 
@@ -298,5 +318,6 @@ internal fun PollContentViewCreatorEndedPreview() = ElementPreview {
         onSelectAnswer = { _, _ -> },
         onEditPoll = {},
         onEndPoll = {},
+        onViewVotes = null,
     )
 }
