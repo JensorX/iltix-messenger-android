@@ -76,15 +76,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APKs
+      - name: Build release APKs
         working-directory: workspace
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleGplayIxDebug
-
-      - name: Build release APKs
-        working-directory: workspace
-        run: ./gradlew :app:assembleGplayIxRelease
+          ./gradlew :app:assembleGplayIxRelease
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4

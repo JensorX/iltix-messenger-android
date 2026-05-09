@@ -197,15 +197,17 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         )
 
         // Add Iltix dependencies in the else branch (non-enterprise)
-        engine.insertAfterLine(
+        // Replace the unconditional appicon.element with flavor-specific deps
+        engine.replaceText(
             path,
-            """implementation\(projects\.features\.enterprise\.implFoss\)""",
-            """        implementation(projects.iltix.theme)
+            """implementation(projects.features.enterprise.implFoss)
+        implementation(projects.appicon.element)""",
+            """implementation(projects.features.enterprise.implFoss)
+        implementation(projects.iltix.theme)
         "elementImplementation"(projects.appicon.element)
         "ixImplementation"(projects.appicon.iltix)
         "ixImplementation"(projects.iltix.lib)
-        "ixImplementation"(projects.iltix.components)""",
-            "app/build.gradle.kts: Iltix dependencies"
+        "ixImplementation"(projects.iltix.components)"""
         )
     }
 
@@ -322,6 +324,10 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         engine.addGradleDependency(
             "features/preferences/impl/build.gradle.kts",
             "implementation(projects.iltix.lib)"
+        )
+        engine.addGradleDependency(
+            "features/preferences/impl/build.gradle.kts",
+            "implementation(projects.iltix.components)"
         )
     }
 
