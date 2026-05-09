@@ -35,7 +35,9 @@ class PatchEngine(private val workspace: File) {
         val content = file.readText()
         val importStatement = "import $import"
 
-        if (content.contains(importStatement)) {
+        // Use whole-line match to avoid substring false positives
+        // (e.g. "remember" matching "rememberCoroutineScope")
+        if (content.lines().any { it.trim() == importStatement }) {
             results.add(PatchResult(relativePath, "addImport($import)", true, "Already present"))
             return
         }
