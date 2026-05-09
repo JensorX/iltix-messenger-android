@@ -8,7 +8,7 @@ on:
         required: false
         type: string
   push:
-    branches: [main]
+    branches: [main, patch-rework]
     paths:
       - 'overlay/**'
       - 'patcher/**'
@@ -95,7 +95,7 @@ jobs:
   release:
     name: Create Release
     needs: build
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
