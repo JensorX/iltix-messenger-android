@@ -115,3 +115,9 @@ lint/tmp/
 .DS_Store
 
 checkouts/**
+
+# Iltix patcher workspace (generated from upstream + patches)
+workspace/
+.upstream-cache/
+patcher/build/
+patcher/.gradle/
