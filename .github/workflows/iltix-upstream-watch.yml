@@ -1,0 +1,82 @@
+name: Upstream Watch
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Daily at 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check for new upstream releases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read current pinned tag
+        id: current
+        run: |
+          TAG=$(grep '^UPSTREAM_TAG=' iltix.upstream.properties | cut -d= -f2)
+          REPO=$(grep '^UPSTREAM_REPO=' iltix.upstream.properties | cut -d= -f2)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch latest upstream tag
+        id: latest
+        run: |
+          LATEST=$(curl -s "https://api.github.com/repos/${{ steps.current.outputs.repo }}/releases/latest" | jq -r '.tag_name')
+          echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Compare tags
+        id: compare
+        run: |
+          if [ "${{ steps.current.outputs.tag }}" != "${{ steps.latest.outputs.tag }}" ]; then
+            echo "new_version=true" >> "$GITHUB_OUTPUT"
+            echo "New upstream version available: ${{ steps.latest.outputs.tag }} (current: ${{ steps.current.outputs.tag }})"
+          else
+            echo "new_version=false" >> "$GITHUB_OUTPUT"
+            echo "Already on latest: ${{ steps.current.outputs.tag }}"
+          fi
+
+      - name: Create issue for new version
+        if: steps.compare.outputs.new_version == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = '${{ steps.current.outputs.tag }}';
+            const latest = '${{ steps.latest.outputs.tag }}';
+            const repo = '${{ steps.current.outputs.repo }}';
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'upstream-update',
+            });
+            const existing = issues.data.find(i => i.title.includes(latest));
+            if (existing) {
+              console.log(`Issue already exists: #${existing.number}`);
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Upstream update available: ${latest}`,
+              body: [
+                `A new upstream Element X Android release is available.`,
+                ``,
+                `- **Current:** \`${current}\``,
+                `- **Latest:** \`${latest}\``,
+                `- **Release:** https://github.com/${repo}/releases/tag/${latest}`,
+                ``,
+                `### Steps`,
+                `1. Update \`UPSTREAM_TAG=${latest}\` in \`iltix.upstream.properties\``,
+                `2. Run \`./scripts/setup-workspace.sh\` locally to test`,
+                `3. Fix any broken patches (check PatchVerifier output)`,
+                `4. Commit and push`,
+              ].join('\n'),
+              labels: ['upstream-update'],
+            });

@@ -1,0 +1,114 @@
+name: Iltix Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: 'Upstream Element X tag to build against (e.g. v26.05.0). Leave empty to use iltix.upstream.properties.'
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'overlay/**'
+      - 'patcher/**'
+      - 'iltix.upstream.properties'
+      - '.github/workflows/iltix-build.yml'
+
+concurrency:
+  group: iltix-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false"
+
+jobs:
+  build:
+    name: Build Iltix APKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      upstream_tag: ${{ steps.config.outputs.tag }}
+
+    steps:
+      - name: Checkout Iltix repo
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Read upstream config
+        id: config
+        run: |
+          if [ -n "${{ inputs.upstream_tag }}" ]; then
+            echo "tag=${{ inputs.upstream_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            TAG=$(grep '^UPSTREAM_TAG=' iltix.upstream.properties | cut -d= -f2)
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+          REPO=$(grep '^UPSTREAM_REPO=' iltix.upstream.properties | cut -d= -f2)
+          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+
+      - name: Cache upstream source
+        uses: actions/cache@v4
+        with:
+          path: .upstream-cache/${{ steps.config.outputs.tag }}
+          key: upstream-${{ steps.config.outputs.tag }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build patcher
+        working-directory: patcher
+        run: ./gradlew jar --quiet
+
+      - name: Run patcher
+        run: |
+          java -jar patcher/build/libs/iltix-patcher-1.0.0.jar \
+            --root "$GITHUB_WORKSPACE" \
+            --upstream-tag "${{ steps.config.outputs.tag }}"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APKs
+        working-directory: workspace
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleGplayIxRelease
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: iltix-apks-${{ steps.config.outputs.tag }}
+          path: |
+            workspace/app/build/outputs/apk/gplayIx/**/*.apk
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APKs
+        uses: actions/download-artifact@v4
+        with:
+          name: iltix-apks-${{ needs.build.outputs.upstream_tag }}
+          path: apks/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: iltix-${{ needs.build.outputs.upstream_tag }}-${{ github.run_number }}
+          name: "Iltix ${{ needs.build.outputs.upstream_tag }} (#${{ github.run_number }})"
+          files: apks/**/*.apk
+          generate_release_notes: true

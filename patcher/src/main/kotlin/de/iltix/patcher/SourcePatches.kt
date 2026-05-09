@@ -1,0 +1,1817 @@
+package de.iltix.patcher
+
+import java.io.File
+
+/**
+ * Applies all source code patches (Kotlin files) to hook Iltix into upstream Element X.
+ * Each method patches one upstream file with the required Iltix imports and code insertions.
+ *
+ * IMPORTANT: All patterns use regex anchors against stable upstream code structures,
+ * never line numbers. If upstream refactors a file significantly, the patch will fail
+ * loudly (PatchVerifier catches it) rather than silently corrupting code.
+ */
+class SourcePatches(private val engine: PatchEngine) {
+
+    fun applyAll() {
+        println("\n--- Applying source patches ---")
+        patchMainActivity()
+        patchLoggedInFlowNode()
+        patchHomeView()
+        patchRoomListPresenter()
+        patchRoomSummaryRow()
+        patchRoomListContentView()
+        patchMessagesView()
+        patchMessageComposerEvent()
+        patchMessageComposerState()
+        patchMessageComposerStateProvider()
+        patchMessageComposerPresenter()
+        patchMessageComposerView()
+        patchTextComposer()
+        patchMessagesViewTopBar()
+        patchThreadTopBar()
+        patchTimelineItemEventRow()
+        patchMessageEventBubble()
+        patchTimelineItemVoiceView()
+        patchTimelineItemPollView()
+        patchRoomDetailsPresenter()
+        patchRoomDetailsView()
+        patchUserProfileView()
+        patchNotificationCreator()
+        patchNotificationChannels()
+        patchFetchPendingNotificationsWorker()
+        patchSenderName()
+        patchPreferencesFlowNode()
+        patchPreferencesRootNode()
+        patchPreferencesRootView()
+        patchMarkdownTextEditorState()
+        patchTextEditorState()
+
+        val results = engine.getResults()
+        val failures = engine.failedResults()
+        println("  Source patches: ${results.size - failures.size} succeeded, ${failures.size} failed")
+        if (failures.isNotEmpty()) {
+            failures.forEach { println("    ✗ ${it.file}: ${it.operation} — ${it.message}") }
+        }
+    }
+
+    // ===== Theme hooks =====
+
+    private fun patchMainActivity() {
+        val path = "app/src/main/kotlin/io/element/android/x/MainActivity.kt"
+        engine.addImport(path, "de.iltix.theme.IxElementThemeApp")
+        engine.replaceText(path, "ElementThemeApp(", "IxElementThemeApp(")
+    }
+
+    private fun patchLoggedInFlowNode() {
+        val path = "appnav/src/main/kotlin/io/element/android/appnav/LoggedInFlowNode.kt"
+        engine.addImport(path, "de.iltix.theme.IxElementThemeApp")
+        engine.replaceText(path, "ElementThemeApp(", "IxElementThemeApp(")
+    }
+
+    // ===== Home hooks =====
+
+    private fun patchHomeView() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/HomeView.kt"
+        engine.addImport(path, "de.iltix.home.IxHomeChatsContent")
+        engine.addImport(path, "de.iltix.home.rememberIxHomeUiConfig")
+
+        // Insert IxHomeUiConfig initialization after the roomListState declaration
+        engine.insertAfterLine(
+            path,
+            """val roomListState.*=.*\.roomListState""",
+            """
+    val ixHomeUi = rememberIxHomeUiConfig(
+        currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+        roomListState = roomListState,
+    )
+    val showBottomBar = !ixHomeUi.shouldShowIxSpaceNav""",
+            "HomeView: ixHomeUi initialization"
+        )
+
+        // Replace contentPadding bottom value with Iltix-aware value
+        engine.replaceText(
+            path,
+            "bottom = 96.dp,",
+            "bottom = if (ixHomeUi.shouldShowIxSpaceNav) 168.dp else 96.dp,"
+        )
+
+        // Replace entire RoomListContentView call (including modifier block) with IxHomeChatsContent
+        engine.replaceText(
+            path,
+            """RoomListContentView(
+                        contentState = roomListState.contentState,
+                        filtersState = roomListState.filtersState,
+                        spaceFiltersState = roomListState.spaceFiltersState,
+                        lazyListState = roomsLazyListState,
+                        hideInvitesAvatars = roomListState.hideInvitesAvatars,
+                        eventSink = roomListState.eventSink,
+                        onSetUpRecoveryClick = onSetUpRecoveryClick,
+                        onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
+                        onRoomClick = ::onRoomClick,
+                        onCreateRoomClick = onStartChatClick,
+                        contentPadding = contentPadding,
+                        modifier = Modifier
+                            .padding(
+                                PaddingValues(
+                                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
+                                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
+                                    // Remove these two lines once https://issuetracker.google.com/issues/436432313 has been fixed
+                                    bottom = padding.calculateBottomPadding(),
+                                    top = padding.calculateTopPadding()
+                                )
+                            )
+                            .consumeWindowInsets(padding)
+                            .hazeSource(state = hazeState)
+                    )""",
+            """IxHomeChatsContent(
+                        roomListState = roomListState,
+                        roomsLazyListState = roomsLazyListState,
+                        outerPadding = padding,
+                        contentPadding = contentPadding,
+                        hazeState = hazeState,
+                        shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,
+                        showNavigationBar = true,
+                        onSetUpRecoveryClick = onSetUpRecoveryClick,
+                        onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
+                        onRoomClick = ::onRoomClick,
+                        onOpenSpace = onRoomClick,
+                        onCreateRoomClick = onStartChatClick,
+                    )"""
+        )
+    }
+
+    private fun patchRoomListPresenter() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
+        engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+
+        // Add IxRoomPrefsSource constructor parameter
+        engine.replaceText(
+            path,
+            """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
+) : Presenter<RoomListState> {""",
+            """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
+    private val ixRoomPrefsSource: IxRoomPrefsSource,
+) : Presenter<RoomListState> {"""
+        )
+
+        // Collect pinFavorites state after collectAsState(false)
+        engine.insertAfterLine(
+            path,
+            """^\s*\}\.collectAsState\(false\)$""",
+            """
+        val pinFavorites by ixRoomPrefsSource.pinFavoritesFlow()
+            .collectAsState(initial = IxPrefs.PIN_FAVORITES.defaultValue)""",
+            "RoomListPresenter: collect pinFavorites"
+        )
+
+        // Add pinFavorites arg to roomListContentState call
+        engine.replaceText(
+            path,
+            """val contentState = roomListContentState(
+            securityBannerDismissed,
+            showNewNotificationSoundBanner,
+        )""",
+            """val contentState = roomListContentState(
+            securityBannerDismissed,
+            showNewNotificationSoundBanner,
+            pinFavorites,
+        )"""
+        )
+
+        // Add pinFavorites parameter to roomListContentState function signature
+        engine.replaceText(
+            path,
+            """    private fun roomListContentState(
+        securityBannerDismissed: Boolean,
+        showNewNotificationSoundBanner: Boolean,
+    ): RoomListContentState {""",
+            """    private fun roomListContentState(
+        securityBannerDismissed: Boolean,
+        showNewNotificationSoundBanner: Boolean,
+        pinFavorites: Boolean,
+    ): RoomListContentState {"""
+        )
+
+        // Pin favorites: partition summaries and replace the summaries assignment
+        engine.replaceText(
+            path,
+            """                summaries = roomSummaries.dataOrNull().orEmpty().toImmutableList(),""",
+            """                summaries = roomSummaries.dataOrNull().orEmpty().let { summaries ->
+                    if (pinFavorites) {
+                        val (favorites, others) = summaries.partition { it.isFavorite }
+                        favorites + others
+                    } else {
+                        summaries
+                    }
+                }.toImmutableList(),"""
+        )
+    }
+
+    private fun patchRoomSummaryRow() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt"
+        engine.addImport(path, "de.iltix.components.badges.IxUnreadBadge")
+        engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
+        engine.addImport(path, "de.iltix.components.roomlist.IxFavoriteStarIcon")
+        engine.addImport(path, "de.iltix.home.rememberIxRoomSummaryConfig")
+
+        // Add rememberIxRoomSummaryConfig in NameAndTimestampRow
+        engine.insertAfterLine(
+            path,
+            """private fun NameAndTimestampRow\(""",
+            """    // Iltix: injected by patcher – needed further below""",
+            "RoomSummaryRow: NameAndTimestampRow comment"
+        )
+
+        // Add isFavorite param to NameAndTimestampRow
+        engine.replaceText(
+            path,
+            """private fun NameAndTimestampRow(
+    // Iltix: injected by patcher – needed further below
+    name: String?,
+    timestamp: String?,
+    isHighlighted: Boolean,
+    modifier: Modifier = Modifier
+) {""",
+            """private fun NameAndTimestampRow(
+    name: String?,
+    timestamp: String?,
+    isHighlighted: Boolean,
+    isFavorite: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val roomSummaryConfig = de.iltix.home.rememberIxRoomSummaryConfig()"""
+        )
+
+        // Add IxFavoriteStarIcon after name Text in NameAndTimestampRow (before Timestamp)
+        engine.replaceText(
+            path,
+            """            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
+            fontStyle = FontStyle.Italic.takeIf { name == null },
+            color = ElementTheme.colors.roomListRoomName,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        // Timestamp""",
+            """            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
+            fontStyle = FontStyle.Italic.takeIf { name == null },
+            color = ElementTheme.colors.roomListRoomName,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (roomSummaryConfig.showFavoriteIndicator && isFavorite) {
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(4.dp))
+            IxFavoriteStarIcon()
+        }
+        // Timestamp"""
+        )
+
+        // Pass isFavorite to NameAndTimestampRow from first call site (JOINED/DM type)
+        engine.replaceText(
+            path,
+            """                    NameAndTimestampRow(
+                        name = room.name,
+                        timestamp = room.timestamp,
+                        isHighlighted = room.isHighlighted
+                    )
+                    MessagePreviewAndIndicatorRow(room = room)""",
+            """                    NameAndTimestampRow(
+                        name = room.name,
+                        timestamp = room.timestamp,
+                        isHighlighted = room.isHighlighted,
+                        isFavorite = room.isFavorite,
+                    )
+                    MessagePreviewAndIndicatorRow(room = room)"""
+        )
+
+        // Replace the UnreadIndicatorAtom with conditional IxUnreadBadge
+        engine.replaceText(
+            path,
+            """            if (room.hasNewContent) {
+                val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
+                UnreadIndicatorAtom(
+                    color = tint,
+                    contentDescription = contentDescription,
+                )
+            }""",
+            """            if (room.hasNewContent) {
+                val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
+                val roomSummaryConfig = rememberIxRoomSummaryConfig()
+                if (roomSummaryConfig.showUnreadCountBadge && room.numberOfUnreadMessages > 0) {
+                    IxUnreadBadge(
+                        count = room.numberOfUnreadMessages,
+                        backgroundColor = tint,
+                        contentDescription = contentDescription,
+                    )
+                } else {
+                    UnreadIndicatorAtom(
+                        color = tint,
+                        contentDescription = contentDescription,
+                    )
+                }
+            }"""
+        )
+    }
+
+    private fun patchRoomListContentView() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomListContentView.kt"
+        engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.runtime.remember")
+        engine.addImport(path, "de.iltix.components.roomlist.IxCardRoomWrapper")
+
+        // Insert IxPreferencesStore + card rows pref at the start of RoomsViewList body
+        engine.replaceText(
+            path,
+            """    modifier: Modifier = Modifier,
+) {
+    OnVisibleRangeChangeEffect""",
+            """    modifier: Modifier = Modifier,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val ixPreferencesStore = remember(context) {
+        de.iltix.lib.preferences.IxPreferencesStore(context)
+    }
+    val useCardRows by ixPreferencesStore
+        .settingFlow(de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS)
+        .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS.defaultValue)
+
+    OnVisibleRangeChangeEffect"""
+        )
+
+        // Wrap RoomSummaryRow in IxCardRoomWrapper and remove HorizontalDivider
+        engine.replaceText(
+            path,
+            """        ) { index, room ->
+            RoomSummaryRow(
+                room = room,
+                hideInviteAvatars = hideInvitesAvatars,
+                isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
+                    state.seenRoomInvites.contains(room.roomId),
+                onClick = onRoomClick,
+                eventSink = eventSink,
+            )
+            if (index != state.summaries.lastIndex) {
+                HorizontalDivider()
+            }""",
+            """        ) { _, room ->
+            val rowContent = @Composable {
+                RoomSummaryRow(
+                    room = room,
+                    hideInviteAvatars = hideInvitesAvatars,
+                    isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
+                        state.seenRoomInvites.contains(room.roomId),
+                    onClick = onRoomClick,
+                    eventSink = eventSink,
+                )
+            }
+            if (useCardRows) {
+                IxCardRoomWrapper { rowContent() }
+            } else {
+                rowContent()
+            }"""
+        )
+    }
+
+    // ===== Messages hooks =====
+
+    private fun patchMessagesView() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesView.kt"
+        engine.addImport(path, "androidx.activity.compose.BackHandler")
+        engine.addImport(path, "androidx.compose.foundation.layout.Column")
+        engine.addImport(path, "androidx.compose.foundation.layout.fillMaxWidth")
+        engine.addImport(path, "androidx.compose.ui.Modifier")
+        engine.addImport(path, "de.iltix.messages.IxEmojiKeyboardPanel")
+        engine.addImport(path, "de.iltix.messages.rememberIxEmojiPanelState")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
+
+        // Insert emoji panel state after maxComposerHeightPx
+        engine.insertAfterLine(
+            path,
+            """var maxComposerHeightPx by remember \{ mutableIntStateOf\(120\) \}""",
+            """
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val emojiPanelState = rememberIxEmojiPanelState(
+        composerState = state.composerState,
+        isIltixBuild = isIltixBuild,
+    )""",
+            "MessagesView: emoji panel state init"
+        )
+
+        // Insert BackHandler before expandableState
+        engine.insertBeforeLine(
+            path,
+            """val expandableState = rememberExpandableBottomSheetLayoutState\(\)""",
+            """    BackHandler(enabled = emojiPanelState.showEmojiPanel) {
+        emojiPanelState.hideEmojiPanel()
+    }
+
+""",
+            "MessagesView: BackHandler for emoji panel"
+        )
+
+        // Wrap ExpandableBottomSheetLayout in Column and modify imePadding
+        engine.replaceText(
+            path,
+            """    ExpandableBottomSheetLayout(
+        modifier = modifier
+            .fillMaxSize()
+            .imePadding()
+            .systemBarsPadding()""",
+            """    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
+    ExpandableBottomSheetLayout(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() }"""
+        )
+
+        // Add isRoomEncrypted to MessagesViewTopBar call
+        engine.replaceText(
+            path,
+            """                        MessagesViewTopBar(
+                            roomName = state.roomName,
+                            roomAvatar = state.roomAvatar,
+                            isTombstoned = state.isTombstoned,
+                            heroes = state.heroes,""",
+            """                        MessagesViewTopBar(
+                            roomName = state.roomName,
+                            roomAvatar = state.roomAvatar,
+                            isTombstoned = state.isTombstoned,
+                            isRoomEncrypted = state.composerState.textEditorState.isRoomEncrypted,
+                            heroes = state.heroes,"""
+        )
+
+        // Close ExpandableBottomSheetLayout and add IxEmojiKeyboardPanel + close Column
+        engine.replaceText(
+            path,
+            """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
+    )
+
+    var endPollConfirmingEvent""",
+            """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
+    )
+
+    if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled && state.composerState.emojibaseStore != null) {
+        IxEmojiKeyboardPanel(
+            emojibaseStore = state.composerState.emojibaseStore,
+            recentEmojis = state.composerState.recentEmojis,
+            panelHeight = emojiPanelState.panelHeight,
+            onSelectEmoji = { emoji ->
+                state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji))
+            },
+        )
+    }
+    } // end Column
+
+    var endPollConfirmingEvent"""
+        )
+
+        // Add showEmojiButton/showEmojiPanel/onToggleEmojiPanel to MessageComposerView call (inside MessagesViewComposerBottomSheetContents)
+        engine.replaceText(
+            path,
+            """                    MessageComposerView(
+                        state = state.composerState,
+                        voiceMessageState = state.voiceMessageComposerState,
+                        modifier = Modifier.fillMaxWidth(),
+                    )""",
+            """                    MessageComposerView(
+                        state = state.composerState,
+                        voiceMessageState = state.voiceMessageComposerState,
+                        showEmojiButton = showEmojiButton,
+                        showEmojiPanel = showEmojiPanel,
+                        onToggleEmojiPanel = onToggleEmojiPanel,
+                        modifier = Modifier.fillMaxWidth(),
+                    )"""
+        )
+
+        // Add emoji params to MessagesViewComposerBottomSheetContents signature
+        engine.replaceText(
+            path,
+            """private fun MessagesViewComposerBottomSheetContents(
+    state: MessagesState,
+    onRoomSuccessorClick: (RoomId) -> Unit,
+    onLinkClick: (String, Boolean) -> Unit,
+)""",
+            """private fun MessagesViewComposerBottomSheetContents(
+    state: MessagesState,
+    onRoomSuccessorClick: (RoomId) -> Unit,
+    onLinkClick: (String, Boolean) -> Unit,
+    showEmojiButton: Boolean = false,
+    showEmojiPanel: Boolean = false,
+    onToggleEmojiPanel: () -> Unit = {},
+)"""
+        )
+
+        // Pass emoji params from MessagesViewComposerBottomSheetContents call site
+        engine.replaceText(
+            path,
+            """            MessagesViewComposerBottomSheetContents(
+                state = state,
+                onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
+                onRoomSuccessorClick = { roomId ->
+                    state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
+                },
+            )""",
+            """            MessagesViewComposerBottomSheetContents(
+                state = state,
+                onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
+                onRoomSuccessorClick = { roomId ->
+                    state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
+                },
+                showEmojiButton = emojiPanelState.showEmojiButton,
+                showEmojiPanel = emojiPanelState.showEmojiPanel,
+                onToggleEmojiPanel = emojiPanelState.onToggleEmojiPanel,
+            )"""
+        )
+    }
+
+    private fun patchMessageComposerEvent() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerEvent.kt"
+        // Add InsertEmoji event
+        engine.replaceText(
+            path,
+            """    data object SaveDraft : MessageComposerEvent
+    data object ClearSlashError : MessageComposerEvent""",
+            """    data class InsertEmoji(val emoji: String) : MessageComposerEvent
+    data object SaveDraft : MessageComposerEvent
+    data object ClearSlashError : MessageComposerEvent"""
+        )
+    }
+
+    private fun patchMessageComposerState() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerState.kt"
+        engine.addImport(path, "io.element.android.emojibasebindings.EmojibaseStore")
+
+        // Add emojibaseStore and recentEmojis fields
+        engine.replaceText(
+            path,
+            """    val canShareLocation: Boolean,
+    val suggestions: ImmutableList<ResolvedSuggestion>,""",
+            """    val canShareLocation: Boolean,
+    val emojibaseStore: EmojibaseStore?,
+    val recentEmojis: ImmutableList<String>,
+    val suggestions: ImmutableList<ResolvedSuggestion>,"""
+        )
+    }
+
+    private fun patchMessageComposerStateProvider() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerStateProvider.kt"
+        engine.addImport(path, "kotlinx.collections.immutable.ImmutableList")
+
+        // Add default params to aMessageComposerState function
+        engine.replaceText(
+            path,
+            """    canShareLocation: Boolean = true,
+    suggestions: ImmutableList<ResolvedSuggestion> = persistentListOf(),""",
+            """    canShareLocation: Boolean = true,
+    recentEmojis: ImmutableList<String> = persistentListOf(),
+    suggestions: ImmutableList<ResolvedSuggestion> = persistentListOf(),"""
+        )
+
+        // Add fields to MessageComposerState constructor call
+        engine.replaceText(
+            path,
+            """    canShareLocation = canShareLocation,
+    suggestions = suggestions,""",
+            """    canShareLocation = canShareLocation,
+    emojibaseStore = null,
+    recentEmojis = recentEmojis,
+    suggestions = suggestions,"""
+        )
+    }
+
+    private fun patchMessageComposerPresenter() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerPresenter.kt"
+        engine.addImport(path, "io.element.android.libraries.recentemojis.api.AddRecentEmoji")
+        engine.addImport(path, "io.element.android.libraries.recentemojis.api.EmojibaseProvider")
+        engine.addImport(path, "io.element.android.libraries.recentemojis.api.GetRecentEmojis")
+        engine.addImport(path, "kotlinx.collections.immutable.toPersistentList")
+
+        // Add constructor params before slashCommandService
+        engine.replaceText(
+            path,
+            """    private val suggestionsProcessor: SuggestionsProcessor,
+    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val notificationConversationService: NotificationConversationService,
+    private val slashCommandService: SlashCommandService,""",
+            """    private val suggestionsProcessor: SuggestionsProcessor,
+    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val notificationConversationService: NotificationConversationService,
+    private val emojibaseProvider: EmojibaseProvider,
+    private val getRecentEmojis: GetRecentEmojis,
+    private val addRecentEmoji: AddRecentEmoji,
+    private val slashCommandService: SlashCommandService,"""
+        )
+
+        // Add recentEmojis state var + LaunchedEffect after sendTypingNotifications
+        engine.replaceText(
+            path,
+            """        val sendTypingNotifications by remember {
+            sessionPreferencesStore.isSendTypingNotificationsEnabled()
+        }.collectAsState(initial = true)
+
+        LaunchedEffect(cameraPermissionState.permissionGranted) {""",
+            """        val sendTypingNotifications by remember {
+            sessionPreferencesStore.isSendTypingNotificationsEnabled()
+        }.collectAsState(initial = true)
+
+        var recentEmojis by remember { mutableStateOf(persistentListOf<String>()) }
+
+        LaunchedEffect(Unit) {
+            recentEmojis = getRecentEmojis().getOrNull()?.toPersistentList() ?: persistentListOf()
+        }
+
+        LaunchedEffect(cameraPermissionState.permissionGranted) {"""
+        )
+
+        // Add InsertEmoji event handling before SaveDraft
+        engine.replaceText(
+            path,
+            """                MessageComposerEvent.SaveDraft -> {""",
+            """                is MessageComposerEvent.InsertEmoji -> {
+                    localCoroutineScope.launch {
+                        textEditorState.insertText(event.emoji)
+                        textEditorState.requestFocus()
+                        addRecentEmoji(event.emoji)
+                        recentEmojis = (listOf(event.emoji) + recentEmojis).distinct().toPersistentList()
+                    }
+                }
+                MessageComposerEvent.SaveDraft -> {"""
+        )
+
+        // Add emojibaseStore and recentEmojis to state return
+        engine.replaceText(
+            path,
+            """            canShareLocation = canShareLocation.value,
+            suggestions = suggestions.toImmutableList(),""",
+            """            canShareLocation = canShareLocation.value,
+            emojibaseStore = emojibaseProvider.emojibaseStore,
+            recentEmojis = recentEmojis,
+            suggestions = suggestions.toImmutableList(),"""
+        )
+    }
+
+    private fun patchMessageComposerView() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerView.kt"
+        engine.addImport(path, "androidx.compose.foundation.layout.size")
+        engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.runtime.getValue")
+        engine.addImport(path, "androidx.compose.runtime.mutableStateOf")
+        engine.addImport(path, "androidx.compose.runtime.remember")
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "io.element.android.compound.tokens.generated.CompoundIcons")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.components.Icon")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.components.IconButton")
+
+        // Add emoji + unencrypted params to MessageComposerView signature
+        engine.replaceText(
+            path,
+            """internal fun MessageComposerView(
+    state: MessageComposerState,
+    voiceMessageState: VoiceMessageComposerState,
+    modifier: Modifier = Modifier,
+) {
+    val view = LocalView.current""",
+            """internal fun MessageComposerView(
+    state: MessageComposerState,
+    voiceMessageState: VoiceMessageComposerState,
+    showEmojiButton: Boolean = false,
+    showEmojiPanel: Boolean = false,
+    onToggleEmojiPanel: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val view = LocalView.current
+
+    val context = LocalContext.current.applicationContext
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val ixPreferencesStore = remember(isIltixBuild, context) {
+        if (isIltixBuild) IxPreferencesStore(context) else null
+    }
+    val moveUnencryptedIndicatorToTopBar by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
+    }?.collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }"""
+        )
+
+        // Add showNotEncryptedBadge + extraLeadingContent to TextComposer call
+        engine.replaceText(
+            path,
+            """        onSelectRichContent = ::sendUri,
+    )""",
+            """        onSelectRichContent = ::sendUri,
+        showNotEncryptedBadge = !moveUnencryptedIndicatorToTopBar,
+        extraLeadingContent = if (showEmojiButton) {
+            {
+                IconButton(modifier = Modifier.size(48.dp), onClick = onToggleEmojiPanel) {
+                    Icon(
+                        imageVector = if (showEmojiPanel) CompoundIcons.Keyboard() else CompoundIcons.ReactionAdd(),
+                        contentDescription = null,
+                    )
+                }
+            }
+        } else { null },
+    )"""
+        )
+    }
+
+    private fun patchTextComposer() {
+        val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/TextComposer.kt"
+
+        // Add showNotEncryptedBadge and extraLeadingContent params to TextComposer signature
+        engine.replaceText(
+            path,
+            """    modifier: Modifier = Modifier,
+    showTextFormatting: Boolean = false,
+) {""",
+            """    modifier: Modifier = Modifier,
+    showTextFormatting: Boolean = false,
+    showNotEncryptedBadge: Boolean = true,
+    extraLeadingContent: (@Composable () -> Unit)? = null,
+) {"""
+        )
+
+        // Pass showNotEncryptedBadge to TextFormattingLayout
+        engine.replaceText(
+            path,
+            """        TextFormattingLayout(
+            modifier = layoutModifier,
+            isRoomEncrypted = state.isRoomEncrypted,
+            textInput = textInput,""",
+            """        TextFormattingLayout(
+            modifier = layoutModifier,
+            isRoomEncrypted = state.isRoomEncrypted,
+            showNotEncryptedBadge = showNotEncryptedBadge,
+            textInput = textInput,"""
+        )
+
+        // Pass showNotEncryptedBadge to StandardLayout
+        engine.replaceText(
+            path,
+            """            composerMode = composerMode,
+            voiceMessageState = voiceMessageState,
+            isRoomEncrypted = state.isRoomEncrypted,
+            modifier = layoutModifier,""",
+            """            composerMode = composerMode,
+            voiceMessageState = voiceMessageState,
+            isRoomEncrypted = state.isRoomEncrypted,
+            showNotEncryptedBadge = showNotEncryptedBadge,
+            modifier = layoutModifier,"""
+        )
+
+        // Pass extraLeadingContent to StandardLayout (after onResetComposerMode line)
+        engine.replaceText(
+            path,
+            """            onVoiceRecorderEvent = onVoiceRecorderEvent,
+            onResetComposerMode = onResetComposerMode,
+        )
+    }
+
+    SoftKeyboardEffect""",
+            """            onVoiceRecorderEvent = onVoiceRecorderEvent,
+            onResetComposerMode = onResetComposerMode,
+            extraLeadingContent = extraLeadingContent,
+        )
+    }
+
+    SoftKeyboardEffect"""
+        )
+
+        // Add showNotEncryptedBadge param to StandardLayout signature
+        engine.replaceText(
+            path,
+            """private fun StandardLayout(
+    composerMode: MessageComposerMode,
+    voiceMessageState: VoiceMessageState,
+    isRoomEncrypted: Boolean?,
+    textInput: @Composable () -> Unit,""",
+            """private fun StandardLayout(
+    composerMode: MessageComposerMode,
+    voiceMessageState: VoiceMessageState,
+    isRoomEncrypted: Boolean?,
+    showNotEncryptedBadge: Boolean,
+    textInput: @Composable () -> Unit,"""
+        )
+
+        // Add extraLeadingContent param to StandardLayout signature (after onResetComposerMode)
+        engine.replaceText(
+            path,
+            """    onResetComposerMode: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        if (isRoomEncrypted == false) {""",
+            """    onResetComposerMode: () -> Unit,
+    modifier: Modifier = Modifier,
+    extraLeadingContent: (@Composable () -> Unit)? = null,
+) {
+    Column(modifier = modifier) {
+        if (showNotEncryptedBadge && isRoomEncrypted == false) {"""
+        )
+
+        // Add extraLeadingContent rendering after the attachment/voice button block
+        engine.replaceText(
+            path,
+            """                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 8.dp, top = 8.dp)""",
+            """                    }
+                }
+            }
+            if (extraLeadingContent != null && voiceMessageState is VoiceMessageState.Idle) {
+                Box(
+                    modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                ) {
+                    extraLeadingContent()
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 8.dp, top = 8.dp)"""
+        )
+
+        // Add showNotEncryptedBadge to TextFormattingLayout signature
+        engine.replaceText(
+            path,
+            """private fun TextFormattingLayout(
+    isRoomEncrypted: Boolean?,
+    textInput: @Composable () -> Unit,""",
+            """private fun TextFormattingLayout(
+    isRoomEncrypted: Boolean?,
+    showNotEncryptedBadge: Boolean,
+    textInput: @Composable () -> Unit,"""
+        )
+
+        // Modify TextFormattingLayout's encrypted check
+        engine.replaceText(
+            path,
+            """    ) {
+        if (isRoomEncrypted == false) {
+            NotEncryptedBadge()
+            Spacer(Modifier.height(8.dp))
+        }""",
+            """    ) {
+        if (showNotEncryptedBadge && isRoomEncrypted == false) {
+            NotEncryptedBadge()
+            Spacer(Modifier.height(8.dp))
+        }"""
+        )
+    }
+
+    private fun patchMessagesViewTopBar() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/topbars/MessagesViewTopBar.kt"
+        engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "androidx.compose.material3.TopAppBarDefaults")
+        engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.runtime.getValue")
+        engine.addImport(path, "androidx.compose.runtime.mutableStateOf")
+        engine.addImport(path, "androidx.compose.runtime.remember")
+        engine.addImport(path, "androidx.compose.ui.graphics.Color")
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
+
+        // Add isRoomEncrypted param to MessagesViewTopBar signature
+        engine.replaceText(
+            path,
+            """    isTombstoned: Boolean,
+    heroes: ImmutableList<AvatarData>,""",
+            """    isTombstoned: Boolean,
+    isRoomEncrypted: Boolean? = null,
+    heroes: ImmutableList<AvatarData>,"""
+        )
+
+        // Insert IxPreferencesStore + theme + unencrypted prefs before TopAppBar(
+        engine.replaceText(
+            path,
+            """    menuActions: @Composable RowScope.() -> Unit,
+) {
+    TopAppBar(
+        modifier = modifier,""",
+            """    menuActions: @Composable RowScope.() -> Unit,
+) {
+    val context = LocalContext.current.applicationContext
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val ixPreferencesStore = remember(isIltixBuild, context) {
+        if (isIltixBuild) IxPreferencesStore(context) else null
+    }
+    val useIltixTheme by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME)
+    }?.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }
+    val moveUnencryptedIndicatorToTopBar by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
+    }?.collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }
+
+    TopAppBar(
+        modifier = modifier,"""
+        )
+
+        // Add TopAppBar colors before windowInsets
+        engine.replaceText(
+            path,
+            """        actions = menuActions,
+        windowInsets = WindowInsets(0.dp)""",
+            """        actions = menuActions,
+        colors = if (useIltixTheme) {
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            )
+        } else {
+            TopAppBarDefaults.topAppBarColors()
+        },
+        windowInsets = WindowInsets(0.dp)"""
+        )
+
+        // Add nickname resolution in RoomAvatarAndNameRow
+        engine.replaceText(
+            path,
+            """    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Avatar(
+            avatarData = roomAvatar,
+            avatarType = AvatarType.Room(
+                heroes = heroes,
+                isTombstoned = isTombstoned,
+            ),
+        )
+        Text(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .semantics {
+                    heading()
+                },
+            text = roomName ?: stringResource(CommonStrings.common_no_room_name),
+            style = ElementTheme.typography.fontBodyLgMedium,
+            fontStyle = FontStyle.Italic.takeIf { roomName == null },""",
+            """    modifier: Modifier = Modifier
+) {
+    val localNicknameUserId = heroes.singleOrNull()?.id
+    val resolvedRoomName = rememberIxResolvedDisplayName(userId = localNicknameUserId, fallbackName = roomName)
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Avatar(
+            avatarData = roomAvatar,
+            avatarType = AvatarType.Room(
+                heroes = heroes,
+                isTombstoned = isTombstoned,
+            ),
+        )
+        Text(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .semantics {
+                    heading()
+                },
+            text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+            style = ElementTheme.typography.fontBodyLgMedium,
+            fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
+        )
+
+        // Add lock icon for unencrypted rooms before iconModifier
+        engine.replaceText(
+            path,
+            """                val iconModifier = Modifier.size(16.dp)
+
+                when (dmUserIdentityState) {""",
+            """                if (moveUnencryptedIndicatorToTopBar && isRoomEncrypted == false) {
+                    Icon(
+                        modifier = Modifier.size(16.dp),
+                        imageVector = CompoundIcons.LockOff(),
+                        tint = ElementTheme.colors.iconSecondary,
+                        contentDescription = stringResource(CommonStrings.common_not_encrypted),
+                    )
+                }
+
+                val iconModifier = Modifier.size(16.dp)
+
+                when (dmUserIdentityState) {"""
+        )
+    }
+
+    private fun patchThreadTopBar() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/topbars/ThreadTopBar.kt"
+        engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "androidx.compose.material3.TopAppBarDefaults")
+        engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.runtime.getValue")
+        engine.addImport(path, "androidx.compose.runtime.mutableStateOf")
+        engine.addImport(path, "androidx.compose.runtime.remember")
+        engine.addImport(path, "androidx.compose.ui.graphics.Color")
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
+
+        // Insert IxPreferencesStore + theme + nickname before TopAppBar(
+        engine.replaceText(
+            path,
+            """    modifier: Modifier = Modifier,
+) {
+    TopAppBar(
+        modifier = modifier,""",
+            """    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current.applicationContext
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val ixPreferencesStore = remember(isIltixBuild, context) {
+        if (isIltixBuild) IxPreferencesStore(context) else null
+    }
+    val useIltixTheme by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME)
+    }?.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }
+    val resolvedRoomName = rememberIxResolvedDisplayName(userId = null, fallbackName = roomName)
+
+    TopAppBar(
+        modifier = modifier,"""
+        )
+
+        // Replace roomName with resolvedRoomName in the thread subtitle
+        engine.replaceText(
+            path,
+            """                    Text(
+                        text = roomName ?: stringResource(CommonStrings.common_no_room_name),
+                        style = ElementTheme.typography.fontBodySmRegular,
+                        fontStyle = FontStyle.Italic.takeIf { roomName == null },""",
+            """                    Text(
+                        text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+                        style = ElementTheme.typography.fontBodySmRegular,
+                        fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
+        )
+
+        // Add TopAppBar colors before closing paren
+        engine.replaceText(
+            path,
+            """            }
+        }
+    )
+}
+
+@PreviewsDayNight
+@Composable
+internal fun ThreadTopBarPreview""",
+            """            }
+        },
+        colors = if (useIltixTheme) {
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            )
+        } else {
+            TopAppBarDefaults.topAppBarColors()
+        },
+    )
+}
+
+@PreviewsDayNight
+@Composable
+internal fun ThreadTopBarPreview"""
+        )
+    }
+
+    private fun patchTimelineItemEventRow() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/TimelineItemEventRow.kt"
+        engine.addImport(path, "de.iltix.theme.LocalIxBubbleStyle")
+
+        // Replace thread summary backgroundBubbleColor call to pass bubbleStyle
+        engine.replaceText(
+            path,
+            ".background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing))",
+            """.background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing, LocalIxBubbleStyle.current))"""
+        )
+    }
+
+    private fun patchTimelineItemVoiceView() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/event/TimelineItemVoiceView.kt"
+        engine.addImport(path, "de.iltix.messages.IxVoiceMessageBody")
+        engine.addImport(path, "de.iltix.theme.LocalIxBubbleStyle")
+        engine.addImport(path, "de.iltix.messages.IxVoiceMessageView")
+        engine.addImport(path, "de.iltix.messages.rememberIxVoiceMessageUiConfig")
+
+        // Replace the Row body with IxVoiceMessageBody delegate
+        engine.replaceText(
+            path,
+            """    ) {
+        if (!isTalkbackActive()) {
+            when (state.buttonType) {
+                VoiceMessageState.ButtonType.Play -> PlayButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Pause -> PauseButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Downloading -> ProgressButton()
+                VoiceMessageState.ButtonType.Retry -> RetryButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Disabled -> PlayButton(onClick = {}, enabled = false)
+            }
+        }""",
+            """    ) {
+        IxVoiceMessageBody(
+            state = state,
+            content = content,
+            onPlayPause = ::playPause,
+        )
+        if (false && !isTalkbackActive()) { // Iltix: replaced by IxVoiceMessageBody above
+            when (state.buttonType) {
+                VoiceMessageState.ButtonType.Play -> PlayButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Pause -> PauseButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Downloading -> ProgressButton()
+                VoiceMessageState.ButtonType.Retry -> RetryButton(onClick = ::playPause)
+                VoiceMessageState.ButtonType.Disabled -> PlayButton(onClick = {}, enabled = false)
+            }
+        }"""
+        )
+    }
+
+    private fun patchTimelineItemPollView() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/event/TimelineItemPollView.kt"
+        engine.addImport(path, "de.iltix.components.poll.IxPollVoteViewerSheet")
+        engine.addImport(path, "de.iltix.lib.R as IltixR")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "androidx.compose.runtime.mutableStateOf")
+        engine.addImport(path, "androidx.compose.runtime.setValue")
+        engine.addImport(path, "androidx.compose.runtime.getValue")
+        engine.addImport(path, "androidx.compose.runtime.remember")
+        engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "androidx.compose.ui.res.stringResource")
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
+        engine.addImport(path, "io.element.android.libraries.matrix.api.core.UserId")
+
+        // Add Iltix poll vote viewer state before PollContentView
+        engine.replaceText(
+            path,
+            """    PollContentView(
+        eventId = content.eventId,""",
+            """    val context = LocalContext.current.applicationContext
+    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
+    val ixPreferencesStore = remember(isIltixBuild, context) {
+        if (isIltixBuild) IxPreferencesStore(context) else null
+    }
+    val pollVoteViewerEnabled by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.POLL_VOTE_VIEWER)
+    }?.collectAsState(initial = IxPrefs.POLL_VOTE_VIEWER.defaultValue) ?: remember {
+        mutableStateOf(false)
+    }
+    var selectedVotes by remember {
+        mutableStateOf<Pair<String, List<UserId>>?>(null)
+    }
+
+    val viewVotesLabel = if (pollVoteViewerEnabled) {
+        stringResource(id = IltixR.string.iltix_poll_view_votes_button)
+    } else null
+
+    selectedVotes?.let { (answerText, voters) ->
+        IxPollVoteViewerSheet(
+            answerText = answerText,
+            voters = voters,
+            onDismiss = { selectedVotes = null },
+        )
+    }
+
+    PollContentView(
+        eventId = content.eventId,"""
+        )
+    }
+
+    // ===== Room Details hooks =====
+
+    private fun patchRoomDetailsPresenter() {
+        val path = "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsPresenter.kt"
+        engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
+        engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "de.iltix.lib.preferences.IxRoomMediaAutoDownloadStore")
+
+        // Add @ApplicationContext appContext constructor param
+        engine.replaceText(
+            path,
+            """class RoomDetailsPresenter(
+    private val client: MatrixClient,""",
+            """class RoomDetailsPresenter(
+    @io.element.android.libraries.di.annotations.ApplicationContext private val appContext: android.content.Context,
+    private val client: MatrixClient,"""
+        )
+
+        // Initialize stores after rememberCoroutineScope
+        engine.insertAfterLine(
+            path,
+            """val scope = rememberCoroutineScope\(\)""",
+            """        val ixPreferencesStore = remember(appContext) { IxPreferencesStore(appContext) }
+        val roomMediaAutoDownloadStore = remember(appContext) { IxRoomMediaAutoDownloadStore(appContext) }""",
+            "RoomDetailsPresenter: init Iltix stores"
+        )
+
+        // Collect media auto-download settings after roomNotificationSettingsStateFlow
+        engine.insertAfterLine(
+            path,
+            """val roomNotificationSettingsState by room\.roomNotificationSettingsStateFlow\.collectAsState\(\)""",
+            """
+        val isMediaAutoDownloadModuleEnabled by remember(ixPreferencesStore) {
+            ixPreferencesStore.settingFlow(IxPrefs.MEDIA_AUTO_DOWNLOAD)
+        }.collectAsState(initial = IxPrefs.MEDIA_AUTO_DOWNLOAD.defaultValue)
+        val mediaAutoDownloadEnabled by roomMediaAutoDownloadStore.enabledFlow(room.roomId.value).collectAsState(initial = false)""",
+            "RoomDetailsPresenter: collect media auto-download settings"
+        )
+
+        // Add SetMediaAutoDownload event handling
+        engine.insertAfterLine(
+            path,
+            """is RoomDetailsEvent\.SetFavorite -> scope\.setFavorite\(event\.isFavorite\)""",
+            """                is RoomDetailsEvent.SetMediaAutoDownload -> {
+                    scope.launch(dispatchers.io) {
+                        roomMediaAutoDownloadStore.setEnabled(room.roomId.value, event.enabled)
+                    }
+                }""",
+            "RoomDetailsPresenter: handle SetMediaAutoDownload event"
+        )
+
+        // Add media auto-download fields to return state
+        engine.replaceText(
+            path,
+            """            roomHistoryVisibility = roomInfo.historyVisibility,
+            eventSink = ::handleEvent,""",
+            """            roomHistoryVisibility = roomInfo.historyVisibility,
+            isMediaAutoDownloadModuleEnabled = isMediaAutoDownloadModuleEnabled,
+            mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
+            eventSink = ::handleEvent,"""
+        )
+
+        // Patch RoomDetailsEvent to add SetMediaAutoDownload
+        val eventPath = "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsEvent.kt"
+        engine.replaceText(
+            eventPath,
+            """    data class SetFavorite(val isFavorite: Boolean) : RoomDetailsEvent
+}""",
+            """    data class SetFavorite(val isFavorite: Boolean) : RoomDetailsEvent
+    data class SetMediaAutoDownload(val enabled: Boolean) : RoomDetailsEvent
+}"""
+        )
+
+        // Patch RoomDetailsState to add media auto-download fields
+        val statePath = "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsState.kt"
+        engine.replaceText(
+            statePath,
+            """    val roomHistoryVisibility: RoomHistoryVisibility,
+    val eventSink: (RoomDetailsEvent) -> Unit""",
+            """    val roomHistoryVisibility: RoomHistoryVisibility,
+    val isMediaAutoDownloadModuleEnabled: Boolean = false,
+    val mediaAutoDownloadEnabled: Boolean = false,
+    val eventSink: (RoomDetailsEvent) -> Unit"""
+        )
+    }
+
+    private fun patchRoomDetailsView() {
+        val path = "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsView.kt"
+        engine.addImport(path, "de.iltix.lib.R as IltixR")
+
+        // Add media auto-download switch after MediaGalleryItem
+        engine.replaceText(
+            path,
+            """                MediaGalleryItem(
+                    onClick = openMediaGallery
+                )
+            }""",
+            """                MediaGalleryItem(
+                    onClick = openMediaGallery
+                )
+                if (state.isMediaAutoDownloadModuleEnabled) {
+                    PreferenceSwitch(
+                        title = stringResource(id = IltixR.string.iltix_media_auto_download_room_title),
+                        subtitle = stringResource(id = IltixR.string.iltix_media_auto_download_room_subtitle),
+                        isChecked = state.mediaAutoDownloadEnabled,
+                        onCheckedChange = { enabled ->
+                            state.eventSink(RoomDetailsEvent.SetMediaAutoDownload(enabled))
+                        },
+                    )
+                }
+            }"""
+        )
+    }
+
+    // ===== Push/Notification hooks =====
+
+    private fun patchNotificationCreator() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/factories/NotificationCreator.kt"
+        engine.addImport(path, "de.iltix.push.resolveIxNotificationRoute")
+        engine.addImport(path, "de.iltix.push.resolveIxRankingTimestamp")
+        engine.addImport(path, "de.iltix.push.resolveIxSummaryNotificationRoute")
+        engine.addImport(path, "de.iltix.push.resolveIxNotificationSenderName")
+
+        // Add ixNotificationRoute resolution after containsMissedCall
+        engine.replaceText(
+            path,
+            """        val containsMissedCall = events.any { it.type == EventType.RTC_NOTIFICATION }
+        val channelId = if (containsMissedCall) {
+            notificationChannels.getChannelForIncomingCall(false)
+        } else {
+            notificationChannels.getChannelIdForMessage(
+                sessionId = roomInfo.sessionId,
+                noisy = roomInfo.shouldBing,
+            )
+        }""",
+            """        val containsMissedCall = events.any { it.type == EventType.RTC_NOTIFICATION }
+        val ixNotificationRoute = if (containsMissedCall) null else resolveIxNotificationRoute(
+            context = context,
+            buildMeta = buildMeta,
+            roomInfo = roomInfo,
+        )
+        val channelId = if (containsMissedCall) {
+            notificationChannels.getChannelForIncomingCall(false)
+        } else if (ixNotificationRoute != null) {
+            ixNotificationRoute.channelId
+        } else {
+            notificationChannels.getChannelIdForMessage(
+                sessionId = roomInfo.sessionId,
+                noisy = roomInfo.shouldBing,
+            )
+        }"""
+        )
+
+        // Add ranking timestamp
+        engine.replaceText(
+            path,
+            """        messagingStyle.addMessagesFromEvents(events, imageLoader)
+        return builder
+            .setCategory(category)
+            .setNumber(events.size)
+            .setOnlyAlertOnce(roomInfo.isUpdated)
+            .setWhen(lastMessageTimestamp)""",
+            """        val rankingTimestamp = resolveIxRankingTimestamp(
+            baseTimestamp = lastMessageTimestamp,
+            ixRoute = ixNotificationRoute,
+        )
+        messagingStyle.addMessagesFromEvents(events, imageLoader)
+        return builder
+            .setCategory(category)
+            .setNumber(events.size)
+            .setOnlyAlertOnce(if (ixNotificationRoute != null) false else roomInfo.isUpdated)
+            .setWhen(rankingTimestamp)"""
+        )
+
+        // Replace priority block to use Iltix routing
+        engine.replaceText(
+            path,
+            """                if (roomInfo.shouldBing) {
+                    priority = NotificationCompat.PRIORITY_DEFAULT
+                    setLights(notificationAccountParams.color, 500, 500)
+                } else {
+                    priority = NotificationCompat.PRIORITY_LOW
+                }""",
+            """                if (ixNotificationRoute != null) {
+                    priority = ixNotificationRoute.priority
+                    if (ixNotificationRoute.shouldSetLights) {
+                        setLights(notificationAccountParams.color, 500, 500)
+                    }
+                } else if (roomInfo.shouldBing) {
+                    priority = NotificationCompat.PRIORITY_DEFAULT
+                    setLights(notificationAccountParams.color, 500, 500)
+                } else {
+                    priority = NotificationCompat.PRIORITY_LOW
+                }"""
+        )
+
+        // Patch createSummaryListNotification with Iltix routing
+        engine.replaceText(
+            path,
+            """        val userId = notificationAccountParams.user.userId
+        val channelId = notificationChannels.getChannelIdForMessage(
+            sessionId = userId,
+            noisy = noisy,
+        )
+        return NotificationCompat.Builder(context, channelId)
+            .setOnlyAlertOnce(true)
+            // used in compat < N, after summary is built based on child notifications
+            .setWhen(lastMessageTimestamp)""",
+            """        val userId = notificationAccountParams.user.userId
+        val ixSummaryRoute = resolveIxSummaryNotificationRoute(
+            context = context,
+            buildMeta = buildMeta,
+        )
+        val channelId = ixSummaryRoute?.channelId ?: notificationChannels.getChannelIdForMessage(
+            sessionId = userId,
+            noisy = noisy,
+        )
+        val rankingTimestamp = resolveIxRankingTimestamp(
+            baseTimestamp = lastMessageTimestamp,
+            ixRoute = ixSummaryRoute,
+        )
+        return NotificationCompat.Builder(context, channelId)
+            .setOnlyAlertOnce(true)
+            // used in compat < N, after summary is built based on child notifications
+            .setWhen(rankingTimestamp)"""
+        )
+
+        // Replace summary priority block with Iltix routing
+        engine.replaceText(
+            path,
+            """                if (noisy) {
+                    // Compat
+                    priority = NotificationCompat.PRIORITY_DEFAULT
+                    setLights(notificationAccountParams.color, 500, 500)
+                } else {
+                    // compat
+                    priority = NotificationCompat.PRIORITY_LOW
+                }""",
+            """                if (ixSummaryRoute != null) {
+                    priority = ixSummaryRoute.priority
+                    if (ixSummaryRoute.shouldSetLights) {
+                        setLights(notificationAccountParams.color, 500, 500)
+                    }
+                } else if (noisy) {
+                    // Compat
+                    priority = NotificationCompat.PRIORITY_DEFAULT
+                    setLights(notificationAccountParams.color, 500, 500)
+                } else {
+                    // compat
+                    priority = NotificationCompat.PRIORITY_LOW
+                }"""
+        )
+
+        // Replace sender name resolution in addMessagesFromEvents
+        engine.replaceText(
+            path,
+            """                val senderName = event.senderDisambiguatedDisplayName.orEmpty()""",
+            """                val senderName = resolveIxNotificationSenderName(context, buildMeta, event)"""
+        )
+    }
+
+    private fun patchNotificationChannels() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/channels/NotificationChannels.kt"
+        engine.addImport(path, "de.iltix.push.createIxPriorityNotificationChannels")
+
+        // Insert createIxPriorityNotificationChannels between silent and call channel creation
+        engine.replaceText(
+            path,
+            """        // Register a channel for incoming and in progress call notifications with no ringing""",
+            """        createIxPriorityNotificationChannels(
+            context = context,
+            notificationManager = notificationManager,
+            stringProvider = stringProvider,
+            accentColor = accentColor,
+        )
+
+        // Register a channel for incoming and in progress call notifications with no ringing"""
+        )
+    }
+
+    private fun patchFetchPendingNotificationsWorker() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/workmanager/FetchPendingNotificationsWorker.kt"
+        engine.addImport(path, "de.iltix.push.IxMediaAutoDownloadService")
+
+        // Add IxMediaAutoDownloadService constructor param
+        engine.replaceText(
+            path,
+            """    private val resultProcessor: NotificationResultProcessor,
+    private val analyticsService: AnalyticsService,""",
+            """    private val resultProcessor: NotificationResultProcessor,
+    private val ixMediaAutoDownloadService: IxMediaAutoDownloadService,
+    private val analyticsService: AnalyticsService,"""
+        )
+
+        // Call ixMediaAutoDownloadService after resultProcessor.emit
+        engine.replaceText(
+            path,
+            """                    resultProcessor.emit(results)
+
+                    results""",
+            """                    resultProcessor.emit(results)
+                    ixMediaAutoDownloadService.handleResolvedResults(results)
+
+                    results"""
+        )
+    }
+
+    // ===== Matrix UI hooks =====
+
+    private fun patchSenderName() {
+        val path = "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/messages/sender/SenderName.kt"
+        engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
+
+        // Replace sender name with Iltix nickname-resolved name
+        engine.replaceText(
+            path,
+            "val displayName = senderProfile.displayName",
+            """val displayName = rememberIxResolvedDisplayName(
+                    userId = senderId.value,
+                    fallbackName = senderProfile.displayName,
+                ) ?: senderProfile.displayName"""
+        )
+    }
+
+    // ===== Preferences hooks — wire Iltix Modules settings screen =====
+
+    private fun patchPreferencesFlowNode() {
+        val path = "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/PreferencesFlowNode.kt"
+        engine.addImport(path, "de.iltix.preferences.IxModuleSettingsNode")
+
+        // Add NavTarget.IltixModules
+        engine.insertAfterLine(
+            path,
+            """data object Labs : NavTarget""",
+            """
+        @Parcelize
+        data object IltixModules : NavTarget
+""",
+            "PreferencesFlowNode: IltixModules NavTarget"
+        )
+
+        // Add navigateToIltixModules callback in resolve()
+        engine.insertAfterLine(
+            path,
+            """backstack\.push\(NavTarget\.Labs\)""",
+            """                    }
+
+                    override fun navigateToIltixModules() {
+                        backstack.push(NavTarget.IltixModules)""",
+            "PreferencesFlowNode: navigateToIltixModules callback"
+        )
+
+        // Add IltixModules case in resolve() switch
+        engine.insertAfterLine(
+            path,
+            """createNode<LabsNode>\(buildContext, listOf\(callback\)\)""",
+            """            }
+            NavTarget.IltixModules -> {
+                createNode<IxModuleSettingsNode>(buildContext)""",
+            "PreferencesFlowNode: IltixModules resolve case"
+        )
+    }
+
+    private fun patchPreferencesRootNode() {
+        val path = "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootNode.kt"
+
+        // Add navigateToIltixModules to Callback interface
+        engine.insertAfterLine(
+            path,
+            """fun navigateToBlockedUsers\(\)""",
+            """        fun navigateToIltixModules()""",
+            "PreferencesRootNode: navigateToIltixModules in Callback"
+        )
+
+        // Add onOpenIltixModules parameter to PreferencesRootView call
+        engine.insertAfterLine(
+            path,
+            """onOpenBlockedUsers = callback::navigateToBlockedUsers""",
+            """            onOpenIltixModules = callback::navigateToIltixModules,""",
+            "PreferencesRootNode: onOpenIltixModules parameter"
+        )
+    }
+
+    private fun patchPreferencesRootView() {
+        val path = "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootView.kt"
+        engine.addImport(path, "de.iltix.lib.R as IltixR")
+
+        // Add onOpenIltixModules parameter to PreferencesRootView function
+        engine.insertAfterLine(
+            path,
+            """onOpenBlockedUsers: \(\) -> Unit,""",
+            """    onOpenIltixModules: () -> Unit,""",
+            "PreferencesRootView: onOpenIltixModules parameter"
+        )
+
+        // Pass onOpenIltixModules to GeneralSection
+        engine.insertAfterLine(
+            path,
+            """onOpenLabs = onOpenLabs,""",
+            """            onOpenIltixModules = onOpenIltixModules,""",
+            "PreferencesRootView: pass onOpenIltixModules to GeneralSection"
+        )
+
+        // Add onOpenIltixModules parameter to GeneralSection function
+        engine.replaceText(
+            path,
+            """    onOpenDeveloperSettings: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },""",
+            """    onOpenDeveloperSettings: () -> Unit,
+    onOpenIltixModules: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },""",
+        )
+
+        // Add Iltix Modules ListItem after Advanced Settings
+        engine.insertAfterLine(
+            path,
+            """onClick = onOpenAdvancedSettings,""",
+            """    )
+
+    ListItem(
+        headlineContent = { Text(stringResource(id = IltixR.string.iltix_modules_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Resource(IltixR.drawable.ic_iltix)),
+        onClick = onOpenIltixModules,""",
+            "PreferencesRootView: Iltix Modules menu item"
+        )
+
+        // Add onOpenIltixModules = {} in ContentToPreview
+        engine.insertAfterLine(
+            path,
+            """onOpenBlockedUsers = \{\},""",
+            """        onOpenIltixModules = {},""",
+            "PreferencesRootView: onOpenIltixModules in preview"
+        )
+    }
+
+    // ===== User Profile hooks =====
+
+    private fun patchUserProfileView() {
+        val path = "features/userprofile/shared/src/main/kotlin/io/element/android/features/userprofile/shared/UserProfileView.kt"
+        engine.addImport(path, "de.iltix.components.nicknames.IxLocalNicknameAction")
+        engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
+
+        // Add local nickname action after the Spacer between actions and verify section
+        engine.insertAfterLine(
+            path,
+            """Spacer\(modifier = Modifier\.height\(26\.dp\)\)""",
+            """            // Iltix: local nickname management
+            IxLocalNicknameAction(
+                userId = state.userId.value,
+                fallbackName = state.userName,
+            )""",
+            "UserProfileView: IxLocalNicknameAction"
+        )
+    }
+
+    // ===== Message Bubble hooks =====
+
+    private fun patchMessageEventBubble() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/MessageEventBubble.kt"
+        engine.addImport(path, "de.iltix.theme.LocalIxBubbleStyle")
+        engine.addImport(path, "androidx.compose.ui.unit.Dp")
+
+        // Add bubbleStyle read + pass to backgroundBubbleColor and shape
+        engine.replaceText(
+            path,
+            """    val cutTopStart = state.cutTopStart
+    // Ignore state.isHighlighted for now, we need a design decision on it.
+    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine)
+    val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }""",
+            """    val cutTopStart = state.cutTopStart
+    val bubbleStyle = LocalIxBubbleStyle.current
+    // Ignore state.isHighlighted for now, we need a design decision on it.
+    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(
+        isMine = state.isMine,
+        bubbleStyle = bubbleStyle,
+    )
+    val bubbleShape = remember(state, bubbleStyle.cornerRadius) {
+        MessageEventBubbleDefaults.shape(
+            cutTopStart = state.cutTopStart,
+            groupPosition = state.groupPosition,
+            isMine = state.isMine,
+            bubbleRadius = bubbleStyle.cornerRadius,
+        )
+    }"""
+        )
+
+        // Update shape function to accept bubbleRadius parameter
+        engine.replaceText(
+            path,
+            """    fun shape(cutTopStart: Boolean, groupPosition: TimelineItemGroupPosition, isMine: Boolean): Shape {
+        val topLeftCorner = if (cutTopStart) 0.dp else BUBBLE_RADIUS""",
+            """    fun shape(cutTopStart: Boolean, groupPosition: TimelineItemGroupPosition, isMine: Boolean, bubbleRadius: Dp = BUBBLE_RADIUS): Shape {
+        val topLeftCorner = if (cutTopStart) 0.dp else bubbleRadius"""
+        )
+
+        // Replace BUBBLE_RADIUS usages inside shape() with bubbleRadius parameter
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(BUBBLE_RADIUS, BUBBLE_RADIUS, 0\.dp, BUBBLE_RADIUS\)""",
+            """RoundedCornerShape(bubbleRadius, bubbleRadius, 0.dp, bubbleRadius)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (First)"
+        )
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(topLeftCorner, BUBBLE_RADIUS, BUBBLE_RADIUS, 0\.dp\)""",
+            """RoundedCornerShape(topLeftCorner, bubbleRadius, bubbleRadius, 0.dp)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (First else)"
+        )
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(BUBBLE_RADIUS, 0\.dp, 0\.dp, BUBBLE_RADIUS\)""",
+            """RoundedCornerShape(bubbleRadius, 0.dp, 0.dp, bubbleRadius)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (Middle)"
+        )
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(0\.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, 0\.dp\)""",
+            """RoundedCornerShape(0.dp, bubbleRadius, bubbleRadius, 0.dp)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (Middle else)"
+        )
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(BUBBLE_RADIUS, 0\.dp, BUBBLE_RADIUS, BUBBLE_RADIUS\)""",
+            """RoundedCornerShape(bubbleRadius, 0.dp, bubbleRadius, bubbleRadius)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (Last)"
+        )
+        engine.replacePattern(
+            path,
+            """RoundedCornerShape\(0\.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS\)""",
+            """RoundedCornerShape(0.dp, bubbleRadius, bubbleRadius, bubbleRadius)""",
+            "MessageEventBubble: shape BUBBLE_RADIUS -> bubbleRadius (Last else)"
+        )
+        // None case: topLeftCorner, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS
+        engine.replaceText(
+            path,
+            """                    topLeftCorner,
+                    BUBBLE_RADIUS,
+                    BUBBLE_RADIUS,
+                    BUBBLE_RADIUS""",
+            """                    topLeftCorner,
+                    bubbleRadius,
+                    bubbleRadius,
+                    bubbleRadius"""
+        )
+
+        // Update backgroundBubbleColor to accept IxBubbleStyle
+        engine.replaceText(
+            path,
+            """    @Composable
+    fun backgroundBubbleColor(isMine: Boolean): Color {
+        return if (isMine) {
+            ElementTheme.colors.messageFromMeBackground
+        } else {
+            ElementTheme.colors.messageFromOtherBackground
+        }
+    }""",
+            """    @Composable
+    fun backgroundBubbleColor(isMine: Boolean, bubbleStyle: de.iltix.theme.IxBubbleStyle = LocalIxBubbleStyle.current): Color {
+        return if (isMine) {
+            bubbleStyle.ownBackgroundColor
+        } else {
+            bubbleStyle.otherBackgroundColor
+        }
+    }"""
+        )
+    }
+
+    // ===== TextEditor insertText support =====
+
+    private fun patchMarkdownTextEditorState() {
+        val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/model/MarkdownTextEditorState.kt"
+        engine.addImport(path, "android.text.SpannableStringBuilder")
+
+        // Add insertText method before getMessageMarkdown
+        engine.insertBeforeLine(
+            path,
+            """fun getMessageMarkdown\(permalinkBuilder: PermalinkBuilder\): String \{""",
+            """    fun insertText(insertedText: String) {
+        val currentText = SpannableStringBuilder(text.value())
+        val start = selection.first.coerceAtLeast(0)
+        val end = selection.last.coerceAtLeast(start)
+        currentText.replace(start, end, insertedText)
+        text.update(currentText, true)
+        val cursor = start + insertedText.length
+        selection = cursor..cursor
+    }
+
+""",
+            "Add insertText method for emoji insertion"
+        )
+    }
+
+    private fun patchTextEditorState() {
+        val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/model/TextEditorState.kt"
+
+        // Add insertText method before reset
+        engine.insertBeforeLine(
+            path,
+            """suspend fun reset\(\) \{""",
+            """    suspend fun insertText(text: String) {
+        when (this) {
+            is Markdown -> state.insertText(text)
+            is Rich -> richTextEditorState.setMarkdown(richTextEditorState.messageMarkdown + text)
+        }
+        requestFocus()
+    }
+
+""",
+            "Add insertText method for emoji insertion"
+        )
+    }
+}
