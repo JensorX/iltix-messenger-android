@@ -78,7 +78,9 @@ jobs:
 
       - name: Build debug APKs
         working-directory: workspace
-        run: ./gradlew :app:assembleGplayIxDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleGplayIxDebug
 
       - name: Build release APKs
         working-directory: workspace
