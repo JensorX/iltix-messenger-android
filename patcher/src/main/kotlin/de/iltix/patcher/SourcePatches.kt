@@ -51,6 +51,8 @@ class SourcePatches(private val engine: PatchEngine) {
         patchPreferencesRootView()
         patchMarkdownTextEditorState()
         patchTextEditorState()
+        patchTypographyTokens()
+        patchElementThemeTypography()
 
         val results = engine.getResults()
         val failures = engine.failedResults()
@@ -217,6 +219,15 @@ class SourcePatches(private val engine: PatchEngine) {
                         onOpenSpace = onRoomClick,
                         onCreateRoomClick = onStartChatClick,
                     )"""
+        )
+
+        // Suppress upstream SpaceFiltersView bottom sheet when Iltix space nav is active
+        engine.replaceText(
+            path,
+            "                    SpaceFiltersView(roomListState.spaceFiltersState)",
+            """                    if (!ixHomeUi.shouldShowIxSpaceNav) {
+                        SpaceFiltersView(roomListState.spaceFiltersState)
+                    }"""
         )
     }
 
@@ -2309,6 +2320,77 @@ internal fun ThreadTopBarPreview"""
 
 """,
             "Add insertText method for emoji insertion"
+        )
+    }
+
+    // ===== Typography token override =====
+
+    private fun patchTypographyTokens() {
+        val path = "libraries/compound/src/main/kotlin/io/element/android/compound/tokens/generated/TypographyTokens.kt"
+
+        // Change object to open class with FontFamily constructor parameter + companion object
+        engine.replaceText(
+            path,
+            "object TypographyTokens {",
+            """open class TypographyTokens(fontFamily: FontFamily = FontFamily.Default) {
+    companion object : TypographyTokens()"""
+        )
+
+        // Replace all hardcoded FontFamily.Default usages with the constructor parameter
+        engine.replaceText(
+            path,
+            "fontFamily = FontFamily.Default,",
+            "fontFamily = fontFamily,"
+        )
+    }
+
+    private fun patchElementThemeTypography() {
+        val path = "libraries/compound/src/main/kotlin/io/element/android/compound/theme/ElementTheme.kt"
+
+        // Change typography from static val to composable getter backed by CompositionLocal
+        engine.replaceText(
+            path,
+            """    /**
+     * Compound [Typography] tokens. In Figma, these have the `Android/font/` prefix.
+     */
+    val typography: TypographyTokens = TypographyTokens""",
+            """    /**
+     * Compound [Typography] tokens. In Figma, these have the `Android/font/` prefix.
+     */
+    val typography: TypographyTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalCompoundTypography.current"""
+        )
+
+        // Add LocalCompoundTypography after LocalCompoundColors
+        engine.replaceText(
+            path,
+            "internal val LocalCompoundColors = staticCompositionLocalOf { compoundColorsLight }",
+            """internal val LocalCompoundColors = staticCompositionLocalOf { compoundColorsLight }
+internal val LocalCompoundTypography = staticCompositionLocalOf<TypographyTokens> { TypographyTokens }"""
+        )
+
+        // Add compoundTypographyTokens parameter to ElementTheme() function
+        engine.replaceText(
+            path,
+            """    typography: Typography = compoundTypography,
+    content: @Composable () -> Unit,""",
+            """    typography: Typography = compoundTypography,
+    compoundTypographyTokens: TypographyTokens = LocalCompoundTypography.current,
+    content: @Composable () -> Unit,"""
+        )
+
+        // Provide compoundTypographyTokens via CompositionLocalProvider
+        engine.replaceText(
+            path,
+            """    CompositionLocalProvider(
+        LocalCompoundColors provides currentCompoundColor,
+        LocalContentColor provides colorScheme.onSurface,""",
+            """    CompositionLocalProvider(
+        LocalCompoundColors provides currentCompoundColor,
+        LocalCompoundTypography provides compoundTypographyTokens,
+        LocalContentColor provides colorScheme.onSurface,"""
         )
     }
 }

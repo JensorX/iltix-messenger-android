@@ -21,8 +21,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
-internal const val IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID = "DEFAULT_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID_V1"
-internal const val IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID = "DEFAULT_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID_V1"
+internal const val IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID = "IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID"
+internal const val IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID = "IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID"
 
 internal data class IxNotificationRoute(
     val channelId: String,
@@ -126,8 +126,8 @@ internal fun createIxPriorityNotificationChannels(
                         .setUsage(USAGE_NOTIFICATION)
                         .build(),
                 )
-                .setName(stringProvider.getString(R.string.notification_channel_noisy).ifEmpty { "Noisy notifications" })
-                .setDescription(stringProvider.getString(R.string.notification_channel_noisy))
+                .setName("Iltix Benachrichtigungen")
+                .setDescription("Priorisierte Iltix-Benachrichtigungen")
                 .setVibrationEnabled(true)
                 .setLightsEnabled(true)
                 .setLightColor(accentColor)
@@ -141,8 +141,8 @@ internal fun createIxPriorityNotificationChannels(
                 IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID,
                 NotificationManagerCompat.IMPORTANCE_HIGH,
             )
-                .setName(stringProvider.getString(R.string.notification_channel_silent).ifEmpty { "Silent notifications" })
-                .setDescription(stringProvider.getString(R.string.notification_channel_silent))
+                .setName("Iltix Benachrichtigungen (Stumm)")
+                .setDescription("Priorisierte stumme Iltix-Benachrichtigungen")
                 .setSound(null, null)
                 .setVibrationEnabled(false)
                 .setLightsEnabled(true)

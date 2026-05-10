@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
+import io.element.android.compound.tokens.generated.TypographyTokens
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ data class IxThemeSettings(
 
 data class IxTypographyOverrides(
     val materialTypography: Typography?,
+    val compoundTypographyTokens: TypographyTokens?,
 )
 
 data class IxResolvedTheme(
@@ -103,12 +105,20 @@ fun rememberIxTypographyOverrides(
         if (isIltixBuild && settings.iltixFontEnabled) {
             ixRobotoTypography()
         } else {
-            null // use default compoundTypography from ElementTheme
+            null
         }
     }
-    return remember(materialTypography) {
+    val compoundTypographyTokens = remember(isIltixBuild, settings.iltixFontEnabled) {
+        if (isIltixBuild && settings.iltixFontEnabled) {
+            ixCompoundTypographyTokens()
+        } else {
+            null
+        }
+    }
+    return remember(materialTypography, compoundTypographyTokens) {
         IxTypographyOverrides(
             materialTypography = materialTypography,
+            compoundTypographyTokens = compoundTypographyTokens,
         )
     }
 }

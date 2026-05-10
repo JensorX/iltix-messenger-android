@@ -63,7 +63,18 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache patcher JAR
+        id: patcher-cache
+        uses: actions/cache@v4
+        with:
+          path: patcher/build/libs/iltix-patcher-1.0.0.jar
+          key: patcher-jar-${{ hashFiles('patcher/src/**', 'patcher/build.gradle.kts') }}
+
       - name: Build patcher
+        if: steps.patcher-cache.outputs.cache-hit != 'true'
         working-directory: patcher
         run: ./gradlew jar --quiet
 
@@ -73,14 +84,11 @@ jobs:
             --root "$GITHUB_WORKSPACE" \
             --upstream-tag "${{ steps.config.outputs.tag }}"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Build release APKs
         working-directory: workspace
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleGplayIxRelease
+          ./gradlew :app:assembleGplayIxRelease --parallel
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4

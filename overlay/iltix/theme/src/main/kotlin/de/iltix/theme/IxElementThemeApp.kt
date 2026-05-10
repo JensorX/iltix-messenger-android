@@ -13,6 +13,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.compound.theme.mapToTheme
 import io.element.android.compound.tokens.generated.SemanticColors
+import io.element.android.compound.tokens.generated.TypographyTokens
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.designsystem.theme.LocalBuildMeta
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -51,6 +52,7 @@ fun IxElementThemeApp(
     val ixTheme = rememberIxResolvedTheme(base = baseSemanticColors, isIltixBuild = isIltixBuild)
 
     val ixTypography = ixTheme.typography.materialTypography
+    val ixCompoundTokens = ixTheme.typography.compoundTypographyTokens
 
     val themedContent = remember {
         movableContentOf {
@@ -69,6 +71,7 @@ fun IxElementThemeApp(
                 compoundLight = ixTheme.semanticColors.light,
                 compoundDark = ixTheme.semanticColors.dark,
                 typography = ixTypography,
+                compoundTypographyTokens = ixCompoundTokens ?: TypographyTokens,
                 content = themedContent,
             )
         } else {

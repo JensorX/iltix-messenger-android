@@ -45,3 +45,9 @@ fun ixRobotoTypography(): Typography {
         labelSmall = t.fontBodyXsMedium.copy(fontFamily = f),
     )
 }
+
+/**
+ * Creates a [TypographyTokens] instance using the Iltix Roboto Condensed font.
+ * This overrides all Compound typography tokens (used via [ElementTheme.typography]).
+ */
+fun ixCompoundTypographyTokens(): TypographyTokens = TypographyTokens(ixRobotoFontFamily)

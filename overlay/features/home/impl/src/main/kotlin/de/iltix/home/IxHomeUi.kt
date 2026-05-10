@@ -1,9 +1,12 @@
 package de.iltix.home
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import de.iltix.lib.preferences.IxPreferencesStore
@@ -40,7 +43,7 @@ fun rememberIxHomeUiConfig(
     }.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue)
     val shouldShowIxSpaceNav = spaceNavMode != "none" &&
         currentHomeNavigationBarItem == HomeNavigationBarItem.Chats &&
-        roomListState.spaceFiltersState is SpaceFiltersState.Selecting
+        roomListState.spaceFiltersState !is SpaceFiltersState.Disabled
 
     return IxHomeUiConfig(
         showStartChatInTopBar = showStartChatInTopBar,
@@ -55,9 +58,33 @@ fun IxFloatingSpaceNav(
     onNavigateToSpace: (RoomId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filters: List<SpaceServiceFilter> = when (state) {
+    // Remember the available filters so they persist across state transitions
+    var rememberedFilters by remember { mutableStateOf<List<SpaceServiceFilter>>(emptyList()) }
+    if (state is SpaceFiltersState.Selecting) {
+        rememberedFilters = state.availableFilters
+    }
+
+    // Pending selection to apply after cycling back to Selecting
+    var pendingSelection by remember { mutableStateOf<SpaceServiceFilter?>(null) }
+
+    // Auto-transition to Selecting state to get the filter list
+    LaunchedEffect(state) {
+        if (state is SpaceFiltersState.Unselected) {
+            state.eventSink(SpaceFiltersEvent.Unselected.ShowFilters)
+        }
+    }
+
+    // Apply pending selection when we reach Selecting state
+    LaunchedEffect(state, pendingSelection) {
+        if (state is SpaceFiltersState.Selecting && pendingSelection != null) {
+            state.eventSink(SpaceFiltersEvent.Selecting.SelectFilter(pendingSelection!!))
+            pendingSelection = null
+        }
+    }
+
+    val filters = when (state) {
         is SpaceFiltersState.Selecting -> state.availableFilters
-        else -> return
+        else -> rememberedFilters
     }
     if (filters.isEmpty()) return
 
@@ -66,13 +93,24 @@ fun IxFloatingSpaceNav(
         filters = filters,
         selectedSpaceId = state.selectedFilter()?.spaceRoom?.roomId,
         onClearSelection = {
-            if (state is SpaceFiltersState.Selected) {
-                state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+            when (state) {
+                is SpaceFiltersState.Selected -> state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+                is SpaceFiltersState.Selecting -> state.eventSink(SpaceFiltersEvent.Selecting.Cancel)
+                else -> Unit
             }
         },
         onSelectFilter = { filter ->
             when (state) {
                 is SpaceFiltersState.Selecting -> state.eventSink(SpaceFiltersEvent.Selecting.SelectFilter(filter))
+                is SpaceFiltersState.Selected -> {
+                    if (filter.spaceRoom.roomId == state.selectedFilter.spaceRoom.roomId) {
+                        // Tapping the already-selected filter → deselect
+                        state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+                    } else {
+                        pendingSelection = filter
+                        state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+                    }
+                }
                 else -> Unit
             }
         },
