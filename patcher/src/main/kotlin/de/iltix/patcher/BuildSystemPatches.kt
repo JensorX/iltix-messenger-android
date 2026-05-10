@@ -19,11 +19,13 @@ class BuildSystemPatches(private val engine: PatchEngine) {
         patchAppBuildGradle()
         patchAppconfigBuildGradle()
         patchAppnavBuildGradle()
+        patchCallImplBuildGradle()
         patchHomeImplBuildGradle()
         patchMessagesImplBuildGradle()
         patchPreferencesImplBuildGradle()
         patchRoomDetailsImplBuildGradle()
         patchUserProfileSharedBuildGradle()
+        patchMediaPlayerImplBuildGradle()
         patchPushImplBuildGradle()
         patchMatrixUiBuildGradle()
 
@@ -296,6 +298,18 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         }
     }"""
         )
+    }
+
+    // ===== features/call/impl/build.gradle.kts =====
+
+    private fun patchCallImplBuildGradle() {
+        val path = "features/call/impl/build.gradle.kts"
+        engine.addGradleDependency(path, "implementation(projects.iltix.lib)")
+    }
+
+    private fun patchMediaPlayerImplBuildGradle() {
+        val path = "libraries/mediaplayer/impl/build.gradle.kts"
+        engine.addGradleDependency(path, "implementation(projects.iltix.lib)")
     }
 
     // ===== Feature/Library build.gradle.kts dependencies =====

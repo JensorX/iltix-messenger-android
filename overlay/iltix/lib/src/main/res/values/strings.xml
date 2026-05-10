@@ -78,6 +78,22 @@
 
     <string name="iltix_priority_notification_title">Priority Notifications</string>
     <string name="iltix_priority_notification_subtitle">Show new messages at the top of the notification shade</string>
+    <string name="iltix_now_bar_category_title">Now Bar</string>
+    <string name="iltix_now_bar_enabled_title">Enable Now Bar integration</string>
+    <string name="iltix_now_bar_enabled_subtitle">Post additive live items on Samsung lockscreen without replacing existing notifications</string>
+    <string name="iltix_now_bar_calls_title">Now Bar for calls</string>
+    <string name="iltix_now_bar_calls_subtitle">Show ongoing calls in the Now Bar</string>
+    <string name="iltix_now_bar_media_title">Now Bar for media playback</string>
+    <string name="iltix_now_bar_media_subtitle">Show voice and audio playback in the Now Bar</string>
+    <string name="iltix_now_bar_favorites_title">Now Bar favorite chat hints</string>
+    <string name="iltix_now_bar_favorites_subtitle">Show highlights for favorite chats in the Now Bar module</string>
+    <string name="iltix_now_bar_favorites_text">%1$s (%2$d unread)</string>
+    <string name="iltix_now_bar_call_channel_title">Iltix Now Bar Calls</string>
+    <string name="iltix_now_bar_call_channel_subtitle">Additional live item for ongoing calls</string>
+    <string name="iltix_now_bar_media_channel_title">Iltix Now Bar Media</string>
+    <string name="iltix_now_bar_media_channel_subtitle">Additional live item for voice and audio playback</string>
+    <string name="iltix_now_bar_favorites_channel_title">Iltix Now Bar Favorites</string>
+    <string name="iltix_now_bar_favorites_channel_subtitle">Additional highlights for favorite chats</string>
     <string name="iltix_unencrypted_topbar_icon_title">Top-bar unencrypted indicator</string>
     <string name="iltix_unencrypted_topbar_icon_subtitle">Show only the unencrypted icon in the room header instead of the composer hint text</string>
 

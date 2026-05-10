@@ -41,6 +41,8 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomDetailsPresenter()
         patchRoomDetailsView()
         patchUserProfileView()
+        patchCallForegroundService()
+        patchDefaultMediaPlayer()
         patchNotificationCreator()
         patchNotificationChannels()
         patchFetchPendingNotificationsWorker()
@@ -326,7 +328,9 @@ class SourcePatches(private val engine: PatchEngine) {
 
     private fun patchRoomListPresenter() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
         engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
+        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
 
         // Add IxRoomPrefsSource constructor parameter
@@ -360,7 +364,22 @@ class SourcePatches(private val engine: PatchEngine) {
             securityBannerDismissed,
             showNewNotificationSoundBanner,
             pinFavorites,
-        )"""
+        )
+
+        val appContext = LocalContext.current.applicationContext
+        LaunchedEffect(contentState) {
+            val roomsState = contentState as? RoomListContentState.Rooms
+            val favoriteWithUnread = roomsState?.summaries?.firstOrNull { it.isFavorite && it.hasNewContent }
+            if (favoriteWithUnread != null) {
+                IxNowBar.postFavoriteChatHint(
+                    context = appContext,
+                    roomName = favoriteWithUnread.name ?: favoriteWithUnread.roomId.value,
+                    unreadCount = favoriteWithUnread.numberOfUnreadMessages,
+                )
+            } else {
+                IxNowBar.clearFavoriteChatHint(appContext)
+            }
+        }"""
         )
 
         // Add pinFavorites parameter to roomListContentState function signature
@@ -2163,6 +2182,111 @@ internal fun ThreadTopBarPreview"""
                 fallbackName = state.userName,
             )""",
             "UserProfileView: IxLocalNicknameAction"
+        )
+    }
+
+    private fun patchCallForegroundService() {
+        val path = "features/call/impl/src/main/kotlin/io/element/android/features/call/impl/services/CallForegroundService.kt"
+        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
+
+        engine.replaceText(
+            path,
+            """        val notificationId = NotificationIdProvider.getForegroundServiceNotificationId(ForegroundServiceType.ONGOING_CALL)
+        val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        } else {
+            0
+        }
+        runCatchingExceptions {
+            ServiceCompat.startForeground(this, notificationId, notification, serviceType)
+        }.onFailure {
+            Timber.e(it, "Failed to start ongoing call foreground service")
+        }""",
+            """        val notificationId = NotificationIdProvider.getForegroundServiceNotificationId(ForegroundServiceType.ONGOING_CALL)
+        val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        } else {
+            0
+        }
+        runCatchingExceptions {
+            ServiceCompat.startForeground(this, notificationId, notification, serviceType)
+            PendingIntentCompat.getActivity(this, 0, callActivityIntent, 0, false)?.let { contentIntent ->
+                IxNowBar.postOngoingCallSidecar(
+                    context = this,
+                    contentIntent = contentIntent,
+                    title = getString(R.string.call_foreground_service_title_android),
+                    text = getString(R.string.call_foreground_service_message_android),
+                )
+            }
+        }.onFailure {
+            Timber.e(it, "Failed to start ongoing call foreground service")
+        }"""
+        )
+
+        engine.insertAfterLine(
+            path,
+            """override fun onDestroy\(\)""",
+            """        IxNowBar.clearOngoingCallSidecar(this)""",
+            "CallForegroundService: clear additive now bar sidecar"
+        )
+    }
+
+    private fun patchDefaultMediaPlayer() {
+        val path = "libraries/mediaplayer/impl/src/main/kotlin/io/element/android/libraries/mediaplayer/impl/DefaultMediaPlayer.kt"
+        engine.addImport(path, "android.content.Context")
+        engine.addImport(path, "io.element.android.libraries.di.annotations.ApplicationContext")
+        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
+
+        engine.replaceText(
+            path,
+            """class DefaultMediaPlayer(
+    private val player: SimplePlayer,
+    @SessionCoroutineScope
+    private val sessionCoroutineScope: CoroutineScope,
+    private val audioFocus: AudioFocus,
+) : MediaPlayer {""",
+            """class DefaultMediaPlayer(
+    private val player: SimplePlayer,
+    @SessionCoroutineScope
+    private val sessionCoroutineScope: CoroutineScope,
+    private val audioFocus: AudioFocus,
+    @ApplicationContext private val context: Context,
+) : MediaPlayer {"""
+        )
+
+        engine.replaceText(
+            path,
+            """            if (isPlaying) {
+                job = sessionCoroutineScope.launch { updateCurrentPosition() }
+            } else {
+                audioFocus.releaseAudioFocus()
+                job?.cancel()
+            }""",
+            """            if (isPlaying) {
+                state.value.mediaId?.let { mediaId ->
+                    IxNowBar.postMediaPlaybackSidecar(
+                        context = context,
+                        mediaId = mediaId,
+                        isPlaying = true,
+                    )
+                }
+                job = sessionCoroutineScope.launch { updateCurrentPosition() }
+            } else {
+                audioFocus.releaseAudioFocus()
+                IxNowBar.clearMediaPlaybackSidecar(context)
+                job?.cancel()
+            }"""
+        )
+
+        engine.replaceText(
+            path,
+            """    override fun pause() {
+        player.pause()
+    }""",
+            """    override fun pause() {
+        player.pause()
+        IxNowBar.clearMediaPlaybackSidecar(context)
+    }"""
         )
     }
 
