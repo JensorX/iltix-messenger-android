@@ -85,28 +85,7 @@ object IxNowBar {
         mediaId: String,
         isPlaying: Boolean,
     ) {
-        if (!isFeatureEnabled(context, IxPrefs.NOW_BAR_MEDIA)) return
-        if (!isPlaying) {
-            clearMediaPlaybackSidecar(context)
-            return
-        }
-        val manager = NotificationManagerCompat.from(context)
-        manager.createNotificationChannel(
-            NotificationChannelCompat.Builder(MEDIA_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_HIGH)
-                .setName(context.getString(R.string.iltix_now_bar_media_channel_title))
-                .setDescription(context.getString(R.string.iltix_now_bar_media_channel_subtitle))
-                .build()
-        )
-        val notification = NotificationCompat.Builder(context, MEDIA_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle(context.getString(R.string.iltix_now_bar_media_title))
-            .setContentText(mediaId)
-            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .build()
-        manager.notify(MEDIA_NOW_BAR_NOTIFICATION_ID, notification)
+        clearMediaPlaybackSidecar(context)
     }
 
     fun clearMediaPlaybackSidecar(context: Context) {
@@ -118,23 +97,7 @@ object IxNowBar {
         roomName: String,
         unreadCount: Long,
     ) {
-        if (!isFeatureEnabled(context, IxPrefs.NOW_BAR_FAVORITES)) return
-        val manager = NotificationManagerCompat.from(context)
-        manager.createNotificationChannel(
-            NotificationChannelCompat.Builder(FAVORITES_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_HIGH)
-                .setName(context.getString(R.string.iltix_now_bar_favorites_channel_title))
-                .setDescription(context.getString(R.string.iltix_now_bar_favorites_channel_subtitle))
-                .build()
-        )
-        val notification = NotificationCompat.Builder(context, FAVORITES_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle(context.getString(R.string.iltix_now_bar_favorites_title))
-            .setContentText(context.getString(R.string.iltix_now_bar_favorites_text, roomName, unreadCount))
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOnlyAlertOnce(true)
-            .build()
-        manager.notify(FAVORITE_CHAT_NOW_BAR_NOTIFICATION_ID, notification)
+        clearFavoriteChatHint(context)
     }
 
     fun clearFavoriteChatHint(context: Context) {

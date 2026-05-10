@@ -328,20 +328,16 @@ class SourcePatches(private val engine: PatchEngine) {
 
     private fun patchRoomListPresenter() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
-        engine.addImport(path, "android.content.Context")
-        engine.addImport(path, "io.element.android.libraries.di.annotations.ApplicationContext")
         engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
-        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
 
-        // Add IxRoomPrefsSource and appContext constructor parameters
+        // Add IxRoomPrefsSource constructor parameter
         engine.replaceText(
             path,
             """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
 ) : Presenter<RoomListState> {""",
             """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val ixRoomPrefsSource: IxRoomPrefsSource,
-    @ApplicationContext private val appContext: Context,
 ) : Presenter<RoomListState> {"""
         )
 
@@ -366,21 +362,7 @@ class SourcePatches(private val engine: PatchEngine) {
             securityBannerDismissed,
             showNewNotificationSoundBanner,
             pinFavorites,
-        )
-
-        LaunchedEffect(contentState) {
-            val roomsState = contentState as? RoomListContentState.Rooms
-            val favoriteWithUnread = roomsState?.summaries?.firstOrNull { it.isFavorite && it.hasNewContent }
-            if (favoriteWithUnread != null) {
-                IxNowBar.postFavoriteChatHint(
-                    context = appContext,
-                    roomName = favoriteWithUnread.name ?: favoriteWithUnread.roomId.value,
-                    unreadCount = favoriteWithUnread.numberOfUnreadMessages,
-                )
-            } else {
-                IxNowBar.clearFavoriteChatHint(appContext)
-            }
-        }"""
+        )"""
         )
 
         // Add pinFavorites parameter to roomListContentState function signature
@@ -1848,7 +1830,7 @@ internal fun ThreadTopBarPreview"""
             ixRoute = ixSummaryRoute,
         )
         return NotificationCompat.Builder(context, channelId)
-            .setOnlyAlertOnce(true)
+            .setOnlyAlertOnce(ixSummaryRoute == null)
             // used in compat < N, after summary is built based on child notifications
             .setWhen(rankingTimestamp)"""
         )
@@ -1944,6 +1926,19 @@ internal fun ThreadTopBarPreview"""
                 }
         } else {"""
         )
+
+            // When Iltix priority route is active, use GROUP_ALERT_ALL so the child notification
+            // triggers heads-up directly. Upstream default is GROUP_ALERT_CHILDREN
+            // which relies on the summary to drive alerting, causing heads-up to be suppressed.
+            engine.replaceText(
+                path,
+                """                .setGroupSummary(false)
+                // In order to avoid notification making sound twice (due to the summary notification)
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)""",
+                """                .setGroupSummary(false)
+                // In order to avoid notification making sound twice (due to the summary notification)
+                .setGroupAlertBehavior(if (ixNotificationRoute != null) NotificationCompat.GROUP_ALERT_ALL else NotificationCompat.GROUP_ALERT_CHILDREN)"""
+            )
     }
 
     private fun patchNotificationChannels() {
@@ -2233,62 +2228,9 @@ internal fun ThreadTopBarPreview"""
     }
 
     private fun patchDefaultMediaPlayer() {
-        val path = "libraries/mediaplayer/impl/src/main/kotlin/io/element/android/libraries/mediaplayer/impl/DefaultMediaPlayer.kt"
-        engine.addImport(path, "android.content.Context")
-        engine.addImport(path, "io.element.android.libraries.di.annotations.ApplicationContext")
-        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
-
-        engine.replaceText(
-            path,
-            """class DefaultMediaPlayer(
-    private val player: SimplePlayer,
-    @SessionCoroutineScope
-    private val sessionCoroutineScope: CoroutineScope,
-    private val audioFocus: AudioFocus,
-) : MediaPlayer {""",
-            """class DefaultMediaPlayer(
-    private val player: SimplePlayer,
-    @SessionCoroutineScope
-    private val sessionCoroutineScope: CoroutineScope,
-    private val audioFocus: AudioFocus,
-    @ApplicationContext private val context: Context,
-) : MediaPlayer {"""
-        )
-
-        engine.replaceText(
-            path,
-            """            if (isPlaying) {
-                job = sessionCoroutineScope.launch { updateCurrentPosition() }
-            } else {
-                audioFocus.releaseAudioFocus()
-                job?.cancel()
-            }""",
-            """            if (isPlaying) {
-                state.value.mediaId?.let { mediaId ->
-                    IxNowBar.postMediaPlaybackSidecar(
-                        context = context,
-                        mediaId = mediaId,
-                        isPlaying = true,
-                    )
-                }
-                job = sessionCoroutineScope.launch { updateCurrentPosition() }
-            } else {
-                audioFocus.releaseAudioFocus()
-                IxNowBar.clearMediaPlaybackSidecar(context)
-                job?.cancel()
-            }"""
-        )
-
-        engine.replaceText(
-            path,
-            """    override fun pause() {
-        player.pause()
-    }""",
-            """    override fun pause() {
-        player.pause()
-        IxNowBar.clearMediaPlaybackSidecar(context)
-    }"""
-        )
+        // Samsung Now Bar media support needs a real MediaSession-backed implementation.
+        // The previous transport-notification sidecar showed raw event IDs and could
+        // interfere with voice-message playback, so keep this path disabled for now.
     }
 
     // ===== Message Bubble hooks =====
