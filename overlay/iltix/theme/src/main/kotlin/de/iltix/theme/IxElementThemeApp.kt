@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.movableContentOf
 import io.element.android.compound.colors.SemanticColorsLightDark
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
@@ -51,6 +52,14 @@ fun IxElementThemeApp(
 
     val ixTypography = ixTheme.typography.materialTypography
 
+    val themedContent = remember {
+        movableContentOf {
+            ProvideIxStyleSettings(settings = ixTheme.settings) {
+                content()
+            }
+        }
+    }
+
     CompositionLocalProvider(
         LocalBuildMeta provides buildMeta,
     ) {
@@ -60,21 +69,15 @@ fun IxElementThemeApp(
                 compoundLight = ixTheme.semanticColors.light,
                 compoundDark = ixTheme.semanticColors.dark,
                 typography = ixTypography,
-            ) {
-                ProvideIxStyleSettings(settings = ixTheme.settings) {
-                    content()
-                }
-            }
+                content = themedContent,
+            )
         } else {
             ElementTheme(
                 theme = theme,
                 compoundLight = ixTheme.semanticColors.light,
                 compoundDark = ixTheme.semanticColors.dark,
-            ) {
-                ProvideIxStyleSettings(settings = ixTheme.settings) {
-                    content()
-                }
-            }
+                content = themedContent,
+            )
         }
     }
 }

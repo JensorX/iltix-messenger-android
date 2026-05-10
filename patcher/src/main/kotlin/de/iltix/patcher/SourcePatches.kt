@@ -17,6 +17,7 @@ class SourcePatches(private val engine: PatchEngine) {
         patchMainActivity()
         patchLoggedInFlowNode()
         patchHomeView()
+        patchHomeTopBar()
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
@@ -33,12 +34,17 @@ class SourcePatches(private val engine: PatchEngine) {
         patchMessageEventBubble()
         patchTimelineItemVoiceView()
         patchTimelineItemPollView()
+        patchTimelineItemPollContent()
+        patchTimelineItemContentPollFactory()
+        patchPollContentView()
+        patchPollAnswerView()
         patchRoomDetailsPresenter()
         patchRoomDetailsView()
         patchUserProfileView()
         patchNotificationCreator()
         patchNotificationChannels()
         patchFetchPendingNotificationsWorker()
+        patchDefaultNotifiableEventResolver()
         patchSenderName()
         patchPreferencesFlowNode()
         patchPreferencesRootNode()
@@ -83,9 +89,83 @@ class SourcePatches(private val engine: PatchEngine) {
     val ixHomeUi = rememberIxHomeUiConfig(
         currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
         roomListState = roomListState,
-    )
-    val showBottomBar = !ixHomeUi.shouldShowIxSpaceNav""",
+    )""",
             "HomeView: ixHomeUi initialization"
+        )
+
+        // Add useIltixTheme to HomeTopBar call
+        engine.replaceText(
+            path,
+            """            HomeTopBar(
+                selectedNavigationItem = state.currentHomeNavigationBarItem,""",
+            """            HomeTopBar(
+                selectedNavigationItem = state.currentHomeNavigationBarItem,
+                useIltixTheme = ixHomeUi.useIltixTheme,"""
+        )
+
+        // Add showStartChatInTopBar + onStartChatClick to HomeTopBar call
+        engine.replaceText(
+            path,
+            """                canReportBug = state.canReportBug,
+                modifier = Modifier.hazeEffect(""",
+            """                canReportBug = state.canReportBug,
+                showStartChatInTopBar = ixHomeUi.showStartChatInTopBar,
+                onStartChatClick = onStartChatClick,
+                modifier = Modifier.hazeEffect("""
+        )
+
+        // Wrap floatingActionButton content with ixSpaceNav/startChat checks
+        engine.replaceText(
+            path,
+            """        floatingActionButton = {
+            val coroutineScope = rememberCoroutineScope()
+            HomeBottomBar(""",
+            """        floatingActionButton = {
+            if (!ixHomeUi.shouldShowIxSpaceNav) {
+            val coroutineScope = rememberCoroutineScope()
+            HomeBottomBar("""
+        )
+
+        // Replace the FAB lambda inside HomeBottomBar to hide when showStartChatInTopBar
+        engine.replaceText(
+            path,
+            """                floatingActionButton = {
+                    when (state.currentHomeNavigationBarItem) {
+                        HomeNavigationBarItem.Chats -> {
+                            HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                        }
+                        HomeNavigationBarItem.Spaces -> {
+                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                        }
+                    }
+                },
+            )
+        },
+        floatingActionButtonPosition = FabPosition.Center,""",
+            """                floatingActionButton = when (state.currentHomeNavigationBarItem) {
+                    HomeNavigationBarItem.Chats -> {
+                        if (ixHomeUi.showStartChatInTopBar) {
+                            null
+                        } else {
+                            {
+                                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                            }
+                        }
+                    }
+                    HomeNavigationBarItem.Spaces -> {
+                        {
+                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                        }
+                    }
+                },
+            )
+            } else {
+                if (!ixHomeUi.showStartChatInTopBar) {
+                    HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                }
+            }
+        },
+        floatingActionButtonPosition = if (!ixHomeUi.shouldShowIxSpaceNav) FabPosition.Center else FabPosition.End,"""
         )
 
         // Replace contentPadding bottom value with Iltix-aware value
@@ -137,6 +217,99 @@ class SourcePatches(private val engine: PatchEngine) {
                         onOpenSpace = onRoomClick,
                         onCreateRoomClick = onStartChatClick,
                     )"""
+        )
+    }
+
+    private fun patchHomeTopBar() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/HomeTopBar.kt"
+        engine.addImport(path, "io.element.android.compound.theme.ElementTheme")
+
+        // Add useIltixTheme and showStartChatInTopBar params to HomeTopBar
+        engine.replaceText(
+            path,
+            """fun HomeTopBar(
+    selectedNavigationItem: HomeNavigationBarItem,
+    currentUserAndNeighbors: ImmutableList<MatrixUser>,""",
+            """fun HomeTopBar(
+    selectedNavigationItem: HomeNavigationBarItem,
+    useIltixTheme: Boolean = false,
+    currentUserAndNeighbors: ImmutableList<MatrixUser>,"""
+        )
+
+        engine.replaceText(
+            path,
+            """    canReportBug: Boolean,
+    displayFilters: Boolean,""",
+            """    canReportBug: Boolean,
+    showStartChatInTopBar: Boolean = false,
+    onStartChatClick: () -> Unit = {},
+    displayFilters: Boolean,"""
+        )
+
+        // Hide gradient when Iltix theme is active
+        engine.replaceText(
+            path,
+            """                .backgroundVerticalGradient(
+                    isVisible = !areSearchResultsDisplayed,
+                )""",
+            """                .backgroundVerticalGradient(
+                    isVisible = !areSearchResultsDisplayed && !useIltixTheme,
+                )"""
+        )
+
+        // Use Iltix theme colors for TopAppBar
+        engine.replaceText(
+            path,
+            """                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,""",
+            """                containerColor = if (useIltixTheme) ElementTheme.colors.bgCanvasDefault else Color.Transparent,
+                scrolledContainerColor = if (useIltixTheme) ElementTheme.colors.bgCanvasDefault else Color.Transparent,"""
+        )
+
+        // Pass showStartChatInTopBar and onStartChatClick to RoomListMenuItems
+        engine.replaceText(
+            path,
+            """                    RoomListMenuItems(
+                        onToggleSearch = onToggleSearch,
+                        onMenuActionClick = onMenuActionClick,""",
+            """                    RoomListMenuItems(
+                        showStartChatInTopBar = showStartChatInTopBar,
+                        onToggleSearch = onToggleSearch,
+                        onMenuActionClick = onMenuActionClick,
+                        onStartChatClick = onStartChatClick,"""
+        )
+
+        // Add showStartChatInTopBar and onStartChatClick to RoomListMenuItems signature + icon
+        engine.replaceText(
+            path,
+            """private fun RoomListMenuItems(
+    onToggleSearch: () -> Unit,
+    onMenuActionClick: (RoomListMenuAction) -> Unit,
+    canReportBug: Boolean,
+    spaceFiltersState: SpaceFiltersState,
+) {
+    IconButton(
+        onClick = onToggleSearch,""",
+            """private fun RoomListMenuItems(
+    showStartChatInTopBar: Boolean = false,
+    onToggleSearch: () -> Unit,
+    onMenuActionClick: (RoomListMenuAction) -> Unit,
+    onStartChatClick: () -> Unit = {},
+    canReportBug: Boolean,
+    spaceFiltersState: SpaceFiltersState,
+) {
+    if (showStartChatInTopBar) {
+        IconButton(
+            onClick = onStartChatClick,
+        ) {
+            Icon(
+                imageVector = CompoundIcons.Plus(),
+                contentDescription = stringResource(CommonStrings.action_create_room),
+            )
+        }
+    }
+    IconButton(
+        onClick = onToggleSearch,"""
         )
     }
 
@@ -223,7 +396,7 @@ class SourcePatches(private val engine: PatchEngine) {
             "RoomSummaryRow: NameAndTimestampRow comment"
         )
 
-        // Add isFavorite param to NameAndTimestampRow
+        // Add isFavorite + localNicknameUserId params, roomSummaryConfig + resolvedName to NameAndTimestampRow
         engine.replaceText(
             path,
             """private fun NameAndTimestampRow(
@@ -235,15 +408,20 @@ class SourcePatches(private val engine: PatchEngine) {
 ) {""",
             """private fun NameAndTimestampRow(
     name: String?,
+    localNicknameUserId: String? = null,
     timestamp: String?,
     isHighlighted: Boolean,
     isFavorite: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val roomSummaryConfig = de.iltix.home.rememberIxRoomSummaryConfig()"""
+    val roomSummaryConfig = de.iltix.home.rememberIxRoomSummaryConfig()
+    val resolvedName = rememberIxResolvedDisplayName(
+        userId = localNicknameUserId,
+        fallbackName = name,
+    )"""
         )
 
-        // Add IxFavoriteStarIcon after name Text in NameAndTimestampRow (before Timestamp)
+        // Use resolvedName instead of name for display text
         engine.replaceText(
             path,
             """            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
@@ -253,8 +431,8 @@ class SourcePatches(private val engine: PatchEngine) {
             overflow = TextOverflow.Ellipsis
         )
         // Timestamp""",
-            """            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
-            fontStyle = FontStyle.Italic.takeIf { name == null },
+            """            text = resolvedName?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
+            fontStyle = FontStyle.Italic.takeIf { resolvedName == null },
             color = ElementTheme.colors.roomListRoomName,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -266,7 +444,7 @@ class SourcePatches(private val engine: PatchEngine) {
         // Timestamp"""
         )
 
-        // Pass isFavorite to NameAndTimestampRow from first call site (JOINED/DM type)
+        // Pass isFavorite + localNicknameUserId to NameAndTimestampRow from first call site (JOINED/DM type)
         engine.replaceText(
             path,
             """                    NameAndTimestampRow(
@@ -277,6 +455,7 @@ class SourcePatches(private val engine: PatchEngine) {
                     MessagePreviewAndIndicatorRow(room = room)""",
             """                    NameAndTimestampRow(
                         name = room.name,
+                        localNicknameUserId = room.heroes.firstOrNull()?.id?.takeIf { room.isDm },
                         timestamp = room.timestamp,
                         isHighlighted = room.isHighlighted,
                         isFavorite = room.isFavorite,
@@ -1143,6 +1322,50 @@ internal fun ThreadTopBarPreview"""
         )
     }
 
+    private fun patchTimelineItemPollContent() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/model/event/TimelineItemPollContent.kt"
+        engine.addImport(path, "io.element.android.libraries.matrix.api.core.UserId")
+        engine.addImport(path, "kotlinx.collections.immutable.ImmutableList")
+        engine.addImport(path, "kotlinx.collections.immutable.ImmutableMap")
+
+        // Add votes field to data class
+        engine.replaceText(
+            path,
+            """    val answerItems: List<PollAnswerItem>,
+    val pollKind: PollKind,""",
+            """    val answerItems: List<PollAnswerItem>,
+    val votes: ImmutableMap<String, ImmutableList<UserId>>,
+    val pollKind: PollKind,"""
+        )
+
+        // Also fix the provider
+        val providerPath = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/model/event/TimelineItemPollContentProvider.kt"
+        engine.addImport(providerPath, "kotlinx.collections.immutable.persistentMapOf")
+
+        engine.replaceText(
+            providerPath,
+            """        answerItems = answerItems,
+        isMine = isMine,""",
+            """        answerItems = answerItems,
+        votes = persistentMapOf(),
+        isMine = isMine,"""
+        )
+    }
+
+    private fun patchTimelineItemContentPollFactory() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/factories/event/TimelineItemContentPollFactory.kt"
+
+        // Add votes = content.votes to TimelineItemPollContent constructor
+        engine.replaceText(
+            path,
+            """            answerItems = pollContentState.answerItems,
+            pollKind = pollContentState.pollKind,""",
+            """            answerItems = pollContentState.answerItems,
+            votes = content.votes,
+            pollKind = pollContentState.pollKind,"""
+        )
+    }
+
     private fun patchTimelineItemPollView() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/event/TimelineItemPollView.kt"
         engine.addImport(path, "de.iltix.components.poll.IxPollVoteViewerSheet")
@@ -1192,6 +1415,183 @@ internal fun ThreadTopBarPreview"""
 
     PollContentView(
         eventId = content.eventId,"""
+        )
+
+        // Add onViewVotes and viewVotesLabel to PollContentView call
+        engine.replaceText(
+            path,
+            """        onEndPoll = ::onEndPoll,
+        modifier = modifier,
+    )
+}""",
+            """        onEndPoll = ::onEndPoll,
+        onViewVotes = if (pollVoteViewerEnabled) { answerItem ->
+            selectedVotes = answerItem.answer.text to content.votes[answerItem.answer.id].orEmpty()
+        } else null,
+        viewVotesLabel = viewVotesLabel,
+        modifier = modifier,
+    )
+}"""
+        )
+    }
+
+    private fun patchPollContentView() {
+        val path = "features/poll/api/src/main/kotlin/io/element/android/features/poll/api/pollcontent/PollContentView.kt"
+        engine.addImport(path, "io.element.android.features.poll.api.pollcontent.PollAnswerItem")
+
+        // Add onViewVotes + viewVotesLabel to first PollContentView overload
+        engine.replaceText(
+            path,
+            """    onEndPoll: (pollStartId: EventId) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PollContentView(
+        eventId = state.eventId,""",
+            """    onEndPoll: (pollStartId: EventId) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    PollContentView(
+        eventId = state.eventId,"""
+        )
+
+        // Pass onViewVotes + viewVotesLabel in delegation call
+        engine.replaceText(
+            path,
+            """        onEndPoll = onEndPoll,
+        modifier = modifier,
+    )
+}""",
+            """        onEndPoll = onEndPoll,
+        onViewVotes = onViewVotes,
+        viewVotesLabel = viewVotesLabel,
+        modifier = modifier,
+    )
+}"""
+        )
+
+        // Add onViewVotes + viewVotesLabel to second PollContentView overload
+        engine.replaceText(
+            path,
+            """    onEndPoll: (pollStartId: EventId) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val votesCount = remember(answerItems)""",
+            """    onEndPoll: (pollStartId: EventId) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    val votesCount = remember(answerItems)"""
+        )
+
+        // Pass onViewVotes + viewVotesLabel to PollAnswers call
+        engine.replaceText(
+            path,
+            """        PollAnswers(answerItems = answerItems, onSelectAnswer = ::onSelectAnswer)""",
+            """        PollAnswers(
+            answerItems = answerItems,
+            onSelectAnswer = ::onSelectAnswer,
+            onViewVotes = onViewVotes,
+            viewVotesLabel = viewVotesLabel,
+        )"""
+        )
+
+        // Add onViewVotes + viewVotesLabel to PollAnswers function
+        engine.replaceText(
+            path,
+            """private fun PollAnswers(
+    answerItems: ImmutableList<PollAnswerItem>,
+    onSelectAnswer: (PollAnswer) -> Unit,
+) {""",
+            """private fun PollAnswers(
+    answerItems: ImmutableList<PollAnswerItem>,
+    onSelectAnswer: (PollAnswer) -> Unit,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
+) {"""
+        )
+
+        // Pass onViewVotes + viewVotesLabel to PollAnswerView call
+        engine.replaceText(
+            path,
+            """            PollAnswerView(
+                answerItem = it,
+                modifier = Modifier""",
+            """            PollAnswerView(
+                answerItem = it,
+                onViewVotes = onViewVotes,
+                viewVotesLabel = viewVotesLabel,
+                modifier = Modifier"""
+        )
+    }
+
+    private fun patchPollAnswerView() {
+        val path = "features/poll/api/src/main/kotlin/io/element/android/features/poll/api/pollcontent/PollAnswerView.kt"
+        engine.addImport(path, "io.element.android.libraries.designsystem.theme.components.TextButton")
+        engine.addImport(path, "androidx.compose.foundation.layout.Spacer")
+        engine.addImport(path, "androidx.compose.foundation.layout.height")
+        engine.addImport(path, "androidx.compose.ui.Alignment")
+
+        // Add onViewVotes + viewVotesLabel params to PollAnswerView
+        engine.replaceText(
+            path,
+            """internal fun PollAnswerView(
+    answerItem: PollAnswerItem,
+    modifier: Modifier = Modifier,
+) {""",
+            """internal fun PollAnswerView(
+    answerItem: PollAnswerItem,
+    onViewVotes: ((PollAnswerItem) -> Unit)? = null,
+    viewVotesLabel: String? = null,
+    modifier: Modifier = Modifier,
+) {"""
+        )
+
+        // Add view votes button after LinearProgressIndicator
+        engine.replaceText(
+            path,
+            """            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = if (answerItem.isWinner) ElementTheme.colors.textSuccessPrimary else answerItem.isEnabled.toEnabledColor(),
+                progress = {
+                    when {
+                        answerItem.showVotes -> answerItem.percentage
+                        answerItem.isSelected -> 1f
+                        else -> 0f
+                    }
+                },
+                trackColor = ElementTheme.colors.progressIndicatorTrackColor,
+                strokeCap = StrokeCap.Round,
+            )
+        }
+    }
+}""",
+            """            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = if (answerItem.isWinner) ElementTheme.colors.textSuccessPrimary else answerItem.isEnabled.toEnabledColor(),
+                progress = {
+                    when {
+                        answerItem.showVotes -> answerItem.percentage
+                        answerItem.isSelected -> 1f
+                        else -> 0f
+                    }
+                },
+                trackColor = ElementTheme.colors.progressIndicatorTrackColor,
+                strokeCap = StrokeCap.Round,
+            )
+            if (answerItem.showVotes && answerItem.votesCount > 0 && onViewVotes != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                TextButton(
+                    text = viewVotesLabel ?: stringResource(CommonStrings.action_view),
+                    onClick = { onViewVotes(answerItem) },
+                    modifier = Modifier.align(Alignment.End),
+                )
+            }
+        }
+    }
+}"""
         )
     }
 
@@ -1454,6 +1854,65 @@ internal fun ThreadTopBarPreview"""
             """                val senderName = event.senderDisambiguatedDisplayName.orEmpty()""",
             """                val senderName = resolveIxNotificationSenderName(context, buildMeta, event)"""
         )
+
+        // Add ixConversationHintsEnabled + roomIsDm to addMessagesFromEvents signature
+        engine.replaceText(
+            path,
+            """    private suspend fun MessagingStyle.addMessagesFromEvents(
+        events: List<NotifiableMessageEvent>,
+        imageLoader: ImageLoader,
+    ) {""",
+            """    private suspend fun MessagingStyle.addMessagesFromEvents(
+        events: List<NotifiableMessageEvent>,
+        imageLoader: ImageLoader,
+        ixConversationHintsEnabled: Boolean = false,
+        roomIsDm: Boolean = false,
+    ) {"""
+        )
+
+        // Add isImportant to Person.Builder (before .build())
+        engine.replaceText(
+            path,
+            """                    .setKey(key)
+                    .build()""",
+            """                    .setKey(key)
+                    .setImportant(ixConversationHintsEnabled && (roomIsDm || event.hasMentionOrReply))
+                    .build()"""
+        )
+
+        // Pass ixConversationHintsEnabled + roomIsDm to addMessagesFromEvents call
+        engine.replaceText(
+            path,
+            """        messagingStyle.addMessagesFromEvents(events, imageLoader)""",
+            """        messagingStyle.addMessagesFromEvents(
+            events = events,
+            imageLoader = imageLoader,
+            ixConversationHintsEnabled = ixNotificationRoute != null,
+            roomIsDm = roomInfo.isDm,
+        )"""
+        )
+
+        // Add setChannelId + setShortcutId to existing notification builder
+        engine.replaceText(
+            path,
+            """        val builder = if (existingNotification != null) {
+            NotificationCompat.Builder(context, existingNotification)
+                // Clear existing actions
+                .clearActions()
+        } else {""",
+            """        val builder = if (existingNotification != null) {
+            NotificationCompat.Builder(context, existingNotification)
+                // Clear existing actions
+                .clearActions()
+                .apply {
+                    // When Iltix priority is active, ensure the high-importance channel is used
+                    if (ixNotificationRoute != null) setChannelId(channelId)
+                    if (threadId == null) {
+                        setShortcutId(createShortcutId(roomInfo.sessionId, roomInfo.roomId))
+                    }
+                }
+        } else {"""
+        )
     }
 
     private fun patchNotificationChannels() {
@@ -1499,6 +1958,44 @@ internal fun ThreadTopBarPreview"""
                     ixMediaAutoDownloadService.handleResolvedResults(results)
 
                     results"""
+        )
+    }
+
+    private fun patchDefaultNotifiableEventResolver() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/DefaultNotifiableEventResolver.kt"
+
+        // Enable video download in fetchImageIfPresent: replace null stub with actual download
+        engine.replaceText(
+            path,
+            """            is VideoMessageType -> null // Use the thumbnail here?
+            else -> null
+        }
+            ?: return null""",
+            """            is VideoMessageType -> {
+                notificationMediaRepoFactory.create(client).getMediaFile(
+                    mediaSource = messageType.source,
+                    mimeType = messageType.info?.mimetype,
+                    filename = messageType.filename,
+                )
+            }
+            else -> null
+        }
+            ?: return null"""
+        )
+
+        // Enable video mimetype in getImageMimetype
+        engine.replaceText(
+            path,
+            """            is VideoMessageType -> null // Use the thumbnail here?
+            else -> null
+        }
+    }
+}""",
+            """            is VideoMessageType -> messageType.info?.mimetype
+            else -> null
+        }
+    }
+}"""
         )
     }
 
