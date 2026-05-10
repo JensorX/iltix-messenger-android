@@ -328,18 +328,20 @@ class SourcePatches(private val engine: PatchEngine) {
 
     private fun patchRoomListPresenter() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
-        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "android.content.Context")
+        engine.addImport(path, "io.element.android.libraries.di.annotations.ApplicationContext")
         engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
         engine.addImport(path, "de.iltix.nowbar.IxNowBar")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
 
-        // Add IxRoomPrefsSource constructor parameter
+        // Add IxRoomPrefsSource and appContext constructor parameters
         engine.replaceText(
             path,
             """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
 ) : Presenter<RoomListState> {""",
             """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val ixRoomPrefsSource: IxRoomPrefsSource,
+    @ApplicationContext private val appContext: Context,
 ) : Presenter<RoomListState> {"""
         )
 
@@ -366,7 +368,6 @@ class SourcePatches(private val engine: PatchEngine) {
             pinFavorites,
         )
 
-        val appContext = LocalContext.current.applicationContext
         LaunchedEffect(contentState) {
             val roomsState = contentState as? RoomListContentState.Rooms
             val favoriteWithUnread = roomsState?.summaries?.firstOrNull { it.isFavorite && it.hasNewContent }
