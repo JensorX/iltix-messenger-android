@@ -1927,9 +1927,45 @@ internal fun ThreadTopBarPreview"""
         } else {"""
         )
 
+            // When Iltix priority route is active, add extra Person ranking hint
+            // to help Android rank the notification higher in the shade (same as old working version).
+            engine.replaceText(
+                path,
+                """            .setTicker(tickerText)
+            .build()""",
+                """            .apply {
+                // Extra conversation ranking hint (API-dependent) to get closer to FluffyChat behavior.
+                if (ixNotificationRoute != null) {
+                    events.lastOrNull { !it.outGoingMessage }?.let { latestEvent ->
+                        val senderName = resolveIxNotificationSenderName(context, buildMeta, latestEvent)
+                        val isImportant = roomInfo.isDm || latestEvent.hasMentionOrReply
+                        val displayName = if (latestEvent.hasMentionOrReply) {
+                            stringProvider.getString(R.string.notification_sender_mention_reply, senderName)
+                        } else {
+                            senderName
+                        }
+                        val key = if (latestEvent.hasMentionOrReply) {
+                            "mention-or-reply:${'$'}{latestEvent.eventId.value}"
+                        } else {
+                            latestEvent.senderId.value
+                        }
+                        addPerson(
+                            Person.Builder()
+                                .setName(displayName)
+                                .setIcon(null)
+                                .setKey(key)
+                                .setImportant(isImportant)
+                                .build()
+                        )
+                    }
+                }
+            }
+            .setTicker(tickerText)
+            .build()"""
+            )
+
             // When Iltix priority route is active, use GROUP_ALERT_ALL so the child notification
-            // triggers heads-up directly. Upstream default is GROUP_ALERT_CHILDREN
-            // which relies on the summary to drive alerting, causing heads-up to be suppressed.
+            // can alert directly (matching FluffyChat behavior).
             engine.replaceText(
                 path,
                 """                .setGroupSummary(false)

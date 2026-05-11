@@ -1,10 +1,6 @@
 package de.iltix.push
 
-import android.content.ContentResolver
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioAttributes.USAGE_NOTIFICATION
-import android.net.Uri
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -12,7 +8,6 @@ import de.iltix.lib.nicknames.IxLocalNicknameStore
 import de.iltix.lib.preferences.IxPreferencesStore
 import de.iltix.lib.preferences.IxPrefs
 import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.push.impl.R
 import io.element.android.libraries.push.impl.notifications.RoomEventGroupInfo
 import io.element.android.libraries.push.impl.notifications.channels.NotificationChannels
 import io.element.android.libraries.push.impl.notifications.model.NotifiableMessageEvent
@@ -21,8 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
-internal const val IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID = "IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID"
-internal const val IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID = "IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID"
+internal const val IX_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID = "DEFAULT_PRIORITY_SILENT_NOTIFICATION_CHANNEL_ID_V2"
+internal const val IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID = "DEFAULT_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID_V2"
 
 internal data class IxNotificationRoute(
     val channelId: String,
@@ -50,10 +45,9 @@ internal suspend fun resolveIxNotificationRoute(
     if (!priorityNotificationEnabled) return null
 
     return IxNotificationRoute(
-        // Use the noisy high-importance channel for all priority notifications so Android can show heads-up reliably.
         channelId = IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID,
         priority = NotificationCompat.PRIORITY_MAX,
-        shouldSetLights = true,
+        shouldSetLights = false,
     )
 }
 
@@ -79,7 +73,7 @@ internal fun resolveIxSummaryNotificationRoute(
     return IxNotificationRoute(
         channelId = IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID,
         priority = NotificationCompat.PRIORITY_MAX,
-        shouldSetLights = true,
+        shouldSetLights = false,
     )
 }
 
@@ -116,21 +110,10 @@ internal fun createIxPriorityNotificationChannels(
                 IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID,
                 NotificationManagerCompat.IMPORTANCE_HIGH,
             )
-                .setSound(
-                    Uri.Builder()
-                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                        .path("//" + context.packageName + "/" + R.raw.message)
-                        .build(),
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(USAGE_NOTIFICATION)
-                        .build(),
-                )
                 .setName("Iltix Benachrichtigungen")
                 .setDescription("Priorisierte Iltix-Benachrichtigungen")
                 .setVibrationEnabled(true)
-                .setLightsEnabled(true)
-                .setLightColor(accentColor)
+                .setLightsEnabled(false)
                 .build(),
         )
     }
@@ -145,8 +128,7 @@ internal fun createIxPriorityNotificationChannels(
                 .setDescription("Priorisierte stumme Iltix-Benachrichtigungen")
                 .setSound(null, null)
                 .setVibrationEnabled(false)
-                .setLightsEnabled(true)
-                .setLightColor(accentColor)
+                .setLightsEnabled(false)
                 .build(),
         )
     }
