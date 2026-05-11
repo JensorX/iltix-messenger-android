@@ -78,22 +78,6 @@
 
     <string name="iltix_priority_notification_title">Prioritätsbenachrichtigungen</string>
     <string name="iltix_priority_notification_subtitle">Neue Nachrichten oben in der Benachrichtigungsleiste anzeigen</string>
-    <string name="iltix_now_bar_category_title">Now Bar</string>
-    <string name="iltix_now_bar_enabled_title">Now-Bar-Integration aktivieren</string>
-    <string name="iltix_now_bar_enabled_subtitle">Zusätzliche Live-Einträge auf Samsung-Sperrbildschirmen anzeigen, ohne bestehende Benachrichtigungen zu ersetzen</string>
-    <string name="iltix_now_bar_calls_title">Now Bar für Anrufe</string>
-    <string name="iltix_now_bar_calls_subtitle">Laufende Anrufe in der Now Bar anzeigen</string>
-    <string name="iltix_now_bar_media_title">Now Bar für Medienwiedergabe</string>
-    <string name="iltix_now_bar_media_subtitle">Sprach- und Audiowiedergabe in der Now Bar anzeigen</string>
-    <string name="iltix_now_bar_favorites_title">Now Bar Favoriten-Hinweise</string>
-    <string name="iltix_now_bar_favorites_subtitle">Hinweise für favorisierte Chats im Now-Bar-Modul anzeigen</string>
-    <string name="iltix_now_bar_favorites_text">%1$s (%2$d ungelesen)</string>
-    <string name="iltix_now_bar_call_channel_title">Iltix Now Bar Anrufe</string>
-    <string name="iltix_now_bar_call_channel_subtitle">Zusätzlicher Live-Eintrag für laufende Anrufe</string>
-    <string name="iltix_now_bar_media_channel_title">Iltix Now Bar Medien</string>
-    <string name="iltix_now_bar_media_channel_subtitle">Zusätzlicher Live-Eintrag für Sprach- und Audiowiedergabe</string>
-    <string name="iltix_now_bar_favorites_channel_title">Iltix Now Bar Favoriten</string>
-    <string name="iltix_now_bar_favorites_channel_subtitle">Zusätzliche Hinweise für favorisierte Chats</string>
     <string name="iltix_unencrypted_topbar_icon_title">Unverschlüsselt-Indikator in der Kopfzeile</string>
     <string name="iltix_unencrypted_topbar_icon_subtitle">Nur das Unverschlüsselt-Icon in der Raumkopfzeile statt dem Hinweistext über dem Eingabefeld anzeigen</string>
 

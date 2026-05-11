@@ -185,53 +185,6 @@ private fun IxModuleSettingsGeneralView(
             )
         }
 
-        PreferenceCategory(title = stringResource(id = R.string.iltix_now_bar_category_title)) {
-            val nowBarEnabled = state.preferencesValues["NOW_BAR_ENABLED"] ?: IxPrefs.NOW_BAR_ENABLED.defaultValue
-            IxPrefs.NOW_BAR_ENABLED.titleRes?.let { titleRes ->
-                PreferenceSwitch(
-                    title = stringResource(id = titleRes),
-                    subtitle = IxPrefs.NOW_BAR_ENABLED.summaryRes?.let { stringResource(id = it) },
-                    isChecked = nowBarEnabled,
-                    onCheckedChange = { enabled ->
-                        state.eventSink(IxModuleSettingsEvents.ToggleModule("NOW_BAR_ENABLED", enabled))
-                    },
-                )
-            }
-            IxPrefs.NOW_BAR_CALLS.titleRes?.let { titleRes ->
-                PreferenceSwitch(
-                    title = stringResource(id = titleRes),
-                    subtitle = IxPrefs.NOW_BAR_CALLS.summaryRes?.let { stringResource(id = it) },
-                    isChecked = state.preferencesValues["NOW_BAR_CALLS"] ?: IxPrefs.NOW_BAR_CALLS.defaultValue,
-                    enabled = nowBarEnabled,
-                    onCheckedChange = { enabled ->
-                        state.eventSink(IxModuleSettingsEvents.ToggleModule("NOW_BAR_CALLS", enabled))
-                    },
-                )
-            }
-            IxPrefs.NOW_BAR_MEDIA.titleRes?.let { titleRes ->
-                PreferenceSwitch(
-                    title = stringResource(id = titleRes),
-                    subtitle = IxPrefs.NOW_BAR_MEDIA.summaryRes?.let { stringResource(id = it) },
-                    isChecked = state.preferencesValues["NOW_BAR_MEDIA"] ?: IxPrefs.NOW_BAR_MEDIA.defaultValue,
-                    enabled = nowBarEnabled,
-                    onCheckedChange = { enabled ->
-                        state.eventSink(IxModuleSettingsEvents.ToggleModule("NOW_BAR_MEDIA", enabled))
-                    },
-                )
-            }
-            IxPrefs.NOW_BAR_FAVORITES.titleRes?.let { titleRes ->
-                PreferenceSwitch(
-                    title = stringResource(id = titleRes),
-                    subtitle = IxPrefs.NOW_BAR_FAVORITES.summaryRes?.let { stringResource(id = it) },
-                    isChecked = state.preferencesValues["NOW_BAR_FAVORITES"] ?: IxPrefs.NOW_BAR_FAVORITES.defaultValue,
-                    enabled = nowBarEnabled,
-                    onCheckedChange = { enabled ->
-                        state.eventSink(IxModuleSettingsEvents.ToggleModule("NOW_BAR_FAVORITES", enabled))
-                    },
-                )
-            }
-        }
-
         PreferenceCategory(title = stringResource(id = R.string.iltix_modules_auto_download_section_title)) {
             val mediaAutoDownloadEnabled = state.preferencesValues["MEDIA_AUTO_DOWNLOAD"]
                 ?: IxPrefs.MEDIA_AUTO_DOWNLOAD.defaultValue

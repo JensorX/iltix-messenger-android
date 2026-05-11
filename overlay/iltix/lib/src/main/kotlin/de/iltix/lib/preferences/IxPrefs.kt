@@ -147,42 +147,6 @@ object IxPrefs {
         upstreamChoice = false,
     )
 
-    val NOW_BAR_ENABLED = IxBoolPref(
-        key = "ILTIX_NOW_BAR_ENABLED",
-        defaultValue = true,
-        titleRes = R.string.iltix_now_bar_enabled_title,
-        summaryRes = R.string.iltix_now_bar_enabled_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
-    val NOW_BAR_CALLS = IxBoolPref(
-        key = "ILTIX_NOW_BAR_CALLS",
-        defaultValue = true,
-        titleRes = R.string.iltix_now_bar_calls_title,
-        summaryRes = R.string.iltix_now_bar_calls_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
-    val NOW_BAR_MEDIA = IxBoolPref(
-        key = "ILTIX_NOW_BAR_MEDIA",
-        defaultValue = true,
-        titleRes = R.string.iltix_now_bar_media_title,
-        summaryRes = R.string.iltix_now_bar_media_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
-    val NOW_BAR_FAVORITES = IxBoolPref(
-        key = "ILTIX_NOW_BAR_FAVORITES",
-        defaultValue = true,
-        titleRes = R.string.iltix_now_bar_favorites_title,
-        summaryRes = R.string.iltix_now_bar_favorites_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
     val UNENCRYPTED_TOPBAR_ICON = IxBoolPref(
         key = "ILTIX_UNENCRYPTED_TOPBAR_ICON",
         defaultValue = true,
@@ -247,10 +211,6 @@ object IxPrefs {
         EMOJI_PICKER,
         POLL_VOTE_VIEWER,
         PRIORITY_NOTIFICATION,
-        NOW_BAR_ENABLED,
-        NOW_BAR_CALLS,
-        NOW_BAR_MEDIA,
-        NOW_BAR_FAVORITES,
         UNENCRYPTED_TOPBAR_ICON,
         MEDIA_AUTO_DOWNLOAD,
         MEDIA_AUTO_DOWNLOAD_NETWORK_MODE,

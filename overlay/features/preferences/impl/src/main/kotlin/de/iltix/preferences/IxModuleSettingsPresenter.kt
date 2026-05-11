@@ -87,22 +87,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
             .collectAsState(initial = IxPrefs.PRIORITY_NOTIFICATION.defaultValue)
         preferencesMap["PRIORITY_NOTIFICATION"] = priorityNotification
 
-        val nowBarEnabled by preferencesStore.settingFlow(IxPrefs.NOW_BAR_ENABLED)
-            .collectAsState(initial = IxPrefs.NOW_BAR_ENABLED.defaultValue)
-        preferencesMap["NOW_BAR_ENABLED"] = nowBarEnabled
-
-        val nowBarCalls by preferencesStore.settingFlow(IxPrefs.NOW_BAR_CALLS)
-            .collectAsState(initial = IxPrefs.NOW_BAR_CALLS.defaultValue)
-        preferencesMap["NOW_BAR_CALLS"] = nowBarCalls
-
-        val nowBarMedia by preferencesStore.settingFlow(IxPrefs.NOW_BAR_MEDIA)
-            .collectAsState(initial = IxPrefs.NOW_BAR_MEDIA.defaultValue)
-        preferencesMap["NOW_BAR_MEDIA"] = nowBarMedia
-
-        val nowBarFavorites by preferencesStore.settingFlow(IxPrefs.NOW_BAR_FAVORITES)
-            .collectAsState(initial = IxPrefs.NOW_BAR_FAVORITES.defaultValue)
-        preferencesMap["NOW_BAR_FAVORITES"] = nowBarFavorites
-
         val unencryptedTopbarIcon by preferencesStore.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
             .collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue)
         preferencesMap["UNENCRYPTED_TOPBAR_ICON"] = unencryptedTopbarIcon
@@ -140,10 +124,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
                             "POLL_VOTE_VIEWER" -> IxPrefs.POLL_VOTE_VIEWER
                             "PRIORITY_NOTIFICATION" -> IxPrefs.PRIORITY_NOTIFICATION
-                            "NOW_BAR_ENABLED" -> IxPrefs.NOW_BAR_ENABLED
-                            "NOW_BAR_CALLS" -> IxPrefs.NOW_BAR_CALLS
-                            "NOW_BAR_MEDIA" -> IxPrefs.NOW_BAR_MEDIA
-                            "NOW_BAR_FAVORITES" -> IxPrefs.NOW_BAR_FAVORITES
                             "UNENCRYPTED_TOPBAR_ICON" -> IxPrefs.UNENCRYPTED_TOPBAR_ICON
                             "MEDIA_AUTO_DOWNLOAD" -> IxPrefs.MEDIA_AUTO_DOWNLOAD
                             "MEDIA_AUTO_DOWNLOAD_VIDEOS_WIFI_ONLY" -> IxPrefs.MEDIA_AUTO_DOWNLOAD_VIDEOS_WIFI_ONLY
@@ -184,10 +164,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, false)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, false)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, false)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_ENABLED, false)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_CALLS, false)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_MEDIA, false)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_FAVORITES, false)
                         preferencesStore.setSetting(IxPrefs.UNENCRYPTED_TOPBAR_ICON, false)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD, false)
                         preferencesStore.setSetting(IxPrefs.ILTIX_THEME, false)
@@ -207,10 +183,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, IxPrefs.EMOJI_PICKER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, IxPrefs.POLL_VOTE_VIEWER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, IxPrefs.PRIORITY_NOTIFICATION.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_ENABLED, IxPrefs.NOW_BAR_ENABLED.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_CALLS, IxPrefs.NOW_BAR_CALLS.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_MEDIA, IxPrefs.NOW_BAR_MEDIA.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.NOW_BAR_FAVORITES, IxPrefs.NOW_BAR_FAVORITES.defaultValue)
                         preferencesStore.setSetting(IxPrefs.UNENCRYPTED_TOPBAR_ICON, IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD, IxPrefs.MEDIA_AUTO_DOWNLOAD.defaultValue)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE, IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE.defaultValue)

@@ -41,8 +41,6 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomDetailsPresenter()
         patchRoomDetailsView()
         patchUserProfileView()
-        patchCallForegroundService()
-        patchDefaultMediaPlayer()
         patchNotificationCreator()
         patchNotificationChannels()
         patchFetchPendingNotificationsWorker()
@@ -2215,58 +2213,6 @@ internal fun ThreadTopBarPreview"""
             )""",
             "UserProfileView: IxLocalNicknameAction"
         )
-    }
-
-    private fun patchCallForegroundService() {
-        val path = "features/call/impl/src/main/kotlin/io/element/android/features/call/impl/services/CallForegroundService.kt"
-        engine.addImport(path, "de.iltix.nowbar.IxNowBar")
-
-        engine.replaceText(
-            path,
-            """        val notificationId = NotificationIdProvider.getForegroundServiceNotificationId(ForegroundServiceType.ONGOING_CALL)
-        val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-        } else {
-            0
-        }
-        runCatchingExceptions {
-            ServiceCompat.startForeground(this, notificationId, notification, serviceType)
-        }.onFailure {
-            Timber.e(it, "Failed to start ongoing call foreground service")
-        }""",
-            """        val notificationId = NotificationIdProvider.getForegroundServiceNotificationId(ForegroundServiceType.ONGOING_CALL)
-        val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-        } else {
-            0
-        }
-        runCatchingExceptions {
-            ServiceCompat.startForeground(this, notificationId, notification, serviceType)
-            PendingIntentCompat.getActivity(this, 0, callActivityIntent, 0, false)?.let { contentIntent ->
-                IxNowBar.postOngoingCallSidecar(
-                    context = this,
-                    contentIntent = contentIntent,
-                    title = getString(R.string.call_foreground_service_title_android),
-                    text = getString(R.string.call_foreground_service_message_android),
-                )
-            }
-        }.onFailure {
-            Timber.e(it, "Failed to start ongoing call foreground service")
-        }"""
-        )
-
-        engine.insertAfterLine(
-            path,
-            """override fun onDestroy\(\)""",
-            """        IxNowBar.clearOngoingCallSidecar(this)""",
-            "CallForegroundService: clear additive now bar sidecar"
-        )
-    }
-
-    private fun patchDefaultMediaPlayer() {
-        // Samsung Now Bar media support needs a real MediaSession-backed implementation.
-        // The previous transport-notification sidecar showed raw event IDs and could
-        // interfere with voice-message playback, so keep this path disabled for now.
     }
 
     // ===== Message Bubble hooks =====
