@@ -1726,6 +1726,19 @@ internal fun ThreadTopBarPreview"""
 
     private fun patchNotificationRenderer() {
         val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/NotificationRenderer.kt"
+        engine.addImport(path, "io.element.android.libraries.push.api.notifications.conversations.NotificationConversationService")
+
+        // Inject conversation service so shortcut refresh code compiles.
+        engine.replaceText(
+            path,
+            """    private val notificationDisplayer: NotificationDisplayer,
+    private val notificationDataFactory: NotificationDataFactory,
+    private val enterpriseService: EnterpriseService,""",
+            """    private val notificationDisplayer: NotificationDisplayer,
+    private val notificationDataFactory: NotificationDataFactory,
+    private val notificationConversationService: NotificationConversationService,
+    private val enterpriseService: EnterpriseService,"""
+        )
 
         // Ensure shortcuts exist for room notifications, so setShortcutId() resolves to a valid dynamic shortcut.
         engine.replaceText(
@@ -1756,7 +1769,6 @@ internal fun ThreadTopBarPreview"""
                         roomId = latestEvent.roomId,
                         roomName = latestEvent.roomName ?: latestEvent.roomId.value,
                         roomIsDirect = latestEvent.roomIsDm,
-                        roomIsFavorite = false,
                         roomAvatarUrl = latestEvent.roomAvatarPath,
                     )
                 }.onFailure {
