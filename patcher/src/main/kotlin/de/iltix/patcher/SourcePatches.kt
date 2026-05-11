@@ -1787,13 +1787,6 @@ internal fun ThreadTopBarPreview"""
 """
         )
 
-        // Reuse the earlier isIltixBuild declaration if the upstream file declares it later.
-        engine.replaceText(
-            path,
-            """        val isIltixBuild = context.packageName.contains("iltix")
-        val shortcutBuilder = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))""",
-            """        val shortcutBuilder = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))"""
-        )
     }
 
     private fun patchNotificationCreator() {
