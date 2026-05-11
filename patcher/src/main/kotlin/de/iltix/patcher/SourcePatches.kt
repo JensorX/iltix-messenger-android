@@ -41,6 +41,8 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomDetailsPresenter()
         patchRoomDetailsView()
         patchUserProfileView()
+        patchNotificationRenderer()
+        patchNotificationConversationService()
         patchNotificationCreator()
         patchNotificationChannels()
         patchFetchPendingNotificationsWorker()
@@ -1722,6 +1724,78 @@ internal fun ThreadTopBarPreview"""
 
     // ===== Push/Notification hooks =====
 
+    private fun patchNotificationRenderer() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/NotificationRenderer.kt"
+
+        // Ensure shortcuts exist for room notifications, so setShortcutId() resolves to a valid dynamic shortcut.
+        engine.replaceText(
+            path,
+            """        val summaryNotification = notificationDataFactory.createSummaryNotification(
+            roomNotifications = roomNotifications,
+            invitationNotifications = invitationNotifications,
+            simpleNotifications = simpleNotifications,
+            notificationAccountParams = notificationAccountParams,
+        )""",
+            """        val summaryNotification = notificationDataFactory.createSummaryNotification(
+            roomNotifications = roomNotifications,
+            invitationNotifications = invitationNotifications,
+            simpleNotifications = simpleNotifications,
+            notificationAccountParams = notificationAccountParams,
+        )
+
+        // Ensure shortcut IDs referenced by notifications are backed by dynamic shortcuts.
+        // Without this, Android/Samsung may not classify them as valid conversations.
+        groupedEvents.roomEvents
+            .groupBy { it.roomId }
+            .values
+            .mapNotNull { events -> events.maxByOrNull { it.timestamp } }
+            .forEach { latestEvent ->
+                runCatching {
+                    notificationConversationService.onSendMessage(
+                        sessionId = latestEvent.sessionId,
+                        roomId = latestEvent.roomId,
+                        roomName = latestEvent.roomName ?: latestEvent.roomId.value,
+                        roomIsDirect = latestEvent.roomIsDm,
+                        roomIsFavorite = false,
+                        roomAvatarUrl = latestEvent.roomAvatarPath,
+                    )
+                }.onFailure {
+                    Timber.tag(loggerTag.value).w(it, "Failed to refresh conversation shortcut for room ${'$'}{latestEvent.roomId}")
+                }
+            }"""
+        )
+    }
+
+    private fun patchNotificationConversationService() {
+        val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/conversations/DefaultNotificationConversationService.kt"
+
+        // In Iltix builds, keep conversation shortcuts available even with app lock enabled,
+        // otherwise notification shortcut IDs become invalid for ranking.
+        engine.replaceText(
+            path,
+            """        if (lockScreenService.isPinSetup().first()) {
+            // We don't create shortcuts when a pin code is set for privacy reasons
+            return
+        }
+""",
+            """        val hasPinCode = lockScreenService.isPinSetup().first()
+        val isIltixBuild = context.packageName.contains("iltix")
+        if (hasPinCode && !isIltixBuild) {
+            // Keep upstream privacy behavior for non-Iltix builds.
+            return
+        }
+"""
+        )
+
+        // Reuse the earlier isIltixBuild declaration if the upstream file declares it later.
+        engine.replaceText(
+            path,
+            """        val isIltixBuild = context.packageName.contains("iltix")
+        val shortcutBuilder = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))""",
+            """        val shortcutBuilder = ShortcutInfoCompat.Builder(context, createShortcutId(sessionId, roomId))"""
+        )
+    }
+
     private fun patchNotificationCreator() {
         val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/factories/NotificationCreator.kt"
         engine.addImport(path, "de.iltix.push.resolveIxNotificationRoute")
@@ -1932,7 +2006,7 @@ internal fun ThreadTopBarPreview"""
                 """            .setTicker(tickerText)
             .build()""",
                 """            .apply {
-                // Extra conversation ranking hint (API-dependent) to get closer to FluffyChat behavior.
+                // Extra conversation ranking hint (API-dependent).
                 if (ixNotificationRoute != null) {
                     events.lastOrNull { !it.outGoingMessage }?.let { latestEvent ->
                         val senderName = resolveIxNotificationSenderName(context, buildMeta, latestEvent)
@@ -1963,7 +2037,7 @@ internal fun ThreadTopBarPreview"""
             )
 
             // When Iltix priority route is active, use GROUP_ALERT_ALL so the child notification
-            // can alert directly (matching FluffyChat behavior).
+            // can alert directly.
             engine.replaceText(
                 path,
                 """                .setGroupSummary(false)
