@@ -28,10 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import de.iltix.lib.R
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.designsystem.components.avatar.Avatar
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
@@ -45,6 +43,7 @@ import io.element.android.libraries.matrix.ui.model.getAvatarData
 fun IxSpaceNavBar(
     filters: List<SpaceServiceFilter>,
     selectedSpaceId: RoomId?,
+    clearLabel: String,
     onClearSelection: () -> Unit,
     onSelectFilter: (SpaceServiceFilter) -> Unit,
     onOpenSpace: (SpaceServiceFilter) -> Unit,
@@ -70,12 +69,12 @@ fun IxSpaceNavBar(
                 .clip(RoundedCornerShape(27.dp))
                 .padding(horizontal = 14.dp)
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = 10.dp),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IxSpaceNavItem(
-                label = stringResource(id = R.string.iltix_space_nav_all_label),
+                label = clearLabel,
                 isSelected = selectedSpaceId == null,
                 onClick = onClearSelection,
             )

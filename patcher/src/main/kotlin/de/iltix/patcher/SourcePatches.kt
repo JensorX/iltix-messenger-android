@@ -18,6 +18,7 @@ class SourcePatches(private val engine: PatchEngine) {
         patchLoggedInFlowNode()
         patchHomeView()
         patchHomeTopBar()
+        patchSpaceFiltersPresenter()
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
@@ -104,7 +105,8 @@ class SourcePatches(private val engine: PatchEngine) {
                 selectedNavigationItem = state.currentHomeNavigationBarItem,""",
             """            HomeTopBar(
                 selectedNavigationItem = state.currentHomeNavigationBarItem,
-                useIltixTheme = ixHomeUi.useIltixTheme,"""
+                useIltixTheme = ixHomeUi.useIltixTheme,
+                shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,"""
         )
 
         // Add showStartChatInTopBar + onStartChatClick to HomeTopBar call
@@ -255,6 +257,7 @@ class SourcePatches(private val engine: PatchEngine) {
     displayFilters: Boolean,""",
             """    canReportBug: Boolean,
     showStartChatInTopBar: Boolean = false,
+    shouldShowIxSpaceNav: Boolean = false,
     onStartChatClick: () -> Unit = {},
     displayFilters: Boolean,"""
         )
@@ -287,6 +290,7 @@ class SourcePatches(private val engine: PatchEngine) {
                         onMenuActionClick = onMenuActionClick,""",
             """                    RoomListMenuItems(
                         showStartChatInTopBar = showStartChatInTopBar,
+                        shouldShowIxSpaceNav = shouldShowIxSpaceNav,
                         onToggleSearch = onToggleSearch,
                         onMenuActionClick = onMenuActionClick,
                         onStartChatClick = onStartChatClick,"""
@@ -305,6 +309,7 @@ class SourcePatches(private val engine: PatchEngine) {
         onClick = onToggleSearch,""",
             """private fun RoomListMenuItems(
     showStartChatInTopBar: Boolean = false,
+            shouldShowIxSpaceNav: Boolean = false,
     onToggleSearch: () -> Unit,
     onMenuActionClick: (RoomListMenuAction) -> Unit,
     onStartChatClick: () -> Unit = {},
@@ -321,8 +326,44 @@ class SourcePatches(private val engine: PatchEngine) {
             )
         }
     }
+    if (!shouldShowIxSpaceNav) {
+        SpaceFilterButton(spaceFiltersState = spaceFiltersState)
+    }
     IconButton(
         onClick = onToggleSearch,"""
+        )
+
+        engine.replaceText(
+            path,
+            """    SpaceFilterButton(spaceFiltersState = spaceFiltersState)
+    if (RoomListConfig.HAS_DROP_DOWN_MENU) {""",
+            """    if (RoomListConfig.HAS_DROP_DOWN_MENU) {"""
+        )
+    }
+
+    private fun patchSpaceFiltersPresenter() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/spacefilters/SpaceFiltersPresenter.kt"
+        engine.addImport(path, "io.element.android.libraries.matrix.api.core.RoomId")
+
+        engine.replaceText(
+            path,
+            """        val availableFilters by remember {
+            matrixClient.spaceService.spaceFiltersFlow.map { it.toImmutableList() }
+        }.collectAsState(initial = persistentListOf())""",
+            """        val availableFilters by remember {
+            matrixClient.spaceService.spaceFiltersFlow.map { filters ->
+                filters.map { filter ->
+                    val recursiveDescendants = mutableSetOf<RoomId>()
+                    fun collect(f: SpaceServiceFilter) {
+                        recursiveDescendants.addAll(f.descendants)
+                        filters.filter { it.level == f.level + 1 && f.descendants.contains(it.spaceRoom.roomId) }
+                            .forEach { collect(it) }
+                    }
+                    collect(filter)
+                    filter.copy(descendants = recursiveDescendants.toList())
+                }.toImmutableList()
+            }
+        }.collectAsState(initial = persistentListOf())"""
         )
     }
 

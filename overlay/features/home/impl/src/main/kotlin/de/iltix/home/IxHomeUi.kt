@@ -1,6 +1,8 @@
 package de.iltix.home
 
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -9,8 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import de.iltix.lib.preferences.IxPreferencesStore
 import de.iltix.lib.preferences.IxPrefs
+import de.iltix.lib.R
 import io.element.android.features.home.impl.HomeNavigationBarItem
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersEvent
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
@@ -88,32 +93,125 @@ fun IxFloatingSpaceNav(
     }
     if (filters.isEmpty()) return
 
-    IxSpaceNavBar(
-        modifier = modifier,
-        filters = filters,
-        selectedSpaceId = state.selectedFilter()?.spaceRoom?.roomId,
-        onClearSelection = {
-            when (state) {
-                is SpaceFiltersState.Selected -> state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
-                is SpaceFiltersState.Selecting -> state.eventSink(SpaceFiltersEvent.Selecting.Cancel)
-                else -> Unit
-            }
-        },
-        onSelectFilter = { filter ->
-            when (state) {
-                is SpaceFiltersState.Selecting -> state.eventSink(SpaceFiltersEvent.Selecting.SelectFilter(filter))
-                is SpaceFiltersState.Selected -> {
-                    if (filter.spaceRoom.roomId == state.selectedFilter.spaceRoom.roomId) {
-                        // Tapping the already-selected filter → deselect
-                        state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
-                    } else {
-                        pendingSelection = filter
-                        state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
-                    }
+    val hierarchy = remember(filters) { buildIxSpaceHierarchy(filters) }
+    val selectedPath = remember(hierarchy.parentByChild, state) {
+        buildSelectedPath(
+            selectedId = state.selectedFilter()?.spaceRoom?.roomId,
+            parentByChild = hierarchy.parentByChild,
+        )
+    }
+
+    fun requestSelection(target: SpaceServiceFilter?) {
+        when (state) {
+            is SpaceFiltersState.Selecting -> {
+                if (target == null) {
+                    state.eventSink(SpaceFiltersEvent.Selecting.Cancel)
+                } else {
+                    state.eventSink(SpaceFiltersEvent.Selecting.SelectFilter(target))
                 }
-                else -> Unit
             }
-        },
-        onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
+            is SpaceFiltersState.Selected -> {
+                if (target == null || target.spaceRoom.roomId == state.selectedFilter.spaceRoom.roomId) {
+                    state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+                } else {
+                    pendingSelection = target
+                    state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+                }
+            }
+            is SpaceFiltersState.Unselected -> {
+                pendingSelection = target
+                state.eventSink(SpaceFiltersEvent.Unselected.ShowFilters)
+            }
+            SpaceFiltersState.Disabled -> Unit
+        }
+    }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IxSpaceNavBar(
+            filters = hierarchy.rootFilters,
+            selectedSpaceId = selectedPath.firstOrNull(),
+            clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
+            onClearSelection = { requestSelection(null) },
+            onSelectFilter = { requestSelection(it) },
+            onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
+        )
+
+        selectedPath.forEachIndexed { index, parentId ->
+            val children = hierarchy.childrenByParent[parentId].orEmpty()
+            if (children.isEmpty()) return@forEachIndexed
+            val selectedChild = selectedPath.getOrNull(index + 1)
+            val parentFilter = hierarchy.filtersById[parentId]
+            IxSpaceNavBar(
+                filters = children,
+                selectedSpaceId = selectedChild,
+                clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
+                onClearSelection = {
+                    if (parentFilter != null) {
+                        requestSelection(parentFilter)
+                    } else {
+                        requestSelection(null)
+                    }
+                },
+                onSelectFilter = { requestSelection(it) },
+                onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
+            )
+        }
+    }
+}
+
+private data class IxSpaceHierarchy(
+    val rootFilters: List<SpaceServiceFilter>,
+    val filtersById: Map<RoomId, SpaceServiceFilter>,
+    val parentByChild: Map<RoomId, RoomId>,
+    val childrenByParent: Map<RoomId, List<SpaceServiceFilter>>,
+)
+
+private fun buildIxSpaceHierarchy(filters: List<SpaceServiceFilter>): IxSpaceHierarchy {
+    val byId = filters.associateBy { it.spaceRoom.roomId }
+    val minLevel = filters.minOfOrNull { it.level }
+    if (minLevel == null) {
+        return IxSpaceHierarchy(
+            rootFilters = emptyList(),
+            filtersById = emptyMap(),
+            parentByChild = emptyMap(),
+            childrenByParent = emptyMap(),
+        )
+    }
+
+    val roots = filters.filter { it.level == minLevel }
+    val parentByChild = mutableMapOf<RoomId, RoomId>()
+    val childrenByParent = mutableMapOf<RoomId, MutableList<SpaceServiceFilter>>()
+
+    filters.forEach { child ->
+        if (child.level == minLevel) return@forEach
+        val parent = filters.firstOrNull { candidate ->
+            candidate.level == child.level - 1 && candidate.descendants.contains(child.spaceRoom.roomId)
+        } ?: return@forEach
+        parentByChild[child.spaceRoom.roomId] = parent.spaceRoom.roomId
+        childrenByParent.getOrPut(parent.spaceRoom.roomId) { mutableListOf() }.add(child)
+    }
+
+    return IxSpaceHierarchy(
+        rootFilters = roots,
+        filtersById = byId,
+        parentByChild = parentByChild,
+        childrenByParent = childrenByParent,
     )
+}
+
+private fun buildSelectedPath(
+    selectedId: RoomId?,
+    parentByChild: Map<RoomId, RoomId>,
+): List<RoomId> {
+    if (selectedId == null) return emptyList()
+    val path = mutableListOf<RoomId>()
+    var current: RoomId? = selectedId
+    while (current != null) {
+        path.add(current)
+        current = parentByChild[current]
+    }
+    return path.asReversed()
 }
