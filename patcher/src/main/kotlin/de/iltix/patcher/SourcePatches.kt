@@ -19,6 +19,8 @@ class SourcePatches(private val engine: PatchEngine) {
         patchHomeView()
         patchHomeTopBar()
         patchSpaceFiltersPresenter()
+        patchRoomListRoomSummaryModel()
+        patchRoomListRoomSummaryFactory()
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
@@ -435,6 +437,70 @@ class SourcePatches(private val engine: PatchEngine) {
         )
     }
 
+    private fun patchRoomListRoomSummaryModel() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/model/RoomListRoomSummary.kt"
+
+        engine.replaceText(
+            path,
+            """    val timestamp: String?,
+    val latestEvent: LatestEvent,
+    val avatarData: AvatarData,""",
+            """    val timestamp: String?,
+    val latestEvent: LatestEvent,
+    val latestEventSenderId: String? = null,
+    val latestEventSenderDisplayName: String? = null,
+    val avatarData: AvatarData,"""
+        )
+    }
+
+    private fun patchRoomListRoomSummaryFactory() {
+        val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/datasource/RoomListRoomSummaryFactory.kt"
+        engine.addImport(path, "io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails")
+
+        engine.replaceText(
+            path,
+            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.isDm),
+            avatarData = avatarData,""",
+            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.isDm),
+            latestEventSenderId = roomSummary.latestEvent.senderIdOrNull(),
+            latestEventSenderDisplayName = roomSummary.latestEvent.senderDisplayNameOrNull(),
+            avatarData = avatarData,"""
+        )
+
+        engine.replaceText(
+            path,
+            """            is LatestEventValue.RoomInvite -> LatestEvent.None
+        }
+    }
+}""",
+            """            is LatestEventValue.RoomInvite -> LatestEvent.None
+        }
+    }
+}
+
+private fun LatestEventValue.senderIdOrNull(): String? {
+    return when (this) {
+        is LatestEventValue.Local -> senderId.value
+        is LatestEventValue.Remote -> senderId.value
+        is LatestEventValue.None,
+        is LatestEventValue.RoomInvite,
+        -> null
+    }
+}
+
+private fun LatestEventValue.senderDisplayNameOrNull(): String? {
+    val profile = when (this) {
+        is LatestEventValue.Local -> senderProfile
+        is LatestEventValue.Remote -> senderProfile
+        is LatestEventValue.None,
+        is LatestEventValue.RoomInvite,
+        -> return null
+    }
+    return (profile as? ProfileDetails.Ready)?.displayName
+}"""
+        )
+    }
+
     private fun patchRoomSummaryRow() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt"
         engine.addImport(path, "de.iltix.components.badges.IxUnreadBadge")
@@ -543,6 +609,36 @@ class SourcePatches(private val engine: PatchEngine) {
                     )
                 }
             }"""
+        )
+
+        engine.replaceText(
+            path,
+            """                val messagePreview = room.latestEvent.content()
+                val annotatedMessagePreview = messagePreview as? AnnotatedString ?: AnnotatedString(text = messagePreview.orEmpty().toString())
+                Text(""",
+            """                val messagePreview = room.latestEvent.content()
+                val resolvedLatestEventSenderName = rememberIxResolvedDisplayName(
+                    userId = room.latestEventSenderId,
+                    fallbackName = room.latestEventSenderDisplayName,
+                )
+                val messagePreviewText = messagePreview.orEmpty().toString()
+                val canRewriteSender = !room.isDm &&
+                    !resolvedLatestEventSenderName.isNullOrBlank() &&
+                    !room.latestEventSenderDisplayName.isNullOrBlank()
+                val rewrittenMessagePreview = if (canRewriteSender) {
+                    messagePreviewText.replaceFirst(
+                        oldValue = "${'$'}{room.latestEventSenderDisplayName}:",
+                        newValue = "${'$'}{resolvedLatestEventSenderName}:",
+                    )
+                } else {
+                    messagePreviewText
+                }
+                val annotatedMessagePreview = when {
+                    canRewriteSender -> AnnotatedString(text = rewrittenMessagePreview)
+                    messagePreview is AnnotatedString -> messagePreview
+                    else -> AnnotatedString(text = messagePreviewText)
+                }
+                Text("""
         )
     }
 

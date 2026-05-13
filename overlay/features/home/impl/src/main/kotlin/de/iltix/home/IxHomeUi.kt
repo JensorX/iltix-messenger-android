@@ -130,15 +130,6 @@ fun IxFloatingSpaceNav(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        IxSpaceNavBar(
-            filters = hierarchy.rootFilters,
-            selectedSpaceId = selectedPath.firstOrNull(),
-            clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
-            onClearSelection = { requestSelection(null) },
-            onSelectFilter = { requestSelection(it) },
-            onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
-        )
-
         selectedPath.forEachIndexed { index, parentId ->
             val children = hierarchy.childrenByParent[parentId].orEmpty()
             if (children.isEmpty()) return@forEachIndexed
@@ -159,6 +150,15 @@ fun IxFloatingSpaceNav(
                 onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
             )
         }
+
+        IxSpaceNavBar(
+            filters = hierarchy.rootFilters,
+            selectedSpaceId = selectedPath.firstOrNull(),
+            clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
+            onClearSelection = { requestSelection(null) },
+            onSelectFilter = { requestSelection(it) },
+            onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },
+        )
     }
 }
 
