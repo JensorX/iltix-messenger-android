@@ -87,6 +87,15 @@ fun IxFloatingSpaceNav(
         }
     }
 
+    // When returning from a room, state can be Selected while cached filters are empty.
+    // Re-enter selection flow once to repopulate filters, then restore the previous selection.
+    LaunchedEffect(state, rememberedFilters) {
+        if (rememberedFilters.isEmpty() && state is SpaceFiltersState.Selected) {
+            pendingSelection = state.selectedFilter
+            state.eventSink(SpaceFiltersEvent.Selected.ClearSelection)
+        }
+    }
+
     val filters = when (state) {
         is SpaceFiltersState.Selecting -> state.availableFilters
         else -> rememberedFilters
