@@ -29,3 +29,10 @@ cd ../workspace && ./gradlew :app:assembleGplayIxDebug
 
 - **Iltix Build** workflow: Runs on push to `main` or manual dispatch. Produces debug + release APKs.
 - **Upstream Watch** workflow: Daily check for new Element X tags, creates an issue when update is available.
+
+## Lizenzierung
+
+Dieses Projekt modifiziert [Element X Android](https://github.com/element-hq/element-x-android) (AGPL-3.0-only).
+
+Element X & Iltix Patches/Overlays unterliegen beide der **AGPL-3.0-only Lizenz** (siehe [LICENSE](./LICENSE)).  
+Bei Distribution muss der Quellcode verfügbar sein (automatisch durch Patcher-System erfüllt).
