@@ -606,9 +606,9 @@ class SourcePatches(private val engine: PatchEngine) {
             path,
             """    ExpandableBottomSheetLayout(
         modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .systemBarsPadding()""",
+                .fillMaxSize()
+                .imePadding()
+                .systemBarsPadding()""",
             """    Column(
         modifier = modifier
             .fillMaxSize()
