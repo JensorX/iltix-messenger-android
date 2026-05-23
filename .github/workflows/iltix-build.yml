@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false"
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx7g -XX:+UseParallelGC -Dorg.gradle.daemon=true -Dorg.gradle.configuration-cache=true -Dorg.gradle.parallel.threads=4"
 
 jobs:
   build:
@@ -66,6 +66,23 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Cache Gradle wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Cache Gradle build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/build-cache
+          key: gradle-build-cache-${{ hashFiles('**/build.gradle.kts', '**/gradle.properties') }}
+          restore-keys: |
+            gradle-build-cache-
+
       - name: Cache patcher JAR
         id: patcher-cache
         uses: actions/cache@v4
@@ -88,7 +105,12 @@ jobs:
         working-directory: workspace
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleGplayIxRelease --parallel
+          ./gradlew :app:packageGplayIxRelease \
+            --parallel \
+            --build-cache \
+            --quiet \
+            -x test \
+            -x lint
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
