@@ -110,13 +110,15 @@ object IxPrefs {
         upstreamChoice = false,
     )
 
-    val ILTIX_FONT = IxBoolPref(
-        key = "ILTIX_FONT",
-        defaultValue = true,
+    val ILTIX_FONT = IxListPref(
+        key = "ILTIX_FONT_FAMILY",
+        defaultValue = "noto_sans",
         titleRes = R.string.iltix_font_title,
         summaryRes = R.string.iltix_font_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
+        authorsChoice = "noto_sans",
+        upstreamChoice = "system",
+        entries = listOf("Noto Sans", "Roboto Condensed", "System"),
+        entryValues = listOf("noto_sans", "roboto_condensed", "system"),
     )
 
     // ===== Chat View Features =====

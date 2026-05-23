@@ -66,7 +66,10 @@
     <string name="iltix_card_room_rows_subtitle">Display chat rooms as rounded cards</string>
 
     <string name="iltix_font_title">Iltix Font</string>
-    <string name="iltix_font_subtitle">Use Roboto as app-wide font</string>
+    <string name="iltix_font_subtitle">App-wide font family</string>
+    <string name="iltix_font_option_noto_sans">Noto Sans</string>
+    <string name="iltix_font_option_roboto_condensed">Roboto Condensed</string>
+    <string name="iltix_font_option_system">System</string>
     
     <!-- Chat View Features -->
     <string name="iltix_emoji_picker_title">Emoji Picker</string>

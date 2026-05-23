@@ -30,7 +30,7 @@ data class IxThemeSettings(
     val iltixThemeEnabled: Boolean,
     val materialYouEnabled: Boolean,
     val roundedBubblesEnabled: Boolean,
-    val iltixFontEnabled: Boolean,
+    val iltixFont: String,
 )
 
 data class IxTypographyOverrides(
@@ -65,7 +65,7 @@ fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
             iltixThemeEnabled = false,
             materialYouEnabled = false,
             roundedBubblesEnabled = false,
-            iltixFontEnabled = false,
+            iltixFont = "system",
         )
     }
 
@@ -77,12 +77,12 @@ fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
             preferencesStore.settingFlow(IxPrefs.MATERIAL_YOU_THEME),
             preferencesStore.settingFlow(IxPrefs.ROUNDED_BUBBLES),
             preferencesStore.settingFlow(IxPrefs.ILTIX_FONT),
-        ) { iltixThemeEnabled, materialYouEnabled, roundedBubblesEnabled, iltixFontEnabled ->
+        ) { iltixThemeEnabled, materialYouEnabled, roundedBubblesEnabled, iltixFont ->
             IxThemeSettings(
                 iltixThemeEnabled = iltixThemeEnabled,
                 materialYouEnabled = materialYouEnabled,
                 roundedBubblesEnabled = roundedBubblesEnabled,
-                iltixFontEnabled = iltixFontEnabled,
+                iltixFont = iltixFont,
             )
         }
     }.collectAsState(
@@ -90,7 +90,7 @@ fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
             iltixThemeEnabled = true,
             materialYouEnabled = true,
             roundedBubblesEnabled = true,
-            iltixFontEnabled = true,
+            iltixFont = IxPrefs.ILTIX_FONT.defaultValue,
         )
     )
     return settings
@@ -101,16 +101,24 @@ fun rememberIxTypographyOverrides(
     settings: IxThemeSettings,
     isIltixBuild: Boolean,
 ): IxTypographyOverrides {
-    val materialTypography = remember(isIltixBuild, settings.iltixFontEnabled) {
-        if (isIltixBuild && settings.iltixFontEnabled) {
-            ixRobotoTypography()
+    val materialTypography = remember(isIltixBuild, settings.iltixFont) {
+        if (isIltixBuild) {
+            when (settings.iltixFont) {
+                "noto_sans" -> ixNotoSansTypography()
+                "roboto_condensed" -> ixRobotoTypography()
+                else -> null
+            }
         } else {
             null
         }
     }
-    val compoundTypographyTokens = remember(isIltixBuild, settings.iltixFontEnabled) {
-        if (isIltixBuild && settings.iltixFontEnabled) {
-            ixCompoundTypographyTokens()
+    val compoundTypographyTokens = remember(isIltixBuild, settings.iltixFont) {
+        if (isIltixBuild) {
+            when (settings.iltixFont) {
+                "noto_sans" -> ixNotoSansCompoundTypographyTokens()
+                "roboto_condensed" -> ixCompoundTypographyTokens()
+                else -> null
+            }
         } else {
             null
         }

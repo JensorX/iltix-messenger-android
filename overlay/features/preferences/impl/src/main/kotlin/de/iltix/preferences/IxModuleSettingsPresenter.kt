@@ -73,7 +73,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
 
         val iltixFont by preferencesStore.settingFlow(IxPrefs.ILTIX_FONT)
             .collectAsState(initial = IxPrefs.ILTIX_FONT.defaultValue)
-        preferencesMap["ILTIX_FONT"] = iltixFont
+        stringValuesMap["ILTIX_FONT"] = iltixFont
 
         val emojiPicker by preferencesStore.settingFlow(IxPrefs.EMOJI_PICKER)
             .collectAsState(initial = IxPrefs.EMOJI_PICKER.defaultValue)
@@ -120,7 +120,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "MATERIAL_YOU_THEME" -> IxPrefs.MATERIAL_YOU_THEME
                             "ROUNDED_BUBBLES" -> IxPrefs.ROUNDED_BUBBLES
                             "CARD_ROOM_ROWS" -> IxPrefs.CARD_ROOM_ROWS
-                            "ILTIX_FONT" -> IxPrefs.ILTIX_FONT
                             "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
                             "POLL_VOTE_VIEWER" -> IxPrefs.POLL_VOTE_VIEWER
                             "PRIORITY_NOTIFICATION" -> IxPrefs.PRIORITY_NOTIFICATION
@@ -137,6 +136,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         val pref = when (event.moduleKey) {
                             "SPACE_NAV_MODE" -> IxPrefs.SPACE_NAV_MODE
                             "MEDIA_AUTO_DOWNLOAD_NETWORK_MODE" -> IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE
+                            "ILTIX_FONT" -> IxPrefs.ILTIX_FONT
                             else -> return@launch
                         }
                         preferencesStore.setSetting(pref, event.value)
@@ -170,7 +170,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.MATERIAL_YOU_THEME, false)
                         preferencesStore.setSetting(IxPrefs.ROUNDED_BUBBLES, false)
                         preferencesStore.setSetting(IxPrefs.CARD_ROOM_ROWS, false)
-                        preferencesStore.setSetting(IxPrefs.ILTIX_FONT, false)
+                        preferencesStore.setSetting(IxPrefs.ILTIX_FONT, "system")
                     }
                 }
                 IxModuleSettingsEvents.ResetToDefaults -> {

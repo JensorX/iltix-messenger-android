@@ -422,15 +422,29 @@ private fun IxModuleSettingsThemeView(
             )
         }
 
-        IxPrefs.ILTIX_FONT.titleRes?.let { titleRes ->
-            PreferenceSwitch(
-                title = stringResource(id = titleRes),
-                subtitle = IxPrefs.ILTIX_FONT.summaryRes?.let { stringResource(id = it) },
-                isChecked = state.preferencesValues["ILTIX_FONT"] ?: IxPrefs.ILTIX_FONT.defaultValue,
-                onCheckedChange = { enabled ->
-                    state.eventSink(IxModuleSettingsEvents.ToggleModule("ILTIX_FONT", enabled))
-                },
-            )
+        run {
+            data class FontOption(val value: String, val label: String) : DropdownOption {
+                @Composable
+                override fun getText(): String = label
+            }
+            val fontOptions = listOf(
+                FontOption("noto_sans", stringResource(id = R.string.iltix_font_option_noto_sans)),
+                FontOption("roboto_condensed", stringResource(id = R.string.iltix_font_option_roboto_condensed)),
+                FontOption("system", stringResource(id = R.string.iltix_font_option_system)),
+            ).toImmutableList()
+            val currentFont = state.stringValues["ILTIX_FONT"] ?: IxPrefs.ILTIX_FONT.defaultValue
+            val selectedFont = fontOptions.firstOrNull { it.value == currentFont }
+            IxPrefs.ILTIX_FONT.titleRes?.let { titleRes ->
+                PreferenceDropdown(
+                    title = stringResource(id = titleRes),
+                    supportingText = IxPrefs.ILTIX_FONT.summaryRes?.let { stringResource(id = it) },
+                    selectedOption = selectedFont,
+                    options = fontOptions,
+                    onSelectOption = { option ->
+                        state.eventSink(IxModuleSettingsEvents.SetStringModule("ILTIX_FONT", option.value))
+                    },
+                )
+            }
         }
     }
 }
