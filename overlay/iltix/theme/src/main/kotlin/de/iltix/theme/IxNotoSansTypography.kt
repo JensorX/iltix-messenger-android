@@ -14,22 +14,24 @@ import androidx.compose.ui.text.font.FontWeight
 import de.iltix.lib.R
 import io.element.android.compound.tokens.generated.TypographyTokens
 
-private val ixNotoSansFontFamily = FontFamily(
-    Font(resId = R.font.noto_sans_regular, weight = FontWeight.W400),
-    Font(resId = R.font.noto_sans_medium, weight = FontWeight.W500),
-    Font(resId = R.font.noto_sans_bold, weight = FontWeight.W700),
-    Font(resId = R.font.noto_sans_italic, weight = FontWeight.W400, style = FontStyle.Italic),
-    Font(resId = R.font.noto_sans_medium_italic, weight = FontWeight.W500, style = FontStyle.Italic),
-    Font(resId = R.font.noto_sans_bold_italic, weight = FontWeight.W700, style = FontStyle.Italic),
+private val ixGoogleSansFontFamily = FontFamily(
+    Font(resId = R.font.google_sans_regular, weight = FontWeight.W400),
+    Font(resId = R.font.google_sans_medium, weight = FontWeight.W500),
+    Font(resId = R.font.google_sans_semibold, weight = FontWeight.W600),
+    Font(resId = R.font.google_sans_bold, weight = FontWeight.W700),
+    Font(resId = R.font.google_sans_italic, weight = FontWeight.W400, style = FontStyle.Italic),
+    Font(resId = R.font.google_sans_medium_italic, weight = FontWeight.W500, style = FontStyle.Italic),
+    Font(resId = R.font.google_sans_semibold_italic, weight = FontWeight.W600, style = FontStyle.Italic),
+    Font(resId = R.font.google_sans_bold_italic, weight = FontWeight.W700, style = FontStyle.Italic),
 )
 
 /**
- * Builds a Material [Typography] using Iltix Noto Sans font,
+ * Builds a Material [Typography] using Iltix Google Sans font,
  * mapping Compound tokens to M3 slots the same way upstream does.
  */
 fun ixNotoSansTypography(): Typography {
     val t = TypographyTokens
-    val f = ixNotoSansFontFamily
+    val f = ixGoogleSansFontFamily
     return Typography(
         headlineLarge = t.fontHeadingXlRegular.copy(fontFamily = f),
         headlineMedium = t.fontHeadingLgRegular.copy(fontFamily = f),
@@ -47,7 +49,7 @@ fun ixNotoSansTypography(): Typography {
 }
 
 /**
- * Creates a [TypographyTokens] instance using the Iltix Noto Sans font.
+ * Creates a [TypographyTokens] instance using the Iltix Google Sans font.
  * This overrides all Compound typography tokens (used via [ElementTheme.typography]).
  */
-fun ixNotoSansCompoundTypographyTokens(): TypographyTokens = TypographyTokens(ixNotoSansFontFamily)
+fun ixNotoSansCompoundTypographyTokens(): TypographyTokens = TypographyTokens(ixGoogleSansFontFamily)

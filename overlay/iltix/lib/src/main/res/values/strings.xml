@@ -67,7 +67,7 @@
 
     <string name="iltix_font_title">Iltix Font</string>
     <string name="iltix_font_subtitle">App-wide font family</string>
-    <string name="iltix_font_option_noto_sans">Noto Sans</string>
+    <string name="iltix_font_option_noto_sans">Google Sans</string>
     <string name="iltix_font_option_roboto_condensed">Roboto Condensed</string>
     <string name="iltix_font_option_system">System</string>
     

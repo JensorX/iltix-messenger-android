@@ -117,7 +117,7 @@ object IxPrefs {
         summaryRes = R.string.iltix_font_subtitle,
         authorsChoice = "noto_sans",
         upstreamChoice = "system",
-        entries = listOf("Noto Sans", "Roboto Condensed", "System"),
+        entries = listOf("Google Sans", "Roboto Condensed", "System"),
         entryValues = listOf("noto_sans", "roboto_condensed", "system"),
     )
 

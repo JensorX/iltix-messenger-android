@@ -1,9 +1,14 @@
-Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+Google Sans
+
+Source: https://fonts.google.com/specimen/Google+Sans
+
+License page: https://fonts.google.com/specimen/Google+Sans/license
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-https://scripts.sil.org/OFL
 
+This license is copied below, and is also available with a FAQ at:
+
+https://openfontlicense.org
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

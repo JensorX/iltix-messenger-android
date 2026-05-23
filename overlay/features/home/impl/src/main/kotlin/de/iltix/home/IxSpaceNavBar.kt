@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -31,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,9 +44,6 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.spaces.SpaceServiceFilter
 import io.element.android.libraries.matrix.ui.model.getAvatarData
-
-/** Width reserved for each navigation item (icon + label). */
-private val ItemWidth = 64.dp
 
 /** The rounded corner radius for the pill/capsule highlight and the container. */
 private val ContainerShape = RoundedCornerShape(28.dp)
@@ -73,7 +70,7 @@ fun IxSpaceNavBar(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -120,7 +117,7 @@ private fun IxSpaceNavItem(
 
     // Spring-bounce scale for the icon — mimics GlassTabView's "pop" on selection
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.15f else 1f,
+        targetValue = if (isSelected) 1.04f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium,
@@ -146,7 +143,6 @@ private fun IxSpaceNavItem(
 
     Box(
         modifier = modifier
-            .width(ItemWidth)
             .clip(RoundedCornerShape(12.dp))
             .combinedClickable(
                 onClick = onClick,
@@ -157,21 +153,21 @@ private fun IxSpaceNavItem(
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             // Capsule / icon area
             Box(
                 modifier = Modifier
-                    .size(width = 56.dp, height = 32.dp)
+                    .size(width = 52.dp, height = 28.dp)
                     .clip(CapsuleShape)
                     .background(capsuleColor),
                 contentAlignment = Alignment.Center,
             ) {
                 if (avatar != null) {
                     // Space avatar — scale it for the spring pop
-                    Box(modifier = Modifier.scale(iconScale)) {
+                    Box(modifier = Modifier.scale(iconScale * 0.5f)) {
                         avatar()
                     }
                 } else {
@@ -182,7 +178,7 @@ private fun IxSpaceNavItem(
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier
-                            .size(22.dp)
+                            .size(11.dp)
                             .scale(iconScale),
                     )
                 }
@@ -191,10 +187,10 @@ private fun IxSpaceNavItem(
             // Label below icon
             Text(
                 text = label,
-                style = ElementTheme.typography.fontBodyXsMedium,
+                style = ElementTheme.typography.fontBodyXsMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = contentColor.copy(alpha = contentAlpha),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                overflow = TextOverflow.Clip,
                 textAlign = TextAlign.Center,
             )
         }

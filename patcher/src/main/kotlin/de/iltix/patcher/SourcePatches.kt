@@ -1432,6 +1432,18 @@ internal fun ThreadTopBarPreview"""
             ".background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing))",
             """.background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing, LocalIxBubbleStyle.current))"""
         )
+
+        // Increase rounded-bubble content padding to avoid text clipping near bottom-right edge.
+        engine.replaceText(
+            path,
+            """Modifier.padding(start = 12.dp, end = 12.dp, top = topPadding, bottom = 8.dp)""",
+            """Modifier.padding(start = 15.dp, end = 15.dp, top = topPadding + 3.dp, bottom = 11.dp)"""
+        )
+        engine.replaceText(
+            path,
+            """Modifier.padding(start = 8.dp, end = 8.dp, top = topPadding, bottom = 8.dp)""",
+            """Modifier.padding(start = 11.dp, end = 11.dp, top = topPadding + 3.dp, bottom = 11.dp)"""
+        )
     }
 
     private fun patchTimelineItemVoiceView() {
