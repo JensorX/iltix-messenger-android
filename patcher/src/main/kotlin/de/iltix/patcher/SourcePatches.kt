@@ -1433,6 +1433,13 @@ internal fun ThreadTopBarPreview"""
             """.background(MessageEventBubbleDefaults.backgroundBubbleColor(isOutgoing, LocalIxBubbleStyle.current))"""
         )
 
+        // Increase timestamp overlay padding to match content padding and prevent clipping
+        engine.replaceText(
+            path,
+            """Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)""",
+            """Modifier.padding(start = 11.dp, end = 11.dp, bottom = 11.dp)"""
+        )
+
         // Increase rounded-bubble content padding to avoid text clipping near bottom-right edge.
         engine.replaceText(
             path,

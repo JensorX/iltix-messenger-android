@@ -178,7 +178,7 @@ private fun IxSpaceNavItem(
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier
-                            .size(11.dp)
+                            .size(13.dp)
                             .scale(iconScale),
                     )
                 }

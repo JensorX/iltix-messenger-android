@@ -71,22 +71,6 @@ fun IxHomeChatsContent(
             )
             .consumeWindowInsets(outerPadding)
     ) {
-        RoomListContentView(
-            contentState = roomListState.contentState,
-            filtersState = roomListState.filtersState,
-            spaceFiltersState = roomListState.spaceFiltersState,
-            lazyListState = roomsLazyListState,
-            hideInvitesAvatars = roomListState.hideInvitesAvatars,
-            eventSink = roomListState.eventSink,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
-            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
-            onRoomClick = onRoomClick,
-            onCreateRoomClick = onCreateRoomClick,
-            contentPadding = contentPadding,
-            modifier = Modifier
-                .fillMaxSize()
-                .hazeSource(state = hazeState)
-        )
         if (shouldShowIxSpaceNav) {
             Box(
                 modifier = Modifier
@@ -122,5 +106,21 @@ fun IxHomeChatsContent(
                 onNavigateToSpace = onOpenSpace,
             )
         }
+        RoomListContentView(
+            contentState = roomListState.contentState,
+            filtersState = roomListState.filtersState,
+            spaceFiltersState = roomListState.spaceFiltersState,
+            lazyListState = roomsLazyListState,
+            hideInvitesAvatars = roomListState.hideInvitesAvatars,
+            eventSink = roomListState.eventSink,
+            onSetUpRecoveryClick = onSetUpRecoveryClick,
+            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
+            onRoomClick = onRoomClick,
+            onCreateRoomClick = onCreateRoomClick,
+            contentPadding = contentPadding,
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(state = hazeState)
+        )
     }
 }
