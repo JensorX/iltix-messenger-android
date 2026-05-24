@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.shape.RoundedCornerShape
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -56,7 +57,8 @@ fun IxHomeChatsContent(
     var spaceNavHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val gradientHeight = with(density) { spaceNavHeightPx.toDp() } + outerPadding.calculateBottomPadding() + 8.dp
-    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.30f)
+    val gradientMidColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.18f)
+    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.38f)
 
     Box(
         modifier = Modifier
@@ -71,41 +73,6 @@ fun IxHomeChatsContent(
             )
             .consumeWindowInsets(outerPadding)
     ) {
-        if (shouldShowIxSpaceNav) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(gradientHeight.coerceAtLeast(1.dp))
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                gradientBottomColor,
-                            ),
-                        ),
-                    ),
-            )
-            IxFloatingSpaceNav(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = if (showNavigationBar && !shouldShowIxSpaceNav) 88.dp else 6.dp)
-                    .shadow(
-                        elevation = 3.dp,
-                        shape = ixSpaceNavShape,
-                        clip = false,
-                    )
-                    .clip(ixSpaceNavShape)
-                    .onSizeChanged { spaceNavHeightPx = it.height }
-                    .hazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.thick(),
-                    ),
-                state = roomListState.spaceFiltersState,
-                onNavigateToSpace = onOpenSpace,
-            )
-        }
         RoomListContentView(
             contentState = roomListState.contentState,
             filtersState = roomListState.filtersState,
@@ -122,5 +89,44 @@ fun IxHomeChatsContent(
                 .fillMaxSize()
                 .hazeSource(state = hazeState)
         )
+
+        if (shouldShowIxSpaceNav) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(1f)
+                    .fillMaxWidth()
+                    .height(gradientHeight.coerceAtLeast(1.dp))
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                gradientMidColor,
+                                gradientBottomColor,
+                            ),
+                        ),
+                    ),
+            )
+            IxFloatingSpaceNav(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(2f)
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = if (showNavigationBar) 88.dp else 6.dp)
+                    .shadow(
+                        elevation = 3.dp,
+                        shape = ixSpaceNavShape,
+                        clip = false,
+                    )
+                    .clip(ixSpaceNavShape)
+                    .onSizeChanged { spaceNavHeightPx = it.height }
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeMaterials.thick(),
+                    ),
+                state = roomListState.spaceFiltersState,
+                onNavigateToSpace = onOpenSpace,
+            )
+        }
     }
 }
