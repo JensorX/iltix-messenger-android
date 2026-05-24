@@ -3,9 +3,6 @@ package de.iltix.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,7 +20,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -56,22 +52,12 @@ fun IxHomeChatsContent(
     val ixSpaceNavShape = RoundedCornerShape(28.dp)
     var spaceNavHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val gradientHeight = with(density) { spaceNavHeightPx.toDp() } + outerPadding.calculateBottomPadding() + 8.dp
-    val gradientMidColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.18f)
-    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.38f)
+    val gradientHeight = with(density) { spaceNavHeightPx.toDp() } + outerPadding.calculateBottomPadding() + 12.dp
+    val gradientMidColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.32f)
+    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.56f)
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                PaddingValues(
-                    start = outerPadding.calculateStartPadding(LocalLayoutDirection.current),
-                    end = outerPadding.calculateEndPadding(LocalLayoutDirection.current),
-                    bottom = outerPadding.calculateBottomPadding(),
-                    top = outerPadding.calculateTopPadding(),
-                )
-            )
-            .consumeWindowInsets(outerPadding)
+        modifier = Modifier.fillMaxSize()
     ) {
         RoomListContentView(
             contentState = roomListState.contentState,
