@@ -1440,6 +1440,13 @@ internal fun ThreadTopBarPreview"""
             """Modifier.padding(start = 11.dp, end = 11.dp, bottom = 11.dp)"""
         )
 
+        // Increase overlay timestamp outer padding so it doesn't get clipped by rounded bubble corners
+        engine.replaceText(
+            path,
+            """.padding(horizontal = 4.dp, vertical = 4.dp)\n                            .background(ElementTheme.colors.bgSubtleSecondary, RoundedCornerShape(10.0.dp))\n                            .align(Alignment.BottomEnd)""",
+            """.padding(end = 8.dp, bottom = 8.dp)\n                            .background(ElementTheme.colors.bgSubtleSecondary, RoundedCornerShape(10.0.dp))\n                            .align(Alignment.BottomEnd)"""
+        )
+
         // Increase rounded-bubble content padding to avoid text clipping near bottom-right edge.
         engine.replaceText(
             path,

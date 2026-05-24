@@ -167,7 +167,7 @@ private fun IxSpaceNavItem(
             ) {
                 if (avatar != null) {
                     // Space avatar — scale it for the spring pop
-                    Box(modifier = Modifier.scale(iconScale * 0.5f)) {
+                    Box(modifier = Modifier.scale(iconScale * 0.57f)) {
                         avatar()
                     }
                 } else {
@@ -178,7 +178,7 @@ private fun IxSpaceNavItem(
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier
-                            .size(14.dp)
+                            .size(16.dp)
                             .scale(iconScale),
                     )
                 }

@@ -56,7 +56,7 @@ fun IxHomeChatsContent(
     var spaceNavHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val gradientHeight = with(density) { spaceNavHeightPx.toDp() } + outerPadding.calculateBottomPadding() + 8.dp
-    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.50f)
+    val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.80f)
 
     Box(
         modifier = Modifier
