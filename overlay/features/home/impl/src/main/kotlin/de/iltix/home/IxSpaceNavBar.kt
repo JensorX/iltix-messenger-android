@@ -65,7 +65,7 @@ fun IxSpaceNavBar(
         modifier = modifier
             .clip(ContainerShape)
             .background(
-                ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.72f)
+                ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.82f)
             ),
     ) {
         Row(

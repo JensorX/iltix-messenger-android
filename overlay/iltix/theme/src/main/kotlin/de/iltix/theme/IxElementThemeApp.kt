@@ -56,31 +56,31 @@ fun IxElementThemeApp(
 
     val themedContent = remember {
         movableContentOf {
-            ProvideIxStyleSettings(settings = ixTheme.settings) {
-                content()
-            }
+            content()
         }
     }
 
     CompositionLocalProvider(
         LocalBuildMeta provides buildMeta,
     ) {
-        if (ixTypography != null) {
-            ElementTheme(
-                theme = theme,
-                compoundLight = ixTheme.semanticColors.light,
-                compoundDark = ixTheme.semanticColors.dark,
-                typography = ixTypography,
-                compoundTypographyTokens = ixCompoundTokens ?: TypographyTokens,
-                content = themedContent,
-            )
-        } else {
-            ElementTheme(
-                theme = theme,
-                compoundLight = ixTheme.semanticColors.light,
-                compoundDark = ixTheme.semanticColors.dark,
-                content = themedContent,
-            )
+        ProvideIxStyleSettings(settings = ixTheme.settings) {
+            if (ixTypography != null) {
+                ElementTheme(
+                    theme = theme,
+                    compoundLight = ixTheme.semanticColors.light,
+                    compoundDark = ixTheme.semanticColors.dark,
+                    typography = ixTypography,
+                    compoundTypographyTokens = ixCompoundTokens ?: TypographyTokens,
+                    content = themedContent,
+                )
+            } else {
+                ElementTheme(
+                    theme = theme,
+                    compoundLight = ixTheme.semanticColors.light,
+                    compoundDark = ixTheme.semanticColors.dark,
+                    content = themedContent,
+                )
+            }
         }
     }
 }

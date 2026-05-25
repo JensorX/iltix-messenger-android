@@ -180,7 +180,7 @@ fun ProvideIxStyleSettings(
 ) {
     val useIltixTheme = settings.iltixThemeEnabled
     val bubbleStyle = IxBubbleStyle(
-        cornerRadius = if (useIltixTheme && settings.roundedBubblesEnabled) 28.dp else 12.dp,
+        cornerRadius = if (useIltixTheme && settings.roundedBubblesEnabled) 22.dp else 12.dp,
         ownBackgroundColor = if (useIltixTheme && settings.materialYouEnabled) {
             ElementTheme.colors.bgAccentSelected
         } else {
