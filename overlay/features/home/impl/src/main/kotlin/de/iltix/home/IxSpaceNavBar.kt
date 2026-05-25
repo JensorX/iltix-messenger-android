@@ -11,9 +11,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,18 +56,39 @@ fun IxSpaceNavBar(
     filters: List<SpaceServiceFilter>,
     selectedSpaceId: RoomId?,
     clearLabel: String,
+    useGlassTheme: Boolean,
     onClearSelection: () -> Unit,
     onSelectFilter: (SpaceServiceFilter) -> Unit,
     onOpenSpace: (SpaceServiceFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (filters.isEmpty()) return
+    val isDarkTheme = isSystemInDarkTheme()
+    val containerColor = if (useGlassTheme) {
+        if (isDarkTheme) {
+            Color.Black.copy(alpha = 0.30f)
+        } else {
+            Color.White.copy(alpha = 0.44f)
+        }
+    } else {
+        ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.82f)
+    }
+    val borderColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.42f)
+    } else {
+        Color.White.copy(alpha = 0.68f)
+    }
 
     Box(
         modifier = modifier
             .clip(ContainerShape)
-            .background(
-                ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.82f)
+            .background(containerColor)
+            .then(
+                if (useGlassTheme) {
+                    Modifier.border(1.dp, borderColor, ContainerShape)
+                } else {
+                    Modifier
+                }
             ),
     ) {
         Row(

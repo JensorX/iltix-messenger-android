@@ -74,13 +74,15 @@ object IxPrefs {
     )
 
     // ===== Theme Features =====
-    val ILTIX_THEME = IxBoolPref(
-        key = "ILTIX_THEME",
-        defaultValue = true,
+    val ILTIX_THEME_MODE = IxListPref(
+        key = "ILTIX_THEME_MODE",
+        defaultValue = "solid",
         titleRes = R.string.iltix_theme_toggle_title,
         summaryRes = R.string.iltix_theme_toggle_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
+        authorsChoice = "solid",
+        upstreamChoice = "off",
+        entries = listOf("Off", "Solid", "Glass"),
+        entryValues = listOf("off", "solid", "glass"),
     )
 
     val MATERIAL_YOU_THEME = IxBoolPref(
@@ -207,7 +209,7 @@ object IxPrefs {
         NUMBER_BADGE,
         START_BUTTON_IN_TOOLBAR,
         PIN_FAVORITES,
-        ILTIX_THEME,
+        ILTIX_THEME_MODE,
         MATERIAL_YOU_THEME,
         ROUNDED_BUBBLES,
         CARD_ROOM_ROWS,

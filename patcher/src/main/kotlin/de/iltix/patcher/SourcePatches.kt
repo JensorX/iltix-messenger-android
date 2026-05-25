@@ -218,6 +218,7 @@ class SourcePatches(private val engine: PatchEngine) {
                         contentPadding = contentPadding,
                         hazeState = hazeState,
                         shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,
+                        useGlassTheme = ixHomeUi.useGlassTheme,
                         showNavigationBar = true,
                         onSetUpRecoveryClick = onSetUpRecoveryClick,
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
@@ -663,6 +664,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     val cardRowsMode by ixPreferencesStore
         .settingFlow(de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS)
         .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS.defaultValue)
+    val ixThemeMode by ixPreferencesStore
+        .settingFlow(de.iltix.lib.preferences.IxPrefs.ILTIX_THEME_MODE)
+        .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.ILTIX_THEME_MODE.defaultValue)
 
     OnVisibleRangeChangeEffect"""
         )
@@ -701,6 +705,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             } else {
                 IxCardRoomWrapper(
                     mode = cardRowsMode,
+                    themeMode = ixThemeMode,
                     index = index,
                     lastIndex = state.summaries.lastIndex,
                 ) {
@@ -1244,11 +1249,12 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     val ixPreferencesStore = remember(isIltixBuild, context) {
         if (isIltixBuild) IxPreferencesStore(context) else null
     }
-    val useIltixTheme by remember(ixPreferencesStore) {
-        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME)
-    }?.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue) ?: remember {
-        mutableStateOf(false)
+    val iltixThemeMode by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME_MODE)
+    }?.collectAsState(initial = IxPrefs.ILTIX_THEME_MODE.defaultValue) ?: remember {
+        mutableStateOf("off")
     }
+    val useIltixTheme = iltixThemeMode != "off"
     val moveUnencryptedIndicatorToTopBar by remember(ixPreferencesStore) {
         ixPreferencesStore?.settingFlow(IxPrefs.UNENCRYPTED_TOPBAR_ICON)
     }?.collectAsState(initial = IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue) ?: remember {
@@ -1377,11 +1383,12 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     val ixPreferencesStore = remember(isIltixBuild, context) {
         if (isIltixBuild) IxPreferencesStore(context) else null
     }
-    val useIltixTheme by remember(ixPreferencesStore) {
-        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME)
-    }?.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue) ?: remember {
-        mutableStateOf(false)
+    val iltixThemeMode by remember(ixPreferencesStore) {
+        ixPreferencesStore?.settingFlow(IxPrefs.ILTIX_THEME_MODE)
+    }?.collectAsState(initial = IxPrefs.ILTIX_THEME_MODE.defaultValue) ?: remember {
+        mutableStateOf("off")
     }
+    val useIltixTheme = iltixThemeMode != "off"
     val resolvedRoomName = rememberIxResolvedDisplayName(userId = null, fallbackName = roomName)
 
     TopAppBar(

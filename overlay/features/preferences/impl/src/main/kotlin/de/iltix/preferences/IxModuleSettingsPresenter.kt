@@ -55,9 +55,9 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
             .collectAsState(initial = IxPrefs.PIN_FAVORITES.defaultValue)
         preferencesMap["PIN_FAVORITES"] = pinFavorites
 
-        val iltixThemeEnabled by preferencesStore.settingFlow(IxPrefs.ILTIX_THEME)
-            .collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue)
-        preferencesMap["ILTIX_THEME"] = iltixThemeEnabled
+        val iltixThemeMode by preferencesStore.settingFlow(IxPrefs.ILTIX_THEME_MODE)
+            .collectAsState(initial = IxPrefs.ILTIX_THEME_MODE.defaultValue)
+        stringValuesMap["ILTIX_THEME_MODE"] = iltixThemeMode
 
         val materialYouTheme by preferencesStore.settingFlow(IxPrefs.MATERIAL_YOU_THEME)
             .collectAsState(initial = IxPrefs.MATERIAL_YOU_THEME.defaultValue)
@@ -116,7 +116,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "NUMBER_BADGE" -> IxPrefs.NUMBER_BADGE
                             "START_BUTTON_IN_TOOLBAR" -> IxPrefs.START_BUTTON_IN_TOOLBAR
                             "PIN_FAVORITES" -> IxPrefs.PIN_FAVORITES
-                            "ILTIX_THEME" -> IxPrefs.ILTIX_THEME
                             "MATERIAL_YOU_THEME" -> IxPrefs.MATERIAL_YOU_THEME
                             "ROUNDED_BUBBLES" -> IxPrefs.ROUNDED_BUBBLES
                             "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
@@ -136,6 +135,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "SPACE_NAV_MODE" -> IxPrefs.SPACE_NAV_MODE
                             "CARD_ROOM_ROWS" -> IxPrefs.CARD_ROOM_ROWS
                             "MEDIA_AUTO_DOWNLOAD_NETWORK_MODE" -> IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE
+                            "ILTIX_THEME_MODE" -> IxPrefs.ILTIX_THEME_MODE
                             "ILTIX_FONT" -> IxPrefs.ILTIX_FONT
                             else -> return@launch
                         }
@@ -166,7 +166,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, false)
                         preferencesStore.setSetting(IxPrefs.UNENCRYPTED_TOPBAR_ICON, false)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD, false)
-                        preferencesStore.setSetting(IxPrefs.ILTIX_THEME, false)
+                        preferencesStore.setSetting(IxPrefs.ILTIX_THEME_MODE, "off")
                         preferencesStore.setSetting(IxPrefs.MATERIAL_YOU_THEME, false)
                         preferencesStore.setSetting(IxPrefs.ROUNDED_BUBBLES, false)
                         preferencesStore.setSetting(IxPrefs.CARD_ROOM_ROWS, "none")
@@ -188,7 +188,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE, IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD_VIDEOS_WIFI_ONLY, IxPrefs.MEDIA_AUTO_DOWNLOAD_VIDEOS_WIFI_ONLY.defaultValue)
                         preferencesStore.setSetting(IxPrefs.MEDIA_AUTO_DOWNLOAD_MOBILE_VIDEO_LIMIT_MB, IxPrefs.MEDIA_AUTO_DOWNLOAD_MOBILE_VIDEO_LIMIT_MB.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.ILTIX_THEME, IxPrefs.ILTIX_THEME.defaultValue)
+                        preferencesStore.setSetting(IxPrefs.ILTIX_THEME_MODE, IxPrefs.ILTIX_THEME_MODE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.MATERIAL_YOU_THEME, IxPrefs.MATERIAL_YOU_THEME.defaultValue)
                         preferencesStore.setSetting(IxPrefs.ROUNDED_BUBBLES, IxPrefs.ROUNDED_BUBBLES.defaultValue)
                         preferencesStore.setSetting(IxPrefs.CARD_ROOM_ROWS, IxPrefs.CARD_ROOM_ROWS.defaultValue)

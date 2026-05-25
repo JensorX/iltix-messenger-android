@@ -55,6 +55,9 @@
     <string name="iltix_theme_category_title">Iltix-Design</string>
     <string name="iltix_theme_toggle_title">Iltix-Design aktivieren</string>
     <string name="iltix_theme_toggle_subtitle">Iltix-Farbdesign für die App verwenden</string>
+    <string name="iltix_theme_mode_option_off">Aus</string>
+    <string name="iltix_theme_mode_option_solid">Solid</string>
+    <string name="iltix_theme_mode_option_glass">Glass</string>
 
     <string name="iltix_material_you_theme_title">Material You Design</string>
     <string name="iltix_material_you_theme_subtitle">Dynamische Farben basierend auf dem Systemdesign</string>

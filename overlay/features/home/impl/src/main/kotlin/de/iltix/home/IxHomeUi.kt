@@ -27,6 +27,7 @@ import io.element.android.libraries.matrix.api.spaces.SpaceServiceFilter
 data class IxHomeUiConfig(
     val showStartChatInTopBar: Boolean,
     val useIltixTheme: Boolean,
+    val useGlassTheme: Boolean,
     val shouldShowIxSpaceNav: Boolean,
 )
 
@@ -43,9 +44,11 @@ fun rememberIxHomeUiConfig(
     val spaceNavMode by remember(ixPreferencesStore) {
         ixPreferencesStore.settingFlow(IxPrefs.SPACE_NAV_MODE)
     }.collectAsState(initial = IxPrefs.SPACE_NAV_MODE.defaultValue)
-    val useIltixTheme by remember(ixPreferencesStore) {
-        ixPreferencesStore.settingFlow(IxPrefs.ILTIX_THEME)
-    }.collectAsState(initial = IxPrefs.ILTIX_THEME.defaultValue)
+    val iltixThemeMode by remember(ixPreferencesStore) {
+        ixPreferencesStore.settingFlow(IxPrefs.ILTIX_THEME_MODE)
+    }.collectAsState(initial = IxPrefs.ILTIX_THEME_MODE.defaultValue)
+    val useIltixTheme = iltixThemeMode != "off"
+    val useGlassTheme = iltixThemeMode == "glass"
     val shouldShowIxSpaceNav = spaceNavMode != "none" &&
         currentHomeNavigationBarItem == HomeNavigationBarItem.Chats &&
         roomListState.spaceFiltersState !is SpaceFiltersState.Disabled
@@ -53,6 +56,7 @@ fun rememberIxHomeUiConfig(
     return IxHomeUiConfig(
         showStartChatInTopBar = showStartChatInTopBar,
         useIltixTheme = useIltixTheme,
+        useGlassTheme = useGlassTheme,
         shouldShowIxSpaceNav = shouldShowIxSpaceNav,
     )
 }
@@ -61,6 +65,7 @@ fun rememberIxHomeUiConfig(
 fun IxFloatingSpaceNav(
     state: SpaceFiltersState,
     onNavigateToSpace: (RoomId) -> Unit,
+    useGlassTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     // Remember the available filters so they persist across state transitions
@@ -148,6 +153,7 @@ fun IxFloatingSpaceNav(
                 filters = children,
                 selectedSpaceId = selectedChild,
                 clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
+                useGlassTheme = useGlassTheme,
                 onClearSelection = {
                     if (parentFilter != null) {
                         requestSelection(parentFilter)
@@ -164,6 +170,7 @@ fun IxFloatingSpaceNav(
             filters = hierarchy.rootFilters,
             selectedSpaceId = selectedPath.firstOrNull(),
             clearLabel = stringResource(id = R.string.iltix_space_nav_all_label),
+            useGlassTheme = useGlassTheme,
             onClearSelection = { requestSelection(null) },
             onSelectFilter = { requestSelection(it) },
             onOpenSpace = { filter -> onNavigateToSpace(filter.spaceRoom.roomId) },

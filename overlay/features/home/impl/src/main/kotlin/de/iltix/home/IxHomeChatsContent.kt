@@ -1,6 +1,8 @@
 package de.iltix.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -27,10 +30,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
+import de.iltix.components.roomlist.LocalIxHazeState
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.home.impl.components.RoomListContentView
 import io.element.android.features.home.impl.model.RoomListRoomSummary
@@ -45,6 +50,7 @@ fun IxHomeChatsContent(
     contentPadding: PaddingValues,
     hazeState: HazeState,
     shouldShowIxSpaceNav: Boolean,
+    useGlassTheme: Boolean,
     showNavigationBar: Boolean,
     onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
@@ -55,8 +61,21 @@ fun IxHomeChatsContent(
     val ixSpaceNavShape = RoundedCornerShape(28.dp)
     var spaceNavHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
+    val isDarkTheme = isSystemInDarkTheme()
     val gradientHeight = with(density) { spaceNavHeightPx.toDp() } + outerPadding.calculateBottomPadding() + 8.dp
     val gradientBottomColor = ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.80f)
+    val glassBorderColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.42f)
+    } else {
+        Color.White.copy(alpha = 0.68f)
+    }
+    val glassBackgroundBrush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f),
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
+        ),
+    )
 
     Box(
         modifier = Modifier
@@ -70,24 +89,33 @@ fun IxHomeChatsContent(
                 )
             )
             .consumeWindowInsets(outerPadding)
+            .then(
+                if (useGlassTheme) {
+                    Modifier.background(glassBackgroundBrush)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         // Layer 1 (bottom): Room list
-        RoomListContentView(
-            contentState = roomListState.contentState,
-            filtersState = roomListState.filtersState,
-            spaceFiltersState = roomListState.spaceFiltersState,
-            lazyListState = roomsLazyListState,
-            hideInvitesAvatars = roomListState.hideInvitesAvatars,
-            eventSink = roomListState.eventSink,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
-            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
-            onRoomClick = onRoomClick,
-            onCreateRoomClick = onCreateRoomClick,
-            contentPadding = contentPadding,
-            modifier = Modifier
-                .fillMaxSize()
-                .hazeSource(state = hazeState)
-        )
+        CompositionLocalProvider(LocalIxHazeState provides hazeState) {
+            RoomListContentView(
+                contentState = roomListState.contentState,
+                filtersState = roomListState.filtersState,
+                spaceFiltersState = roomListState.spaceFiltersState,
+                lazyListState = roomsLazyListState,
+                hideInvitesAvatars = roomListState.hideInvitesAvatars,
+                eventSink = roomListState.eventSink,
+                onSetUpRecoveryClick = onSetUpRecoveryClick,
+                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
+                onRoomClick = onRoomClick,
+                onCreateRoomClick = onCreateRoomClick,
+                contentPadding = contentPadding,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(state = hazeState)
+            )
+        }
         // Layer 2 (middle): Gradient fade
         if (shouldShowIxSpaceNav) {
             Box(
@@ -110,19 +138,39 @@ fun IxHomeChatsContent(
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 20.dp)
                     .padding(bottom = if (showNavigationBar && !shouldShowIxSpaceNav) 88.dp else 6.dp)
-                    .shadow(
-                        elevation = 3.dp,
-                        shape = ixSpaceNavShape,
-                        clip = false,
+                    .then(
+                        if (useGlassTheme) {
+                            Modifier
+                        } else {
+                            Modifier.shadow(
+                                elevation = 3.dp,
+                                shape = ixSpaceNavShape,
+                                clip = false,
+                            )
+                        }
                     )
                     .clip(ixSpaceNavShape)
+                    .then(
+                        if (useGlassTheme) {
+                            Modifier.border(1.dp, glassBorderColor, ixSpaceNavShape)
+                        } else {
+                            Modifier
+                        }
+                    )
                     .onSizeChanged { spaceNavHeightPx = it.height }
-                    .hazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.thick(),
+                    .then(
+                        if (useGlassTheme) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = HazeMaterials.thick(),
+                            )
+                        } else {
+                            Modifier
+                        }
                     ),
                 state = roomListState.spaceFiltersState,
                 onNavigateToSpace = onOpenSpace,
+                useGlassTheme = useGlassTheme,
             )
         }
     }

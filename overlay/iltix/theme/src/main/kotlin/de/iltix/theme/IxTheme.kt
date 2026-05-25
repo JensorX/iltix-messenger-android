@@ -27,11 +27,14 @@ import io.element.android.libraries.designsystem.theme.messageFromOtherBackgroun
 import kotlinx.coroutines.flow.combine
 
 data class IxThemeSettings(
-    val iltixThemeEnabled: Boolean,
+    val iltixThemeMode: String,
     val materialYouEnabled: Boolean,
     val roundedBubblesEnabled: Boolean,
     val iltixFont: String,
-)
+) {
+    val iltixThemeEnabled: Boolean get() = iltixThemeMode != "off"
+    val useGlassTheme: Boolean get() = iltixThemeMode == "glass"
+}
 
 data class IxTypographyOverrides(
     val materialTypography: Typography?,
@@ -62,7 +65,7 @@ val LocalIxBubbleStyle = staticCompositionLocalOf {
 fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
     if (!isIltixBuild) {
         return IxThemeSettings(
-            iltixThemeEnabled = false,
+            iltixThemeMode = "off",
             materialYouEnabled = false,
             roundedBubblesEnabled = false,
             iltixFont = "system",
@@ -73,13 +76,13 @@ fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
     val preferencesStore = remember(context) { IxPreferencesStore(context) }
     val settings by remember(preferencesStore) {
         combine(
-            preferencesStore.settingFlow(IxPrefs.ILTIX_THEME),
+            preferencesStore.settingFlow(IxPrefs.ILTIX_THEME_MODE),
             preferencesStore.settingFlow(IxPrefs.MATERIAL_YOU_THEME),
             preferencesStore.settingFlow(IxPrefs.ROUNDED_BUBBLES),
             preferencesStore.settingFlow(IxPrefs.ILTIX_FONT),
-        ) { iltixThemeEnabled, materialYouEnabled, roundedBubblesEnabled, iltixFont ->
+        ) { iltixThemeMode, materialYouEnabled, roundedBubblesEnabled, iltixFont ->
             IxThemeSettings(
-                iltixThemeEnabled = iltixThemeEnabled,
+                iltixThemeMode = iltixThemeMode,
                 materialYouEnabled = materialYouEnabled,
                 roundedBubblesEnabled = roundedBubblesEnabled,
                 iltixFont = iltixFont,
@@ -87,7 +90,7 @@ fun rememberIxThemeSettings(isIltixBuild: Boolean): IxThemeSettings {
         }
     }.collectAsState(
         initial = IxThemeSettings(
-            iltixThemeEnabled = true,
+            iltixThemeMode = IxPrefs.ILTIX_THEME_MODE.defaultValue,
             materialYouEnabled = true,
             roundedBubblesEnabled = true,
             iltixFont = IxPrefs.ILTIX_FONT.defaultValue,

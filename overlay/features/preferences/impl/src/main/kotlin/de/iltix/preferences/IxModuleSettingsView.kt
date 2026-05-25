@@ -378,13 +378,32 @@ private fun IxModuleSettingsThemeView(
         onBackClick = { state.eventSink(IxModuleSettingsEvents.NavigateToView(IxSettingsView.Main)) },
         modifier = modifier,
     ) {
-        IxPrefs.ILTIX_THEME.titleRes?.let { titleRes ->
-            PreferenceSwitch(
+Iltix Design aktivieren ist jetzt ein Dropdown mit Solid und Glass; Solid bleibt das bisherige Design, Glass aktiviert den neuen Verlauf und die transparenten Karten.
+
+Glass-Mode macht jetzt:
+
+Home-Hintergrund als Verlauf aus primary, secondary, tertiary
+Chatzeilen/Karten halbtransparent mit hellem Rand im Light Mode und dunklem Rand im Dark Mode
+bestehende Layouts bleiben unverändert
+Patcher ist mit aktualisiert, damit der Workspace korrekt generiert wird        IxPrefs.ILTIX_THEME_MODE.titleRes?.let { titleRes ->
+            data class IltixThemeModeOption(val value: String, val label: String) : DropdownOption {
+                @Composable
+                override fun getText(): String = label
+            }
+            val themeModeOptions = listOf(
+                IltixThemeModeOption("off", stringResource(id = R.string.iltix_theme_mode_option_off)),
+                IltixThemeModeOption("solid", stringResource(id = R.string.iltix_theme_mode_option_solid)),
+                IltixThemeModeOption("glass", stringResource(id = R.string.iltix_theme_mode_option_glass)),
+            ).toImmutableList()
+            val currentThemeMode = state.stringValues["ILTIX_THEME_MODE"] ?: IxPrefs.ILTIX_THEME_MODE.defaultValue
+            val selectedThemeMode = themeModeOptions.firstOrNull { it.value == currentThemeMode }
+            PreferenceDropdown(
                 title = stringResource(id = titleRes),
-                subtitle = IxPrefs.ILTIX_THEME.summaryRes?.let { stringResource(id = it) },
-                isChecked = state.preferencesValues["ILTIX_THEME"] ?: IxPrefs.ILTIX_THEME.defaultValue,
-                onCheckedChange = { enabled ->
-                    state.eventSink(IxModuleSettingsEvents.ToggleModule("ILTIX_THEME", enabled))
+                supportingText = IxPrefs.ILTIX_THEME_MODE.summaryRes?.let { stringResource(id = it) },
+                selectedOption = selectedThemeMode,
+                options = themeModeOptions,
+                onSelectOption = { option ->
+                    state.eventSink(IxModuleSettingsEvents.SetStringModule("ILTIX_THEME_MODE", option.value))
                 },
             )
         }
