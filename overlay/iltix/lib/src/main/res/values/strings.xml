@@ -64,6 +64,9 @@
 
     <string name="iltix_card_room_rows_title">Card Room Rows</string>
     <string name="iltix_card_room_rows_subtitle">Display chat rooms as rounded cards</string>
+    <string name="iltix_card_room_rows_option_connected">Connected</string>
+    <string name="iltix_card_room_rows_option_cards">Cards</string>
+    <string name="iltix_card_room_rows_option_none">None</string>
 
     <string name="iltix_font_title">Iltix Font</string>
     <string name="iltix_font_subtitle">App-wide font family</string>

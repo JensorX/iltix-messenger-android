@@ -101,13 +101,15 @@ object IxPrefs {
         upstreamChoice = false,
     )
 
-    val CARD_ROOM_ROWS = IxBoolPref(
-        key = "ILTIX_CARD_ROOM_ROWS",
-        defaultValue = true,
+    val CARD_ROOM_ROWS = IxListPref(
+        key = "ILTIX_CARD_ROOM_ROWS_MODE",
+        defaultValue = "connected",
         titleRes = R.string.iltix_card_room_rows_title,
         summaryRes = R.string.iltix_card_room_rows_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
+        authorsChoice = "connected",
+        upstreamChoice = "none",
+        entries = listOf("Connected", "Cards", "None"),
+        entryValues = listOf("connected", "cards", "none"),
     )
 
     val ILTIX_FONT = IxListPref(

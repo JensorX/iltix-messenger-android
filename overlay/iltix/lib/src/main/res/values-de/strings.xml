@@ -64,6 +64,9 @@
 
     <string name="iltix_card_room_rows_title">Karten-Chatzeilen</string>
     <string name="iltix_card_room_rows_subtitle">Chat-Räume als abgerundete Karten darstellen</string>
+    <string name="iltix_card_room_rows_option_connected">Verbunden</string>
+    <string name="iltix_card_room_rows_option_cards">Karten</string>
+    <string name="iltix_card_room_rows_option_none">Keine</string>
 
     <string name="iltix_font_title">Iltix-Schriftart</string>
     <string name="iltix_font_subtitle">App-weite Schriftart</string>

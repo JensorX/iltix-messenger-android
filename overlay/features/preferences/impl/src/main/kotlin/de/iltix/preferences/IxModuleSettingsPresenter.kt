@@ -69,7 +69,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
 
         val cardRoomRows by preferencesStore.settingFlow(IxPrefs.CARD_ROOM_ROWS)
             .collectAsState(initial = IxPrefs.CARD_ROOM_ROWS.defaultValue)
-        preferencesMap["CARD_ROOM_ROWS"] = cardRoomRows
+        stringValuesMap["CARD_ROOM_ROWS"] = cardRoomRows
 
         val iltixFont by preferencesStore.settingFlow(IxPrefs.ILTIX_FONT)
             .collectAsState(initial = IxPrefs.ILTIX_FONT.defaultValue)
@@ -119,7 +119,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "ILTIX_THEME" -> IxPrefs.ILTIX_THEME
                             "MATERIAL_YOU_THEME" -> IxPrefs.MATERIAL_YOU_THEME
                             "ROUNDED_BUBBLES" -> IxPrefs.ROUNDED_BUBBLES
-                            "CARD_ROOM_ROWS" -> IxPrefs.CARD_ROOM_ROWS
                             "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
                             "POLL_VOTE_VIEWER" -> IxPrefs.POLL_VOTE_VIEWER
                             "PRIORITY_NOTIFICATION" -> IxPrefs.PRIORITY_NOTIFICATION
@@ -135,6 +134,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                     coroutineScope.launch {
                         val pref = when (event.moduleKey) {
                             "SPACE_NAV_MODE" -> IxPrefs.SPACE_NAV_MODE
+                            "CARD_ROOM_ROWS" -> IxPrefs.CARD_ROOM_ROWS
                             "MEDIA_AUTO_DOWNLOAD_NETWORK_MODE" -> IxPrefs.MEDIA_AUTO_DOWNLOAD_NETWORK_MODE
                             "ILTIX_FONT" -> IxPrefs.ILTIX_FONT
                             else -> return@launch
@@ -169,7 +169,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.ILTIX_THEME, false)
                         preferencesStore.setSetting(IxPrefs.MATERIAL_YOU_THEME, false)
                         preferencesStore.setSetting(IxPrefs.ROUNDED_BUBBLES, false)
-                        preferencesStore.setSetting(IxPrefs.CARD_ROOM_ROWS, false)
+                        preferencesStore.setSetting(IxPrefs.CARD_ROOM_ROWS, "none")
                         preferencesStore.setSetting(IxPrefs.ILTIX_FONT, "system")
                     }
                 }

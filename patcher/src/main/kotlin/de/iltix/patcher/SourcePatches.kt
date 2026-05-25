@@ -660,7 +660,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     val ixPreferencesStore = remember(context) {
         de.iltix.lib.preferences.IxPreferencesStore(context)
     }
-    val useCardRows by ixPreferencesStore
+    val cardRowsMode by ixPreferencesStore
         .settingFlow(de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS)
         .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.CARD_ROOM_ROWS.defaultValue)
 
@@ -682,7 +682,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             if (index != state.summaries.lastIndex) {
                 HorizontalDivider()
             }""",
-            """        ) { _, room ->
+            """        ) { index, room ->
             val rowContent = @Composable {
                 RoomSummaryRow(
                     room = room,
@@ -693,10 +693,19 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     eventSink = eventSink,
                 )
             }
-            if (useCardRows) {
-                IxCardRoomWrapper { rowContent() }
-            } else {
+            if (cardRowsMode == "none") {
                 rowContent()
+                if (index != state.summaries.lastIndex) {
+                    HorizontalDivider()
+                }
+            } else {
+                IxCardRoomWrapper(
+                    mode = cardRowsMode,
+                    index = index,
+                    lastIndex = state.summaries.lastIndex,
+                ) {
+                    rowContent()
+                }
             }"""
         )
     }

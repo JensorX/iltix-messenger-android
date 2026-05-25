@@ -412,12 +412,24 @@ private fun IxModuleSettingsThemeView(
         }
 
         IxPrefs.CARD_ROOM_ROWS.titleRes?.let { titleRes ->
-            PreferenceSwitch(
+            data class CardRoomRowsOption(val value: String, val label: String) : DropdownOption {
+                @Composable
+                override fun getText(): String = label
+            }
+            val cardRoomRowsOptions = listOf(
+                CardRoomRowsOption("connected", stringResource(id = R.string.iltix_card_room_rows_option_connected)),
+                CardRoomRowsOption("cards", stringResource(id = R.string.iltix_card_room_rows_option_cards)),
+                CardRoomRowsOption("none", stringResource(id = R.string.iltix_card_room_rows_option_none)),
+            ).toImmutableList()
+            val currentMode = state.stringValues["CARD_ROOM_ROWS"] ?: IxPrefs.CARD_ROOM_ROWS.defaultValue
+            val selectedOption = cardRoomRowsOptions.firstOrNull { it.value == currentMode }
+            PreferenceDropdown(
                 title = stringResource(id = titleRes),
-                subtitle = IxPrefs.CARD_ROOM_ROWS.summaryRes?.let { stringResource(id = it) },
-                isChecked = state.preferencesValues["CARD_ROOM_ROWS"] ?: IxPrefs.CARD_ROOM_ROWS.defaultValue,
-                onCheckedChange = { enabled ->
-                    state.eventSink(IxModuleSettingsEvents.ToggleModule("CARD_ROOM_ROWS", enabled))
+                supportingText = IxPrefs.CARD_ROOM_ROWS.summaryRes?.let { stringResource(id = it) },
+                selectedOption = selectedOption,
+                options = cardRoomRowsOptions,
+                onSelectOption = { option ->
+                    state.eventSink(IxModuleSettingsEvents.SetStringModule("CARD_ROOM_ROWS", option.value))
                 },
             )
         }
