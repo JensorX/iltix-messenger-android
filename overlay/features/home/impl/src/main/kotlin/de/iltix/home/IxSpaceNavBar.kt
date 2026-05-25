@@ -71,7 +71,7 @@ fun IxSpaceNavBar(
             Color.White.copy(alpha = 0.44f)
         }
     } else {
-        ElementTheme.colors.bgCanvasDefault.copy(alpha = 0.82f)
+        ElementTheme.colors.bgCanvasDefault
     }
     val borderColor = if (isDarkTheme) {
         Color.Black.copy(alpha = 0.42f)
