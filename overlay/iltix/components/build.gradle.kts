@@ -32,4 +32,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
 }
