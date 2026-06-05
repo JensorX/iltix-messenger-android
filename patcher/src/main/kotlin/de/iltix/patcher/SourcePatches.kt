@@ -302,7 +302,7 @@ class SourcePatches(private val engine: PatchEngine) {
         // Add showStartChatInTopBar and onStartChatClick to RoomListMenuItems signature + icon
         engine.replaceText(
             path,
-            """private fun RoomListMenuItems(
+            """private fun RowScope.RoomListMenuItems(
     onToggleSearch: () -> Unit,
     onMenuActionClick: (RoomListMenuAction) -> Unit,
     canReportBug: Boolean,
@@ -310,7 +310,7 @@ class SourcePatches(private val engine: PatchEngine) {
 ) {
     IconButton(
         onClick = onToggleSearch,""",
-            """private fun RoomListMenuItems(
+            """private fun RowScope.RoomListMenuItems(
     showStartChatInTopBar: Boolean = false,
             shouldShowIxSpaceNav: Boolean = false,
     onToggleSearch: () -> Unit,
@@ -378,9 +378,9 @@ class SourcePatches(private val engine: PatchEngine) {
         // Add IxRoomPrefsSource constructor parameter
         engine.replaceText(
             path,
-            """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
+            """    private val featureFlagService: FeatureFlagService,
 ) : Presenter<RoomListState> {""",
-            """    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
+            """    private val featureFlagService: FeatureFlagService,
     private val ixRoomPrefsSource: IxRoomPrefsSource,
 ) : Presenter<RoomListState> {"""
         )
@@ -401,10 +401,12 @@ class SourcePatches(private val engine: PatchEngine) {
             """val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
+            showUnreadCount,
         )""",
             """val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
+            showUnreadCount,
             pinFavorites,
         )"""
         )
@@ -415,10 +417,12 @@ class SourcePatches(private val engine: PatchEngine) {
             """    private fun roomListContentState(
         securityBannerDismissed: Boolean,
         showNewNotificationSoundBanner: Boolean,
+        showUnreadCount: Boolean,
     ): RoomListContentState {""",
             """    private fun roomListContentState(
         securityBannerDismissed: Boolean,
         showNewNotificationSoundBanner: Boolean,
+        showUnreadCount: Boolean,
         pinFavorites: Boolean,
     ): RoomListContentState {"""
         )
@@ -573,7 +577,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         timestamp = room.timestamp,
                         isHighlighted = room.isHighlighted
                     )
-                    MessagePreviewAndIndicatorRow(room = room)""",
+                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)""",
             """                    NameAndTimestampRow(
                         name = room.name,
                         localNicknameUserId = room.heroes.firstOrNull()?.id?.takeIf { room.isDm },
@@ -581,7 +585,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         isHighlighted = room.isHighlighted,
                         isFavorite = room.isFavorite,
                     )
-                    MessagePreviewAndIndicatorRow(room = room)"""
+                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)"""
         )
 
         // Replace the UnreadIndicatorAtom with conditional IxUnreadBadge
@@ -589,8 +593,18 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             path,
             """            if (room.hasNewContent) {
                 val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
+                val count = if (showUnreadCount) {
+                    if (room.userDefinedNotificationMode == RoomNotificationMode.MUTE) {
+                        room.numberOfUnreadMessages
+                    } else {
+                        room.numberOfUnreadNotifications
+                    }
+                } else {
+                    null
+                }
                 UnreadIndicatorAtom(
                     color = tint,
+                    count = count,
                     contentDescription = contentDescription,
                 )
             }""",
@@ -604,8 +618,18 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         contentDescription = contentDescription,
                     )
                 } else {
+                    val count = if (showUnreadCount) {
+                        if (room.userDefinedNotificationMode == RoomNotificationMode.MUTE) {
+                            room.numberOfUnreadMessages
+                        } else {
+                            room.numberOfUnreadNotifications
+                        }
+                    } else {
+                        null
+                    }
                     UnreadIndicatorAtom(
                         color = tint,
+                        count = count,
                         contentDescription = contentDescription,
                     )
                 }
@@ -680,6 +704,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                 hideInviteAvatars = hideInvitesAvatars,
                 isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
                     state.seenRoomInvites.contains(room.roomId),
+                showUnreadCount = state.showUnreadCount,
                 onClick = onRoomClick,
                 eventSink = eventSink,
             )
@@ -693,6 +718,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     hideInviteAvatars = hideInvitesAvatars,
                     isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
                         state.seenRoomInvites.contains(room.roomId),
+                    showUnreadCount = state.showUnreadCount,
                     onClick = onRoomClick,
                     eventSink = eventSink,
                 )
@@ -1300,10 +1326,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         )
         Text(
             modifier = Modifier
-                .padding(start = 8.dp)
-                .semantics {
-                    heading()
-                },
+                .padding(start = 8.dp),
             text = roomName ?: stringResource(CommonStrings.common_no_room_name),
             style = ElementTheme.typography.fontBodyLgMedium,
             fontStyle = FontStyle.Italic.takeIf { roomName == null },""",
@@ -1325,10 +1348,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         )
         Text(
             modifier = Modifier
-                .padding(start = 8.dp)
-                .semantics {
-                    heading()
-                },
+                .padding(start = 8.dp),
             text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
             style = ElementTheme.typography.fontBodyLgMedium,
             fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
@@ -1398,14 +1418,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Replace roomName with resolvedRoomName in the thread subtitle
         engine.replaceText(
             path,
-            """                    Text(
-                        text = roomName ?: stringResource(CommonStrings.common_no_room_name),
-                        style = ElementTheme.typography.fontBodySmRegular,
-                        fontStyle = FontStyle.Italic.takeIf { roomName == null },""",
-            """                    Text(
-                        text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
-                        style = ElementTheme.typography.fontBodySmRegular,
-                        fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
+            """            val name = roomName ?: stringResource(CommonStrings.common_no_room_name)""",
+            """            val name = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name)"""
         )
 
         // Add TopAppBar colors before closing paren
@@ -1800,8 +1814,10 @@ internal fun ThreadTopBarPreview"""
         engine.replaceText(
             path,
             """class RoomDetailsPresenter(
+    @Assisted private val navigator: RoomDetailsNavigator,
     private val client: MatrixClient,""",
             """class RoomDetailsPresenter(
+    @Assisted private val navigator: RoomDetailsNavigator,
     @io.element.android.libraries.di.annotations.ApplicationContext private val appContext: android.content.Context,
     private val client: MatrixClient,"""
         )
@@ -1843,8 +1859,10 @@ internal fun ThreadTopBarPreview"""
         engine.replaceText(
             path,
             """            roomHistoryVisibility = roomInfo.historyVisibility,
+            hasNewContent = hasNewContent,
             eventSink = ::handleEvent,""",
             """            roomHistoryVisibility = roomInfo.historyVisibility,
+            hasNewContent = hasNewContent,
             isMediaAutoDownloadModuleEnabled = isMediaAutoDownloadModuleEnabled,
             mediaAutoDownloadEnabled = mediaAutoDownloadEnabled,
             eventSink = ::handleEvent,"""
@@ -1854,9 +1872,9 @@ internal fun ThreadTopBarPreview"""
         val eventPath = "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsEvent.kt"
         engine.replaceText(
             eventPath,
-            """    data class SetFavorite(val isFavorite: Boolean) : RoomDetailsEvent
+            """    data object MarkAsUnread : RoomDetailsEvent
 }""",
-            """    data class SetFavorite(val isFavorite: Boolean) : RoomDetailsEvent
+            """    data object MarkAsUnread : RoomDetailsEvent
     data class SetMediaAutoDownload(val enabled: Boolean) : RoomDetailsEvent
 }"""
         )
@@ -1866,8 +1884,10 @@ internal fun ThreadTopBarPreview"""
         engine.replaceText(
             statePath,
             """    val roomHistoryVisibility: RoomHistoryVisibility,
+    val hasNewContent: Boolean,
     val eventSink: (RoomDetailsEvent) -> Unit""",
             """    val roomHistoryVisibility: RoomHistoryVisibility,
+    val hasNewContent: Boolean,
     val isMediaAutoDownloadModuleEnabled: Boolean = false,
     val mediaAutoDownloadEnabled: Boolean = false,
     val eventSink: (RoomDetailsEvent) -> Unit"""
@@ -1881,11 +1901,14 @@ internal fun ThreadTopBarPreview"""
         // Add media auto-download switch after MediaGalleryItem
         engine.replaceText(
             path,
-            """                MediaGalleryItem(
+            """            // Room content
+            PreferenceCategory {
+                MediaGalleryItem(
                     onClick = openMediaGallery
-                )
-            }""",
-            """                MediaGalleryItem(
+                )""",
+            """            // Room content
+            PreferenceCategory {
+                MediaGalleryItem(
                     onClick = openMediaGallery
                 )
                 if (state.isMediaAutoDownloadModuleEnabled) {
@@ -1897,8 +1920,7 @@ internal fun ThreadTopBarPreview"""
                             state.eventSink(RoomDetailsEvent.SetMediaAutoDownload(enabled))
                         },
                     )
-                }
-            }"""
+                }"""
         )
     }
 
