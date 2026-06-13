@@ -48,6 +48,9 @@ class SourcePatches(private val engine: PatchEngine) {
         patchNotificationConversationService()
         patchNotificationCreator()
         patchNotificationChannels()
+        patchPushManifestBootReceiver()
+        patchVectorFirebaseMessagingService()
+        patchVectorUnifiedPushMessagingReceiver()
         patchFetchPendingNotificationsWorker()
         patchDefaultNotifiableEventResolver()
         patchSenderName()
@@ -2272,6 +2275,161 @@ internal fun ThreadTopBarPreview"""
         )
 
         // Register a channel for incoming and in progress call notifications with no ringing"""
+        )
+    }
+
+    private fun patchPushManifestBootReceiver() {
+        val path = "libraries/push/impl/src/main/AndroidManifest.xml"
+
+        engine.replaceText(
+            path,
+            """    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />""",
+            """    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />"""
+        )
+
+        engine.replaceText(
+            path,
+            """        <receiver
+            android:name=".notifications.NotificationBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <provider""",
+            """        <receiver
+            android:name=".notifications.NotificationBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="de.iltix.push.IxBootReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <provider"""
+        )
+    }
+
+    private fun patchVectorFirebaseMessagingService() {
+        val path = "libraries/pushproviders/firebase/src/main/kotlin/io/element/android/libraries/pushproviders/firebase/VectorFirebaseMessagingService.kt"
+        engine.addImport(path, "kotlinx.coroutines.runBlocking")
+
+        engine.replaceText(
+            path,
+            """        coroutineScope.launch {
+            val pushData = pushParser.parse(message.data)
+            if (pushData == null) {
+                Timber.tag(loggerTag.value).w("Invalid data received from Firebase")
+                pushHandler.handleInvalid(
+                    providerInfo = FirebaseConfig.NAME,
+                    data = message.data.keys.joinToString("\n") {
+                        "${'$'}it: ${'$'}{message.data[it]}"
+                    },
+                )
+                if (isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            } else {
+                val handled = pushHandler.handle(
+                    pushData = pushData,
+                    providerInfo = FirebaseConfig.NAME,
+                )
+
+                // If we failed to handle the push, we should release the wakelock early to avoid keeping the device awake for too long.
+                if (!handled && isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            }
+        }""",
+            """        // Firebase invokes this service callback on a background binder thread,
+        // so blocking here is safe and prevents process death before push persistence/enqueueing.
+        runBlocking {
+            val pushData = pushParser.parse(message.data)
+            if (pushData == null) {
+                Timber.tag(loggerTag.value).w("Invalid data received from Firebase")
+                pushHandler.handleInvalid(
+                    providerInfo = FirebaseConfig.NAME,
+                    data = message.data.keys.joinToString("\n") {
+                        "${'$'}it: ${'$'}{message.data[it]}"
+                    },
+                )
+                if (isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            } else {
+                val handled = pushHandler.handle(
+                    pushData = pushData,
+                    providerInfo = FirebaseConfig.NAME,
+                )
+
+                // If we failed to handle the push, we should release the wakelock early to avoid keeping the device awake for too long.
+                if (!handled && isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            }
+        }"""
+        )
+    }
+
+    private fun patchVectorUnifiedPushMessagingReceiver() {
+        val path = "libraries/pushproviders/unifiedpush/src/main/kotlin/io/element/android/libraries/pushproviders/unifiedpush/VectorUnifiedPushMessagingReceiver.kt"
+
+        engine.replaceText(
+            path,
+            """        coroutineScope.launch {
+            val pushData = pushParser.parse(message.content, instance)
+            if (pushData == null) {
+                Timber.tag(loggerTag.value).w("Invalid data received from UnifiedPush")
+                pushHandler.handleInvalid(
+                    providerInfo = "${'$'}{UnifiedPushConfig.NAME} - ${'$'}instance",
+                    data = String(message.content),
+                )
+                fetchPushForegroundServiceManager.stop()
+            } else {
+                val handled = pushHandler.handle(
+                    pushData = pushData,
+                    providerInfo = "${'$'}{UnifiedPushConfig.NAME} - ${'$'}instance",
+                )
+
+                // If we failed to handle the push, we should stop the foreground service early to avoid keeping the device awake for too long.
+                if (!handled) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            }
+        }""",
+            """        val pendingResult = goAsync()
+        coroutineScope.launch {
+            try {
+                val pushData = pushParser.parse(message.content, instance)
+                if (pushData == null) {
+                    Timber.tag(loggerTag.value).w("Invalid data received from UnifiedPush")
+                    pushHandler.handleInvalid(
+                        providerInfo = "${'$'}{UnifiedPushConfig.NAME} - ${'$'}instance",
+                        data = String(message.content),
+                    )
+                    fetchPushForegroundServiceManager.stop()
+                } else {
+                    val handled = pushHandler.handle(
+                        pushData = pushData,
+                        providerInfo = "${'$'}{UnifiedPushConfig.NAME} - ${'$'}instance",
+                    )
+
+                    // If we failed to handle the push, we should stop the foreground service early to avoid keeping the device awake for too long.
+                    if (!handled) {
+                        fetchPushForegroundServiceManager.stop()
+                    }
+                }
+            } finally {
+                pendingResult.finish()
+            }
+        }"""
         )
     }
 

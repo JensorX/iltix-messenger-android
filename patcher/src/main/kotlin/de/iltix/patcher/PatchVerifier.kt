@@ -140,6 +140,26 @@ class PatchVerifier(private val workspace: File) {
             "import de.iltix.push.IxMediaAutoDownloadService",
             "FetchPendingNotificationsWorker: IxMediaAutoDownloadService import"
         ))
+        add(Expectation(
+            "libraries/push/impl/src/main/AndroidManifest.xml",
+            "android.permission.RECEIVE_BOOT_COMPLETED",
+            "Push manifest: RECEIVE_BOOT_COMPLETED permission"
+        ))
+        add(Expectation(
+            "libraries/push/impl/src/main/AndroidManifest.xml",
+            "de.iltix.push.IxBootReceiver",
+            "Push manifest: IxBootReceiver registration"
+        ))
+        add(Expectation(
+            "libraries/pushproviders/firebase/src/main/kotlin/io/element/android/libraries/pushproviders/firebase/VectorFirebaseMessagingService.kt",
+            "runBlocking",
+            "VectorFirebaseMessagingService: runBlocking push handling"
+        ))
+        add(Expectation(
+            "libraries/pushproviders/unifiedpush/src/main/kotlin/io/element/android/libraries/pushproviders/unifiedpush/VectorUnifiedPushMessagingReceiver.kt",
+            "val pendingResult = goAsync()",
+            "VectorUnifiedPushMessagingReceiver: goAsync pending result"
+        ))
 
         // === Matrix UI hooks ===
         add(Expectation(
