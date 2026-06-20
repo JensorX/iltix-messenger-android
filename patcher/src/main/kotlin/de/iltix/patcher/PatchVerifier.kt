@@ -205,6 +205,16 @@ class PatchVerifier(private val workspace: File) {
             "BuildTimeConfig.kt: Iltix constants"
         ))
         add(Expectation(
+            "plugins/src/main/kotlin/extension/CommonExtension.kt",
+            "missingDimensionStrategy(\"app\", \"element\")",
+            "CommonExtension: app missingDimensionStrategy"
+        ))
+        add(Expectation(
+            "plugins/src/main/kotlin/extension/CommonExtension.kt",
+            "missingDimensionStrategy(\"store\", \"gplay\")",
+            "CommonExtension: store missingDimensionStrategy"
+        ))
+        add(Expectation(
             "plugins/src/main/kotlin/ModulesConfig.kt",
             "isIltixBuild",
             "ModulesConfig.kt: Iltix analytics routing"

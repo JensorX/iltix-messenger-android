@@ -396,5 +396,29 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
             "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
             "CommonExtension missingDimensionStrategy"
         )
+
+        // Same patch, but with an extra blank line before the function closing brace.
+        engine.replaceTextIfPresent(
+            path,
+            "generatedDensities()\n        }\n\n    }",
+            "generatedDensities()\n        }\n\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
+            "CommonExtension missingDimensionStrategy (blank line variant)"
+        )
+
+        // Ensure store dimension is added when app strategy is already present.
+        engine.replaceTextIfPresent(
+            path,
+            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n    }",
+            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
+            "CommonExtension add store missingDimensionStrategy"
+        )
+
+        // Ensure app dimension is added when store strategy is already present.
+        engine.replaceTextIfPresent(
+            path,
+            "generatedDensities()\n        }\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
+            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
+            "CommonExtension add app missingDimensionStrategy"
+        )
     }
 }
