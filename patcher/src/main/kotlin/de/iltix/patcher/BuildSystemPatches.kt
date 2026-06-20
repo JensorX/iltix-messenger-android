@@ -390,35 +390,24 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
 
     private fun patchCommonExtension() {
         val path = "plugins/src/main/kotlin/extension/CommonExtension.kt"
+        
+        // Upstream v26.06.4 has defaultLibraryConfig() lambda.
+        // Insert missingDimensionStrategy calls after vectorDrawables block closes.
         engine.replaceTextIfPresent(
             path,
-            "generatedDensities()\n        }\n    }",
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
-            "CommonExtension missingDimensionStrategy"
-        )
-
-        // Same patch, but with an extra blank line before the function closing brace.
-        engine.replaceTextIfPresent(
-            path,
-            "generatedDensities()\n        }\n\n    }",
-            "generatedDensities()\n        }\n\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
-            "CommonExtension missingDimensionStrategy (blank line variant)"
-        )
-
-        // Ensure store dimension is added when app strategy is already present.
-        engine.replaceTextIfPresent(
-            path,
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n    }",
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
-            "CommonExtension add store missingDimensionStrategy"
-        )
-
-        // Ensure app dimension is added when store strategy is already present.
-        engine.replaceTextIfPresent(
-            path,
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
-            "CommonExtension add app missingDimensionStrategy"
+            """    vectorDrawables {
+        useSupportLibrary = true
+        generatedDensities()
+    }
+}""",
+            """    vectorDrawables {
+        useSupportLibrary = true
+        generatedDensities()
+    }
+    missingDimensionStrategy("app", "element")
+    missingDimensionStrategy("store", "gplay")
+}""",
+            "CommonExtension: inject missingDimensionStrategy in defaultLibraryConfig"
         )
     }
 }
