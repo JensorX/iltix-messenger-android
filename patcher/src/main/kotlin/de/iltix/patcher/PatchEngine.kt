@@ -78,6 +78,27 @@ class PatchEngine(private val workspace: File) {
     }
 
     /**
+     * Replace occurrences of a literal string when present.
+     * If the pattern is absent, this is treated as a successful no-op.
+     */
+    fun replaceTextIfPresent(relativePath: String, oldText: String, newText: String, description: String = "") {
+        val file = workspace.resolve(relativePath)
+        if (!file.exists()) {
+            results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", false, "File not found"))
+            return
+        }
+        val content = file.readText()
+        if (!content.contains(oldText)) {
+            results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Pattern not found, skipped"))
+            return
+        }
+        val newContent = content.replace(oldText, newText)
+        file.writeText(newContent)
+        val count = Regex(Regex.escape(oldText)).findAll(content).count()
+        results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Replaced $count occurrence(s)"))
+    }
+
+    /**
      * Replace text matching a regex pattern.
      */
     fun replacePattern(relativePath: String, pattern: String, replacement: String, description: String = "") {

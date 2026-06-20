@@ -390,10 +390,11 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
 
     private fun patchCommonExtension() {
         val path = "plugins/src/main/kotlin/extension/CommonExtension.kt"
-        engine.replaceText(
+        engine.replaceTextIfPresent(
             path,
             "generatedDensities()\n        }\n    }",
-            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }"
+            "generatedDensities()\n        }\n        missingDimensionStrategy(\"app\", \"element\")\n        missingDimensionStrategy(\"store\", \"gplay\")\n    }",
+            "CommonExtension missingDimensionStrategy"
         )
     }
 }
