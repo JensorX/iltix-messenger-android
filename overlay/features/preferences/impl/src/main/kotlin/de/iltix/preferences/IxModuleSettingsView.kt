@@ -320,6 +320,17 @@ private fun IxModuleSettingsOverviewView(
                 },
             )
         }
+
+        IxPrefs.SHOW_TYPING_IN_OVERVIEW.titleRes?.let { titleRes ->
+            PreferenceSwitch(
+                title = stringResource(id = titleRes),
+                subtitle = IxPrefs.SHOW_TYPING_IN_OVERVIEW.summaryRes?.let { stringResource(id = it) },
+                isChecked = state.preferencesValues["SHOW_TYPING_IN_OVERVIEW"] ?: IxPrefs.SHOW_TYPING_IN_OVERVIEW.defaultValue,
+                onCheckedChange = { enabled ->
+                    state.eventSink(IxModuleSettingsEvents.ToggleModule("SHOW_TYPING_IN_OVERVIEW", enabled))
+                },
+            )
+        }
     }
 }
 

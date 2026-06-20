@@ -50,6 +50,9 @@
     
     <string name="iltix_pin_favorites_title">Favoriten anheften</string>
     <string name="iltix_pin_favorites_subtitle">Favorisierte Chats oben anheften</string>
+
+    <string name="iltix_show_typing_overview_title">Schreibt-Indikator</string>
+    <string name="iltix_show_typing_overview_subtitle">"schreibt..." in der Chat-Übersicht anzeigen</string>
     
     <!-- Theme Features -->
     <string name="iltix_theme_category_title">Iltix-Design</string>

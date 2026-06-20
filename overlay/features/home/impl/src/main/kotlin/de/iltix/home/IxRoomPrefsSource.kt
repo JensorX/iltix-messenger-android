@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
  */
 interface IxRoomPrefsSource {
     fun pinFavoritesFlow(): Flow<Boolean>
+    fun showTypingInOverviewFlow(): Flow<Boolean>
 }
 
 @Inject
@@ -31,4 +32,6 @@ class DefaultIxRoomPrefsSource(
     private val store by lazy { IxPreferencesStore(context) }
 
     override fun pinFavoritesFlow(): Flow<Boolean> = store.settingFlow(IxPrefs.PIN_FAVORITES)
+
+    override fun showTypingInOverviewFlow(): Flow<Boolean> = store.settingFlow(IxPrefs.SHOW_TYPING_IN_OVERVIEW)
 }

@@ -377,6 +377,9 @@ class SourcePatches(private val engine: PatchEngine) {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
         engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
+        engine.addImport(path, "io.element.android.libraries.matrix.api.room.roomMembers")
+        engine.addImport(path, "kotlinx.collections.immutable.persistentListOf")
+        engine.addImport(path, "kotlinx.coroutines.flow.combine")
 
         // Add IxRoomPrefsSource constructor parameter
         engine.replaceText(
@@ -398,6 +401,16 @@ class SourcePatches(private val engine: PatchEngine) {
             "RoomListPresenter: collect pinFavorites"
         )
 
+        engine.insertAfterLine(
+            path,
+            """collectAsState\(initial = IxPrefs\.PIN_FAVORITES\.defaultValue\)""",
+            """
+
+        val showTypingInOverview by ixRoomPrefsSource.showTypingInOverviewFlow()
+            .collectAsState(initial = IxPrefs.SHOW_TYPING_IN_OVERVIEW.defaultValue)""",
+            "RoomListPresenter: collect showTypingInOverview"
+        )
+
         // Add pinFavorites arg to roomListContentState call
         engine.replaceText(
             path,
@@ -411,6 +424,7 @@ class SourcePatches(private val engine: PatchEngine) {
             showNewNotificationSoundBanner,
             showUnreadCount,
             pinFavorites,
+            showTypingInOverview,
         )"""
         )
 
@@ -427,14 +441,71 @@ class SourcePatches(private val engine: PatchEngine) {
         showNewNotificationSoundBanner: Boolean,
         showUnreadCount: Boolean,
         pinFavorites: Boolean,
+        showTypingInOverview: Boolean,
     ): RoomListContentState {"""
+        )
+
+        engine.replaceText(
+            path,
+            """        val seenRoomInvites by remember { seenInvitesStore.seenRoomIds() }.collectAsState(emptySet())
+        val securityBannerState by rememberSecurityBannerState(securityBannerDismissed)""",
+            """        val typingMemberDisplayNamesByRoom by produceState(
+            initialValue = emptyMap<RoomId, List<String>>(),
+            key1 = roomSummaries.dataOrNull(),
+            key2 = showTypingInOverview,
+        ) {
+            val summaries = roomSummaries.dataOrNull().orEmpty()
+            if (!showTypingInOverview || summaries.isEmpty()) {
+                value = emptyMap()
+                return@produceState
+            }
+            val nextValue = mutableMapOf<RoomId, List<String>>()
+            value = emptyMap()
+            summaries.forEach { summary ->
+                launch {
+                    client.getJoinedRoom(summary.roomId)?.use { room ->
+                        combine(room.roomTypingMembersFlow, room.membersStateFlow) { typingMembers, membersState ->
+                            typingMembers
+                                .filterNot { client.isMe(it) }
+                                .map { userId ->
+                                    membersState.roomMembers()
+                                        ?.firstOrNull { roomMember -> roomMember.userId == userId }
+                                        ?.disambiguatedDisplayName
+                                        .orEmpty()
+                                        .ifBlank { userId.value }
+                                }
+                        }
+                            .distinctUntilChanged()
+                            .collect { names ->
+                                if (names.isEmpty()) {
+                                    nextValue.remove(summary.roomId)
+                                } else {
+                                    nextValue[summary.roomId] = names
+                                }
+                                value = nextValue.toMap()
+                            }
+                    }
+                }
+            }
+        }
+        val seenRoomInvites by remember { seenInvitesStore.seenRoomIds() }.collectAsState(emptySet())
+        val securityBannerState by rememberSecurityBannerState(securityBannerDismissed)"""
         )
 
         // Pin favorites: partition summaries and replace the summaries assignment
         engine.replaceText(
             path,
             """                summaries = roomSummaries.dataOrNull().orEmpty().toImmutableList(),""",
-            """                summaries = roomSummaries.dataOrNull().orEmpty().let { summaries ->
+            """                summaries = roomSummaries.dataOrNull().orEmpty().map { summary ->
+                    val typingMemberDisplayNames = if (showTypingInOverview) {
+                        typingMemberDisplayNamesByRoom[summary.roomId].orEmpty().toImmutableList()
+                    } else {
+                        persistentListOf()
+                    }
+                    summary.copy(
+                        typingMemberDisplayNames = typingMemberDisplayNames,
+                    )
+                }.let { summaries ->
                     if (pinFavorites) {
                         val (favorites, others) = summaries.partition { it.isFavorite }
                         favorites + others
@@ -447,6 +518,7 @@ class SourcePatches(private val engine: PatchEngine) {
 
     private fun patchRoomListRoomSummaryModel() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/model/RoomListRoomSummary.kt"
+        engine.addImport(path, "kotlinx.collections.immutable.persistentListOf")
 
         engine.replaceText(
             path,
@@ -457,6 +529,7 @@ class SourcePatches(private val engine: PatchEngine) {
     val latestEvent: LatestEvent,
     val latestEventSenderId: String? = null,
     val latestEventSenderDisplayName: String? = null,
+    val typingMemberDisplayNames: ImmutableList<String> = persistentListOf(),
     val avatarData: AvatarData,"""
         )
     }
@@ -641,6 +714,25 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
         engine.replaceText(
             path,
+            """            if (room.latestEvent is LatestEvent.Error) {""",
+            """            val typingPreview = room.typingMemberDisplayNames.toIxTypingPreview()
+            if (typingPreview != null) {
+                Text(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clipToBounds(),
+                    text = typingPreview,
+                    color = ElementTheme.colors.textSecondary,
+                    style = ElementTheme.typography.fontBodyMdRegular,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else if (room.latestEvent is LatestEvent.Error) {"""
+        )
+
+        engine.replaceText(
+            path,
             """                val messagePreview = room.latestEvent.content()
                 val annotatedMessagePreview = messagePreview as? AnnotatedString ?: AnnotatedString(text = messagePreview.orEmpty().toString())
                 Text(""",
@@ -667,6 +759,25 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     else -> AnnotatedString(text = messagePreviewText)
                 }
                 Text("""
+        )
+
+        engine.insertBeforeLine(
+            path,
+            """@PreviewsDayNight""",
+            """private fun List<String>.toIxTypingPreview(): String? {
+    val names = map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+    return when (names.size) {
+        0 -> null
+        1 -> "${'$'}{names[0]} schreibt..."
+        2 -> "${'$'}{names[0]} und ${'$'}{names[1]} schreiben..."
+        else -> "${'$'}{names[0]} und ${'$'}{names.size - 1} weitere schreiben..."
+    }
+}
+
+""",
+            "RoomSummaryRow: typing preview text formatter"
         )
     }
 

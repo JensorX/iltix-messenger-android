@@ -50,6 +50,9 @@
     
     <string name="iltix_pin_favorites_title">Pin Favorites</string>
     <string name="iltix_pin_favorites_subtitle">Pin favorite chats to the top</string>
+
+    <string name="iltix_show_typing_overview_title">Typing Indicator</string>
+    <string name="iltix_show_typing_overview_subtitle">Show "is typing..." in chat overview</string>
     
     <!-- Theme Features -->
     <string name="iltix_theme_category_title">Iltix Theme</string>

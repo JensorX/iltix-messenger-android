@@ -58,6 +58,11 @@ class PatchVerifier(private val workspace: File) {
             "RoomListPresenter: IxRoomPrefsSource import"
         ))
         add(Expectation(
+            "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt",
+            "showTypingInOverview",
+            "RoomListPresenter: typing overview preference and state"
+        ))
+        add(Expectation(
             "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
             "import de.iltix.components.badges.IxUnreadBadge",
             "RoomSummaryRow: IxUnreadBadge import"
@@ -66,6 +71,16 @@ class PatchVerifier(private val workspace: File) {
             "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
             "import de.iltix.components.nicknames.rememberIxResolvedDisplayName",
             "RoomSummaryRow: rememberIxResolvedDisplayName import"
+        ))
+        add(Expectation(
+            "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
+            "toIxTypingPreview",
+            "RoomSummaryRow: typing preview formatter"
+        ))
+        add(Expectation(
+            "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/model/RoomListRoomSummary.kt",
+            "typingMemberDisplayNames",
+            "RoomListRoomSummary: typing member names field"
         ))
 
         // === Messages hooks ===

@@ -55,6 +55,10 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
             .collectAsState(initial = IxPrefs.PIN_FAVORITES.defaultValue)
         preferencesMap["PIN_FAVORITES"] = pinFavorites
 
+        val showTypingInOverview by preferencesStore.settingFlow(IxPrefs.SHOW_TYPING_IN_OVERVIEW)
+            .collectAsState(initial = IxPrefs.SHOW_TYPING_IN_OVERVIEW.defaultValue)
+        preferencesMap["SHOW_TYPING_IN_OVERVIEW"] = showTypingInOverview
+
         val iltixThemeMode by preferencesStore.settingFlow(IxPrefs.ILTIX_THEME_MODE)
             .collectAsState(initial = IxPrefs.ILTIX_THEME_MODE.defaultValue)
         stringValuesMap["ILTIX_THEME_MODE"] = iltixThemeMode
@@ -116,6 +120,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             "NUMBER_BADGE" -> IxPrefs.NUMBER_BADGE
                             "START_BUTTON_IN_TOOLBAR" -> IxPrefs.START_BUTTON_IN_TOOLBAR
                             "PIN_FAVORITES" -> IxPrefs.PIN_FAVORITES
+                            "SHOW_TYPING_IN_OVERVIEW" -> IxPrefs.SHOW_TYPING_IN_OVERVIEW
                             "MATERIAL_YOU_THEME" -> IxPrefs.MATERIAL_YOU_THEME
                             "ROUNDED_BUBBLES" -> IxPrefs.ROUNDED_BUBBLES
                             "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
@@ -161,6 +166,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, false)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, false)
                         preferencesStore.setSetting(IxPrefs.PIN_FAVORITES, false)
+                        preferencesStore.setSetting(IxPrefs.SHOW_TYPING_IN_OVERVIEW, false)
                         preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, false)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, false)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, false)
@@ -180,6 +186,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, IxPrefs.NUMBER_BADGE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, IxPrefs.START_BUTTON_IN_TOOLBAR.defaultValue)
                         preferencesStore.setSetting(IxPrefs.PIN_FAVORITES, IxPrefs.PIN_FAVORITES.defaultValue)
+                        preferencesStore.setSetting(IxPrefs.SHOW_TYPING_IN_OVERVIEW, IxPrefs.SHOW_TYPING_IN_OVERVIEW.defaultValue)
                         preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, IxPrefs.EMOJI_PICKER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, IxPrefs.POLL_VOTE_VIEWER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, IxPrefs.PRIORITY_NOTIFICATION.defaultValue)

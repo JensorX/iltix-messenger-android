@@ -73,6 +73,15 @@ object IxPrefs {
         upstreamChoice = false,
     )
 
+    val SHOW_TYPING_IN_OVERVIEW = IxBoolPref(
+        key = "ILTIX_SHOW_TYPING_IN_OVERVIEW",
+        defaultValue = true,
+        titleRes = R.string.iltix_show_typing_overview_title,
+        summaryRes = R.string.iltix_show_typing_overview_subtitle,
+        authorsChoice = true,
+        upstreamChoice = false,
+    )
+
     // ===== Theme Features =====
     val ILTIX_THEME_MODE = IxListPref(
         key = "ILTIX_THEME_MODE",
@@ -209,6 +218,7 @@ object IxPrefs {
         NUMBER_BADGE,
         START_BUTTON_IN_TOOLBAR,
         PIN_FAVORITES,
+        SHOW_TYPING_IN_OVERVIEW,
         ILTIX_THEME_MODE,
         MATERIAL_YOU_THEME,
         ROUNDED_BUBBLES,
