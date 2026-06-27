@@ -375,9 +375,7 @@ class SourcePatches(private val engine: PatchEngine) {
 
     private fun patchRoomListPresenter() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt"
-        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
         engine.addImport(path, "de.iltix.home.IxRoomPrefsSource")
-        engine.addImport(path, "de.iltix.lib.nicknames.IxLocalNicknameStore")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
         engine.addImport(path, "io.element.android.libraries.matrix.api.room.roomMembers")
         engine.addImport(path, "kotlinx.collections.immutable.persistentListOf")
@@ -451,10 +449,7 @@ class SourcePatches(private val engine: PatchEngine) {
             path,
             """        val seenRoomInvites by remember { seenInvitesStore.seenRoomIds() }.collectAsState(emptySet())
         val securityBannerState by rememberSecurityBannerState(securityBannerDismissed)""",
-            """        val appContext = LocalContext.current.applicationContext
-        val nicknameStore = remember(appContext) { IxLocalNicknameStore(appContext) }
-
-        val typingMemberDisplayNamesByRoom by produceState(
+            """        val typingMemberDisplayNamesByRoom by produceState(
             initialValue = emptyMap<RoomId, List<String>>(),
             key1 = roomSummaries.dataOrNull(),
             key2 = showTypingInOverview,
@@ -477,7 +472,7 @@ class SourcePatches(private val engine: PatchEngine) {
                                         ?.firstOrNull { roomMember -> roomMember.userId == userId }
                                         ?.displayName
                                         .orEmpty()
-                                    val nickname = nicknameStore.nicknameFlow(userId.value).first().orEmpty()
+                                    val nickname = ixRoomPrefsSource.localNicknameFlow(userId.value).first().orEmpty()
                                     nickname
                                         .ifBlank { displayName }
                                         .ifBlank { userId.extractedDisplayName }

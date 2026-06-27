@@ -7,6 +7,7 @@
 package de.iltix.home
 
 import android.content.Context
+import de.iltix.lib.nicknames.IxLocalNicknameStore
 import de.iltix.lib.preferences.IxPreferencesStore
 import de.iltix.lib.preferences.IxPrefs
 import dev.zacsweers.metro.AppScope
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 interface IxRoomPrefsSource {
     fun pinFavoritesFlow(): Flow<Boolean>
     fun showTypingInOverviewFlow(): Flow<Boolean>
+    fun localNicknameFlow(userId: String): Flow<String?>
 }
 
 @Inject
@@ -30,8 +32,11 @@ class DefaultIxRoomPrefsSource(
     @ApplicationContext private val context: Context,
 ) : IxRoomPrefsSource {
     private val store by lazy { IxPreferencesStore(context) }
+    private val nicknameStore by lazy { IxLocalNicknameStore(context) }
 
     override fun pinFavoritesFlow(): Flow<Boolean> = store.settingFlow(IxPrefs.PIN_FAVORITES)
 
     override fun showTypingInOverviewFlow(): Flow<Boolean> = store.settingFlow(IxPrefs.SHOW_TYPING_IN_OVERVIEW)
+
+    override fun localNicknameFlow(userId: String): Flow<String?> = nicknameStore.nicknameFlow(userId)
 }

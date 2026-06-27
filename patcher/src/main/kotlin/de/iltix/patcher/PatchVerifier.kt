@@ -63,6 +63,11 @@ class PatchVerifier(private val workspace: File) {
             "RoomListPresenter: typing overview preference and state"
         ))
         add(Expectation(
+            "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt",
+            "ixRoomPrefsSource.localNicknameFlow",
+            "RoomListPresenter: typing names use injected nickname source"
+        ))
+        add(Expectation(
             "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
             "import de.iltix.components.badges.IxUnreadBadge",
             "RoomSummaryRow: IxUnreadBadge import"
