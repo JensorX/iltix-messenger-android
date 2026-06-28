@@ -112,7 +112,7 @@ internal fun syncIxLiveNotificationMirrors(
         .forEach { tag -> compatManager.cancel(tag, IX_LIVE_NOTIFICATION_ID) }
 }
 
-internal fun cancelAllIxLiveNotifications(context: Context) {
+fun cancelAllIxLiveNotifications(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
     val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
     val compatManager = NotificationManagerCompat.from(context)
