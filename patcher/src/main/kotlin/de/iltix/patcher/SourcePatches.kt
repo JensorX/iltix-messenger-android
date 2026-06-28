@@ -2045,6 +2045,10 @@ internal fun ThreadTopBarPreview"""
 
     private fun patchNotificationRenderer() {
         val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/NotificationRenderer.kt"
+        engine.addImport(path, "android.content.Context")
+        engine.addImport(path, "de.iltix.push.ixLiveNotificationKey")
+        engine.addImport(path, "de.iltix.push.syncIxLiveNotificationMirrors")
+        engine.addImport(path, "io.element.android.libraries.di.annotations.ApplicationContext")
         engine.addImport(path, "io.element.android.libraries.push.api.notifications.conversations.NotificationConversationService")
 
         // Inject conversation service so shortcut refresh code compiles.
@@ -2056,6 +2060,7 @@ internal fun ThreadTopBarPreview"""
             """    private val notificationDisplayer: NotificationDisplayer,
     private val notificationDataFactory: NotificationDataFactory,
     private val notificationConversationService: NotificationConversationService,
+    @ApplicationContext private val context: Context,
     private val enterpriseService: EnterpriseService,"""
         )
 
@@ -2093,7 +2098,15 @@ internal fun ThreadTopBarPreview"""
                 }.onFailure {
                     Timber.tag(loggerTag.value).w(it, "Failed to refresh conversation shortcut for room ${'$'}{latestEvent.roomId}")
                 }
-            }"""
+            }
+
+        syncIxLiveNotificationMirrors(
+            context = context,
+            activeRoomKeys = groupedEvents.roomEvents
+                .filter { !it.outGoingMessage }
+                .map(::ixLiveNotificationKey)
+                .toSet(),
+        )"""
         )
     }
 
@@ -2122,6 +2135,7 @@ internal fun ThreadTopBarPreview"""
 
     private fun patchNotificationCreator() {
         val path = "libraries/push/impl/src/main/kotlin/io/element/android/libraries/push/impl/notifications/factories/NotificationCreator.kt"
+        engine.addImport(path, "de.iltix.push.publishIxLiveNotification")
         engine.addImport(path, "de.iltix.push.resolveIxNotificationRoute")
         engine.addImport(path, "de.iltix.push.resolveIxRankingTimestamp")
         engine.addImport(path, "de.iltix.push.resolveIxSummaryNotificationRoute")
@@ -2357,7 +2371,20 @@ internal fun ThreadTopBarPreview"""
                 }
             }
             .setTicker(tickerText)
-            .build()"""
+            .build()
+            .also { notification ->
+                if (threadId == null) {
+                    events.lastOrNull { !it.outGoingMessage }?.let { latestEvent ->
+                        publishIxLiveNotification(
+                            context = context,
+                            buildMeta = buildMeta,
+                            roomInfo = roomInfo,
+                            latestEvent = latestEvent,
+                            normalNotification = notification,
+                        )
+                    }
+                }
+            }"""
             )
 
             // When Iltix priority route is active, use GROUP_ALERT_ALL so the child notification

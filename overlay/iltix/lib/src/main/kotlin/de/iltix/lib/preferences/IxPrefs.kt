@@ -10,7 +10,8 @@ import de.iltix.lib.R
 
 /**
  * All Iltix feature preferences in a single object.
- * All features default to true (enabled by default in Iltix).
+ * Most features default to true (enabled by default in Iltix). Riskier system
+ * integration features should opt in explicitly.
  */
 object IxPrefs {
     // ===== General Features =====
@@ -20,6 +21,15 @@ object IxPrefs {
         titleRes = R.string.iltix_local_usernames_title,
         summaryRes = R.string.iltix_local_usernames_subtitle,
         authorsChoice = true,
+        upstreamChoice = false,
+    )
+
+    val LIVE_NOTIFICATIONS = IxBoolPref(
+        key = "ILTIX_LIVE_NOTIFICATIONS",
+        defaultValue = false,
+        titleRes = R.string.iltix_live_notifications_title,
+        summaryRes = R.string.iltix_live_notifications_subtitle,
+        authorsChoice = false,
         upstreamChoice = false,
     )
 
@@ -214,6 +224,7 @@ object IxPrefs {
      */
     fun getAllPreferences(): List<IxPref<*>> = listOf(
         LOCAL_USERNAMES,
+        LIVE_NOTIFICATIONS,
         SPACE_NAV_MODE,
         NUMBER_BADGE,
         START_BUTTON_IN_TOOLBAR,

@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import de.iltix.lib.preferences.IxPreferencesStore
 import de.iltix.lib.preferences.IxPrefs
+import de.iltix.push.cancelAllIxLiveNotifications
 import io.element.android.libraries.architecture.Presenter
 import kotlinx.coroutines.launch
 
@@ -38,6 +39,10 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
         val localUsernames by preferencesStore.settingFlow(IxPrefs.LOCAL_USERNAMES)
             .collectAsState(initial = IxPrefs.LOCAL_USERNAMES.defaultValue)
         preferencesMap["LOCAL_USERNAMES"] = localUsernames
+
+        val liveNotifications by preferencesStore.settingFlow(IxPrefs.LIVE_NOTIFICATIONS)
+            .collectAsState(initial = IxPrefs.LIVE_NOTIFICATIONS.defaultValue)
+        preferencesMap["LIVE_NOTIFICATIONS"] = liveNotifications
 
         val spaceNavMode by preferencesStore.settingFlow(IxPrefs.SPACE_NAV_MODE)
             .collectAsState(initial = IxPrefs.SPACE_NAV_MODE.defaultValue)
@@ -117,6 +122,7 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                     coroutineScope.launch {
                         val pref = when (event.moduleKey) {
                             "LOCAL_USERNAMES" -> IxPrefs.LOCAL_USERNAMES
+                            "LIVE_NOTIFICATIONS" -> IxPrefs.LIVE_NOTIFICATIONS
                             "NUMBER_BADGE" -> IxPrefs.NUMBER_BADGE
                             "START_BUTTON_IN_TOOLBAR" -> IxPrefs.START_BUTTON_IN_TOOLBAR
                             "PIN_FAVORITES" -> IxPrefs.PIN_FAVORITES
@@ -132,6 +138,9 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             else -> return@launch
                         }
                         preferencesStore.setSetting(pref, event.enabled)
+                        if (event.moduleKey == "LIVE_NOTIFICATIONS" && !event.enabled) {
+                            cancelAllIxLiveNotifications(context)
+                        }
                     }
                 }
                 is IxModuleSettingsEvents.SetStringModule -> {
@@ -162,6 +171,8 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                 IxModuleSettingsEvents.DeactivateAllModules -> {
                     coroutineScope.launch {
                         preferencesStore.setSetting(IxPrefs.LOCAL_USERNAMES, false)
+                        preferencesStore.setSetting(IxPrefs.LIVE_NOTIFICATIONS, false)
+                        cancelAllIxLiveNotifications(context)
                         preferencesStore.setSetting(IxPrefs.SPACE_NAV_MODE, "none")
                         preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, false)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, false)
@@ -182,6 +193,10 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                 IxModuleSettingsEvents.ResetToDefaults -> {
                     coroutineScope.launch {
                         preferencesStore.setSetting(IxPrefs.LOCAL_USERNAMES, IxPrefs.LOCAL_USERNAMES.defaultValue)
+                        preferencesStore.setSetting(IxPrefs.LIVE_NOTIFICATIONS, IxPrefs.LIVE_NOTIFICATIONS.defaultValue)
+                        if (!IxPrefs.LIVE_NOTIFICATIONS.defaultValue) {
+                            cancelAllIxLiveNotifications(context)
+                        }
                         preferencesStore.setSetting(IxPrefs.SPACE_NAV_MODE, IxPrefs.SPACE_NAV_MODE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, IxPrefs.NUMBER_BADGE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, IxPrefs.START_BUTTON_IN_TOOLBAR.defaultValue)

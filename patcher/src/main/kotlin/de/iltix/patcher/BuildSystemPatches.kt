@@ -343,6 +343,10 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
             "features/preferences/impl/build.gradle.kts",
             "implementation(projects.iltix.components)"
         )
+        engine.addGradleDependency(
+            "features/preferences/impl/build.gradle.kts",
+            "implementation(projects.libraries.push.impl)"
+        )
     }
 
     private fun patchRoomDetailsImplBuildGradle() {

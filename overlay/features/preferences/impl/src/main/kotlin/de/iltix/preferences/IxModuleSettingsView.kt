@@ -185,6 +185,17 @@ private fun IxModuleSettingsGeneralView(
             )
         }
 
+        IxPrefs.LIVE_NOTIFICATIONS.titleRes?.let { titleRes ->
+            PreferenceSwitch(
+                title = stringResource(id = titleRes),
+                subtitle = IxPrefs.LIVE_NOTIFICATIONS.summaryRes?.let { stringResource(id = it) },
+                isChecked = state.preferencesValues["LIVE_NOTIFICATIONS"] ?: IxPrefs.LIVE_NOTIFICATIONS.defaultValue,
+                onCheckedChange = { enabled ->
+                    state.eventSink(IxModuleSettingsEvents.ToggleModule("LIVE_NOTIFICATIONS", enabled))
+                },
+            )
+        }
+
         PreferenceCategory(title = stringResource(id = R.string.iltix_modules_auto_download_section_title)) {
             val mediaAutoDownloadEnabled = state.preferencesValues["MEDIA_AUTO_DOWNLOAD"]
                 ?: IxPrefs.MEDIA_AUTO_DOWNLOAD.defaultValue

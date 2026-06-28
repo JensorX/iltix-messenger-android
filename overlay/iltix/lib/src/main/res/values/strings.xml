@@ -28,6 +28,8 @@
     <!-- General Features -->
     <string name="iltix_local_usernames_title">Local Usernames</string>
     <string name="iltix_local_usernames_subtitle">Assign local nicknames to contacts</string>
+    <string name="iltix_live_notifications_title">Live Notifications</string>
+    <string name="iltix_live_notifications_subtitle">Show incoming chats as an additional silent live notification on supported devices</string>
     <string name="iltix_local_nickname_set_title">Set local nickname</string>
     <string name="iltix_local_nickname_edit_title">Edit local nickname</string>
     <string name="iltix_local_nickname_sheet_title">Local nickname</string>

@@ -28,6 +28,8 @@
     <!-- General Features -->
     <string name="iltix_local_usernames_title">Lokale Benutzernamen</string>
     <string name="iltix_local_usernames_subtitle">Lokale Spitznamen für Kontakte vergeben</string>
+    <string name="iltix_live_notifications_title">Live-Benachrichtigungen</string>
+    <string name="iltix_live_notifications_subtitle">Eingehende Chats als zusaetzliche stumme Live-Benachrichtigung auf unterstuetzten Geraeten anzeigen</string>
     <string name="iltix_local_nickname_set_title">Lokalen Spitznamen festlegen</string>
     <string name="iltix_local_nickname_edit_title">Lokalen Spitznamen bearbeiten</string>
     <string name="iltix_local_nickname_sheet_title">Lokaler Spitzname</string>

@@ -103,6 +103,11 @@ internal fun createIxPriorityNotificationChannels(
     if (!context.packageName.contains("iltix")) return
 
     val existingChannels = notificationManager.notificationChannels.associateBy { it.id }
+    ensureIxLiveNotificationChannel(
+        context = context,
+        notificationManager = notificationManager,
+        stringProvider = stringProvider,
+    )
 
     if (existingChannels[IX_PRIORITY_NOISY_NOTIFICATION_CHANNEL_ID] == null) {
         notificationManager.createNotificationChannel(
