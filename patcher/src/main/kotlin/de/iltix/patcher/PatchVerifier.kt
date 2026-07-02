@@ -95,6 +95,16 @@ class PatchVerifier(private val workspace: File) {
             "MessagesView: IxEmojiKeyboardPanel import"
         ))
         add(Expectation(
+            "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/typing/TypingNotificationPresenter.kt",
+            "import de.iltix.lib.nicknames.IxLocalNicknameStore",
+            "TypingNotificationPresenter: IxLocalNicknameStore import"
+        ))
+        add(Expectation(
+            "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/typing/TypingNotificationPresenter.kt",
+            "observeRoomTypingMembers(nicknameStore)",
+            "TypingNotificationPresenter: nickname-aware typing observer"
+        ))
+        add(Expectation(
             "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerView.kt",
             "import de.iltix.lib.preferences.IxPreferencesStore",
             "MessageComposerView: IxPreferencesStore import"

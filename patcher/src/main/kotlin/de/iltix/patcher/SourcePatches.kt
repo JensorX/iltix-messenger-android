@@ -25,6 +25,7 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomSummaryRow()
         patchRoomListContentView()
         patchMessagesView()
+        patchTypingNotificationPresenter()
         patchMessageComposerEvent()
         patchMessageComposerState()
         patchMessageComposerStateProvider()
@@ -380,6 +381,7 @@ class SourcePatches(private val engine: PatchEngine) {
         engine.addImport(path, "io.element.android.libraries.matrix.api.room.roomMembers")
         engine.addImport(path, "kotlinx.collections.immutable.persistentListOf")
         engine.addImport(path, "kotlinx.coroutines.flow.combine")
+        engine.addImport(path, "kotlinx.coroutines.flow.first")
 
         // Add IxRoomPrefsSource constructor parameter
         engine.replaceText(
@@ -951,6 +953,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             },
         )
     }
+
     } // end Column
 
     var endPollConfirmingEvent"""
@@ -1012,6 +1015,57 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                 showEmojiPanel = emojiPanelState.showEmojiPanel,
                 onToggleEmojiPanel = emojiPanelState.onToggleEmojiPanel,
             )"""
+        )
+    }
+
+    private fun patchTypingNotificationPresenter() {
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/typing/TypingNotificationPresenter.kt"
+        engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
+        engine.addImport(path, "de.iltix.lib.nicknames.IxLocalNicknameStore")
+        engine.addImport(path, "kotlinx.coroutines.flow.first")
+
+        // Initialize local nickname store in composable scope with robust pattern matching.
+        engine.replacePattern(
+            path,
+            """val renderTypingNotifications by remember \{\s*sessionPreferencesStore\.isRenderTypingNotificationsEnabled\(\)\s*}\s*\.collectAsState\(initial = true\)\s*val typingMembersState by produceState\(initialValue = persistentListOf\(\), key1 = renderTypingNotifications\) \{\s*if \(renderTypingNotifications\) \{\s*observeRoomTypingMembers\(\)\s*} else \{\s*value = persistentListOf<TypingRoomMember>\(\)\s*}\s*}""",
+            """val renderTypingNotifications by remember {
+            sessionPreferencesStore.isRenderTypingNotificationsEnabled()
+        }.collectAsState(initial = true)
+        val appContext = LocalContext.current.applicationContext
+        val nicknameStore = remember(appContext) { IxLocalNicknameStore(appContext) }
+        val typingMembersState by produceState(initialValue = persistentListOf(), key1 = renderTypingNotifications) {
+            if (renderTypingNotifications) {
+                observeRoomTypingMembers(nicknameStore)
+            } else {
+                value = persistentListOf<TypingRoomMember>()
+            }
+        }""",
+            "TypingNotificationPresenter: inject local nickname store"
+        )
+
+        // Resolve typing member names via local nickname first, then upstream display name.
+        engine.replacePattern(
+            path,
+            """private fun ProduceStateScope<ImmutableList<TypingRoomMember>>\.observeRoomTypingMembers\(\) \{\s*combine\(room\.roomTypingMembersFlow, room\.membersStateFlow\) \{ typingMembers, membersState ->\s*typingMembers\s*\.map \{ userId ->\s*membersState\.roomMembers\(\)\s*\?\.firstOrNull \{ roomMember -> roomMember\.userId == userId }\s*\?\.toTypingRoomMember\(\)\s*\?: createDefaultRoomMemberForTyping\(userId\)\s*}\s*}""",
+            """private fun ProduceStateScope<ImmutableList<TypingRoomMember>>.observeRoomTypingMembers(
+        nicknameStore: IxLocalNicknameStore,
+    ) {
+        combine(room.roomTypingMembersFlow, room.membersStateFlow) { typingMembers, membersState ->
+            typingMembers
+                .map { userId ->
+                    val upstreamName = membersState.roomMembers()
+                        ?.firstOrNull { roomMember -> roomMember.userId == userId }
+                        ?.disambiguatedDisplayName
+                        .orEmpty()
+                    val nickname = nicknameStore.nicknameFlow(userId.value).first().orEmpty()
+                    TypingRoomMember(
+                        disambiguatedDisplayName = nickname
+                            .ifBlank { upstreamName }
+                            .ifBlank { userId.value },
+                    )
+                }
+        }""",
+            "TypingNotificationPresenter: map typing users via local nickname"
         )
     }
 
