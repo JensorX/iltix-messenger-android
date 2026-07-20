@@ -897,11 +897,14 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             "MessagesView: BackHandler for emoji panel"
         )
 
-        // Wrap ExpandableBottomSheetLayout in Column and modify imePadding.
-        // Use a regex anchor here because upstream formatter changes indentation frequently.
-        engine.replacePattern(
+        // Wrap ExpandableBottomSheetLayout in Column and modify imePadding
+        engine.replaceText(
             path,
-            """(?m)^\s*ExpandableBottomSheetLayout\(\s*\n\s*modifier = modifier\s*\n\s*\.fillMaxSize\(\)\s*\n\s*\.imePadding\(\)\s*\n\s*\.systemBarsPadding\(\)""",
+            """    ExpandableBottomSheetLayout(
+        modifier = modifier
+                .fillMaxSize()
+                .imePadding()
+                .systemBarsPadding()""",
             """    Column(
         modifier = modifier
             .fillMaxSize()
@@ -911,8 +914,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() }""",
-            "MessagesView: wrap bottom sheet layout in Column"
+            .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() }"""
         )
 
         // Add isRoomEncrypted to MessagesViewTopBar call

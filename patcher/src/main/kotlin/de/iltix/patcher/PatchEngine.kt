@@ -59,6 +59,8 @@ class PatchEngine(private val workspace: File) {
 
     /**
      * Replace all occurrences of a literal string in a file.
+     * Multi-line replacements retry with indentation-insensitive whole-line matching.
+     * This tolerates formatter-only indentation changes while preserving line content and structure.
      */
     fun replaceText(relativePath: String, oldText: String, newText: String) {
         val file = workspace.resolve(relativePath)
@@ -67,14 +69,33 @@ class PatchEngine(private val workspace: File) {
             return
         }
         val content = file.readText()
-        if (!content.contains(oldText)) {
-            results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", false, "Pattern not found"))
+        if (content.contains(oldText)) {
+            val newContent = content.replace(oldText, newText)
+            file.writeText(newContent)
+            val count = Regex(Regex.escape(oldText)).findAll(content).count()
+            results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", true, "Replaced $count occurrence(s)"))
             return
         }
-        val newContent = content.replace(oldText, newText)
-        file.writeText(newContent)
-        val count = Regex(Regex.escape(oldText)).findAll(content).count()
-        results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", true, "Replaced $count occurrence(s)"))
+
+        val matches = findIndentationInsensitiveMatches(content, oldText)
+        when (matches.size) {
+            1 -> {
+                file.writeText(content.replaceRange(matches.single().range, newText))
+                results.add(PatchResult(
+                    relativePath,
+                    "replaceText(${oldText.take(40)}...)",
+                    true,
+                    "Replaced 1 occurrence using indentation-insensitive fallback",
+                ))
+            }
+            0 -> results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", false, "Pattern not found"))
+            else -> results.add(PatchResult(
+                relativePath,
+                "replaceText(${oldText.take(40)}...)",
+                false,
+                "Indentation-insensitive pattern is ambiguous (${matches.size} matches)",
+            ))
+        }
     }
 
     /**
@@ -88,14 +109,47 @@ class PatchEngine(private val workspace: File) {
             return
         }
         val content = file.readText()
-        if (!content.contains(oldText)) {
-            results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Pattern not found, skipped"))
+        if (content.contains(oldText)) {
+            val newContent = content.replace(oldText, newText)
+            file.writeText(newContent)
+            val count = Regex(Regex.escape(oldText)).findAll(content).count()
+            results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Replaced $count occurrence(s)"))
             return
         }
-        val newContent = content.replace(oldText, newText)
-        file.writeText(newContent)
-        val count = Regex(Regex.escape(oldText)).findAll(content).count()
-        results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Replaced $count occurrence(s)"))
+
+        val matches = findIndentationInsensitiveMatches(content, oldText)
+        when (matches.size) {
+            1 -> {
+                file.writeText(content.replaceRange(matches.single().range, newText))
+                results.add(PatchResult(
+                    relativePath,
+                    "replaceTextIfPresent($description)",
+                    true,
+                    "Replaced 1 occurrence using indentation-insensitive fallback",
+                ))
+            }
+            0 -> results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Pattern not found, skipped"))
+            else -> results.add(PatchResult(
+                relativePath,
+                "replaceTextIfPresent($description)",
+                false,
+                "Indentation-insensitive pattern is ambiguous (${matches.size} matches)",
+            ))
+        }
+    }
+
+    private fun findIndentationInsensitiveMatches(content: String, text: String): List<MatchResult> {
+        val normalizedText = text.replace("\r\n", "\n").replace('\r', '\n')
+        if (!normalizedText.contains('\n')) return emptyList()
+
+        val pattern = normalizedText.lines().joinToString("""\R""") { line ->
+            if (line.isBlank()) {
+                """^\h*$"""
+            } else {
+                """^\h*${Regex.escape(line.trim())}\h*$"""
+            }
+        }
+        return Regex(pattern, RegexOption.MULTILINE).findAll(content).toList()
     }
 
     /**
