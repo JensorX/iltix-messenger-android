@@ -1437,13 +1437,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Insert IxPreferencesStore + theme + unencrypted prefs before TopAppBar(
         engine.replaceText(
             path,
-            """    modifier: Modifier = Modifier,
-    menuActions: @Composable RowScope.() -> Unit,
+            """    menuActions: @Composable RowScope.() -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     TopAppBar(
         modifier = modifier,""",
-            """    modifier: Modifier = Modifier,
-    menuActions: @Composable RowScope.() -> Unit,
+            """    menuActions: @Composable RowScope.() -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current.applicationContext
     val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
