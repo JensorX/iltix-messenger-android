@@ -1435,13 +1435,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         )
 
         // Insert IxPreferencesStore + theme + unencrypted prefs before TopAppBar(
-        engine.replaceText(
+        engine.replacePattern(
             path,
-            """    modifier: Modifier = Modifier,
-    menuActions: @Composable RowScope.() -> Unit,
-) {
-    TopAppBar(
-        modifier = modifier,""",
+            """modifier: Modifier = Modifier,\s+menuActions: @Composable RowScope\.\(\) -> Unit,\s+\)\s+\{\s+TopAppBar\(\s+modifier = modifier""",
             """    modifier: Modifier = Modifier,
     menuActions: @Composable RowScope.() -> Unit,
 ) {
@@ -1463,7 +1459,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     }
 
     TopAppBar(
-        modifier = modifier,"""
+        modifier = modifier""",
+            "MessagesViewTopBar: preferences before TopAppBar"
         )
 
         // Add TopAppBar colors before windowInsets
