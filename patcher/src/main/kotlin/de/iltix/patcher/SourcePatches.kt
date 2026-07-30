@@ -201,18 +201,10 @@ class SourcePatches(private val engine: PatchEngine) {
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                         onRoomClick = ::onRoomClick,
                         onCreateRoomClick = onStartChatClick,
-                        contentPadding = contentPadding,
+                        contentPadding = lazyColumnContentPadding + contentPadding,
                         modifier = Modifier
-                            .padding(
-                                PaddingValues(
-                                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
-                                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
-                                    // Remove these two lines once https://issuetracker.google.com/issues/436432313 has been fixed
-                                    bottom = padding.calculateBottomPadding(),
-                                    top = padding.calculateTopPadding()
-                                )
-                            )
-                            .consumeWindowInsets(padding)
+                            .padding(outerPadding)
+                            .consumeWindowInsets(outerPadding)
                             .hazeSource(state = hazeState)
                     )""",
             """IxHomeChatsContent(
@@ -610,6 +602,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     name: String?,
     timestamp: String?,
     isHighlighted: Boolean,
+    dmUserStatus: DisplayedStatus?,
     modifier: Modifier = Modifier
 ) {""",
             """private fun NameAndTimestampRow(
@@ -618,6 +611,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     timestamp: String?,
     isHighlighted: Boolean,
     isFavorite: Boolean = false,
+    dmUserStatus: DisplayedStatus?,
     modifier: Modifier = Modifier
 ) {
     val roomSummaryConfig = de.iltix.home.rememberIxRoomSummaryConfig()
@@ -630,21 +624,27 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Use resolvedName instead of name for display text
         engine.replaceText(
             path,
-            """            text = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
-            fontStyle = FontStyle.Italic.takeIf { name == null },
-            color = ElementTheme.colors.roomListRoomName,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            """        val displayName = name?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name)
+        DisplayNameWithStatus(
+            name = displayName,
+            status = dmUserStatus,
+            modifier = Modifier.weight(1f),
+            style = ElementTheme.typography.fontBodyLgMedium,
+            nameColor = ElementTheme.colors.roomListRoomName,
+            nameFontStyle = FontStyle.Italic.takeIf { name == null },
         )
         // Timestamp""",
-            """            text = resolvedName?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name),
-            fontStyle = FontStyle.Italic.takeIf { resolvedName == null },
-            color = ElementTheme.colors.roomListRoomName,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            """        val displayName = resolvedName?.toSafeLength(ellipsize = true) ?: stringResource(id = CommonStrings.common_no_room_name)
+        DisplayNameWithStatus(
+            name = displayName,
+            status = dmUserStatus,
+            modifier = Modifier.weight(1f),
+            style = ElementTheme.typography.fontBodyLgMedium,
+            nameColor = ElementTheme.colors.roomListRoomName,
+            nameFontStyle = FontStyle.Italic.takeIf { resolvedName == null },
         )
         if (roomSummaryConfig.showFavoriteIndicator && isFavorite) {
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             IxFavoriteStarIcon()
         }
         // Timestamp"""
@@ -656,7 +656,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             """                    NameAndTimestampRow(
                         name = room.name,
                         timestamp = room.timestamp,
-                        isHighlighted = room.isHighlighted
+                        isHighlighted = room.isHighlighted,
+                        dmUserStatus = room.dmUserStatus,
                     )
                     MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)""",
             """                    NameAndTimestampRow(
@@ -665,6 +666,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         timestamp = room.timestamp,
                         isHighlighted = room.isHighlighted,
                         isFavorite = room.isFavorite,
+                        dmUserStatus = room.dmUserStatus,
                     )
                     MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)"""
         )
@@ -1435,11 +1437,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Insert IxPreferencesStore + theme + unencrypted prefs before TopAppBar(
         engine.replaceText(
             path,
-            """    menuActions: @Composable RowScope.() -> Unit,
+            """    modifier: Modifier = Modifier,
+    menuActions: @Composable RowScope.() -> Unit,
 ) {
     TopAppBar(
         modifier = modifier,""",
-            """    menuActions: @Composable RowScope.() -> Unit,
+            """    modifier: Modifier = Modifier,
+    menuActions: @Composable RowScope.() -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
@@ -1482,7 +1486,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Add nickname resolution in RoomAvatarAndNameRow
         engine.replaceText(
             path,
-            """    modifier: Modifier = Modifier
+            """    dmUserStatus: DisplayedStatus?,
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier,
@@ -1495,12 +1500,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                 isTombstoned = isTombstoned,
             ),
         )
-        Text(
-            modifier = Modifier
-                .padding(start = 8.dp),
-            text = roomName ?: stringResource(CommonStrings.common_no_room_name),
+        DisplayNameWithStatus(
+            name = roomName ?: stringResource(CommonStrings.common_no_room_name),
+            status = dmUserStatus,
+            modifier = Modifier.padding(start = 8.dp),
             style = ElementTheme.typography.fontBodyLgMedium,
-            fontStyle = FontStyle.Italic.takeIf { roomName == null },""",
+            nameColor = ElementTheme.colors.textPrimary,
+            nameFontStyle = FontStyle.Italic.takeIf { roomName == null },""",
             """    modifier: Modifier = Modifier
 ) {
     val localNicknameUserId = heroes.singleOrNull()?.id
@@ -1517,12 +1523,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                 isTombstoned = isTombstoned,
             ),
         )
-        Text(
-            modifier = Modifier
-                .padding(start = 8.dp),
-            text = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+        DisplayNameWithStatus(
+            name = resolvedRoomName ?: stringResource(CommonStrings.common_no_room_name),
+            status = dmUserStatus,
+            modifier = Modifier.padding(start = 8.dp),
             style = ElementTheme.typography.fontBodyLgMedium,
-            fontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
+            nameColor = ElementTheme.colors.textPrimary,
+            nameFontStyle = FontStyle.Italic.takeIf { resolvedRoomName == null },"""
         )
 
         // Add lock icon for unencrypted rooms before iconModifier
@@ -1674,12 +1681,16 @@ internal fun ThreadTopBarPreview"""
             path,
             """    ) {
         if (!isTalkbackActive()) {
-            when (state.buttonType) {
-                VoiceMessageState.ButtonType.Play -> PlayButton(onClick = ::playPause)
-                VoiceMessageState.ButtonType.Pause -> PauseButton(onClick = ::playPause)
-                VoiceMessageState.ButtonType.Downloading -> ProgressButton()
-                VoiceMessageState.ButtonType.Retry -> RetryButton(onClick = ::playPause)
-                VoiceMessageState.ButtonType.Disabled -> PlayButton(onClick = {}, enabled = false)
+            if (contentValidationValue.isValid()) {
+                when (state.buttonType) {
+                    VoiceMessageState.ButtonType.Play -> PlayButton(onClick = ::playPause)
+                    VoiceMessageState.ButtonType.Pause -> PauseButton(onClick = ::playPause)
+                    VoiceMessageState.ButtonType.Downloading -> ProgressButton()
+                    VoiceMessageState.ButtonType.Retry -> RetryButton(onClick = ::playPause)
+                    VoiceMessageState.ButtonType.Disabled -> PlayButton(onClick = {}, enabled = false)
+                }
+            } else {
+                ProgressButton(displayImmediately = true)
             }
         }""",
             """    ) {
@@ -2861,12 +2872,12 @@ internal fun ThreadTopBarPreview"""
             path,
             """    val cutTopStart = state.cutTopStart
     // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine)
+    val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine))
     val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }""",
             """    val cutTopStart = state.cutTopStart
     val bubbleStyle = LocalIxBubbleStyle.current
     // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor = MessageEventBubbleDefaults.backgroundBubbleColor(
+    val backgroundBubbleColor = customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(
         isMine = state.isMine,
         bubbleStyle = bubbleStyle,
     )
