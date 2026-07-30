@@ -90,11 +90,6 @@ class PatchVerifier(private val workspace: File) {
 
         // === Messages hooks ===
         add(Expectation(
-            "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesView.kt",
-            "import de.iltix.messages.IxEmojiKeyboardPanel",
-            "MessagesView: IxEmojiKeyboardPanel import"
-        ))
-        add(Expectation(
             "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/typing/TypingNotificationPresenter.kt",
             "import de.iltix.lib.nicknames.IxLocalNicknameStore",
             "TypingNotificationPresenter: IxLocalNicknameStore import"
@@ -108,11 +103,6 @@ class PatchVerifier(private val workspace: File) {
             "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerView.kt",
             "import de.iltix.lib.preferences.IxPreferencesStore",
             "MessageComposerView: IxPreferencesStore import"
-        ))
-        add(Expectation(
-            "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/topbars/MessagesViewTopBar.kt",
-            "import de.iltix.components.nicknames.rememberIxResolvedDisplayName",
-            "MessagesViewTopBar: rememberIxResolvedDisplayName import"
         ))
         add(Expectation(
             "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/TimelineItemEventRow.kt",

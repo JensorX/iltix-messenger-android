@@ -24,15 +24,19 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
-        patchMessagesView()
+        // Temporarily disabled: upstream drift in emoji composer integration causes release compile failures.
+        // Re-enable after adapting patches to current Element X messages API.
+        // patchMessagesView()
         patchTypingNotificationPresenter()
-        patchMessageComposerEvent()
-        patchMessageComposerState()
-        patchMessageComposerStateProvider()
-        patchMessageComposerPresenter()
+        // Temporarily disabled together with MessagesView emoji integration.
+        // patchMessageComposerEvent()
+        // patchMessageComposerState()
+        // patchMessageComposerStateProvider()
+        // patchMessageComposerPresenter()
         patchMessageComposerView()
         patchTextComposer()
-        patchMessagesViewTopBar()
+        // Temporarily disabled: upstream top bar signature changed and breaks dmUserStatus patch.
+        // patchMessagesViewTopBar()
         patchThreadTopBar()
         patchTimelineItemEventRow()
         patchMessageEventBubble()

@@ -6,18 +6,25 @@
 
 package de.iltix.messages
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import io.element.android.emojibasebindings.EmojibaseStore
-import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPicker
-import io.element.android.features.messages.impl.timeline.components.customreaction.picker.EmojiPickerPresenter
-import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentSetOf
 
 /**
  * Inline emoji keyboard panel that occupies the same height as the software keyboard.
@@ -30,19 +37,39 @@ fun IxEmojiKeyboardPanel(
     panelHeight: Dp,
     onSelectEmoji: (String) -> Unit,
 ) {
-    val presenter = remember(emojibaseStore, recentEmojis) {
-        EmojiPickerPresenter(
-            emojibaseStore = emojibaseStore,
-            recentEmojis = recentEmojis,
-            coroutineDispatchers = CoroutineDispatchers.Default,
-        )
-    }
-    EmojiPicker(
-        onSelectEmoji = { emoji -> onSelectEmoji(emoji.unicode) },
-        state = presenter.present(),
-        selectedEmojis = persistentSetOf(),
+    // Keep signature stable for patch integration, even if upstream picker API moved.
+    val ignoredEmojibaseStore = emojibaseStore
+    val fallbackEmojis = listOf("😀", "😂", "😍", "👍", "🙏", "🔥", "🎉", "❤️")
+    val emojiItems = (recentEmojis.toList() + fallbackEmojis).distinct().take(40)
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(panelHeight),
-    )
+            .height(panelHeight)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 44.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            items(emojiItems) { emoji ->
+                Surface(
+                    onClick = { onSelectEmoji(emoji) },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = emoji,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Ensure parameter is considered used even when upstream picker integration is disabled.
+    ignoredEmojibaseStore
 }
