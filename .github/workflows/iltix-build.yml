@@ -105,10 +105,11 @@ jobs:
         working-directory: workspace
         run: |
           chmod +x gradlew
-          ./gradlew :app:packageGplayIxRelease \
+          ./gradlew :app:assembleGplayIxRelease \
             --parallel \
             --build-cache \
-            --quiet \
+            --stacktrace \
+            --info \
             -x test \
             -x lint
 
