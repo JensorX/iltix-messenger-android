@@ -137,7 +137,7 @@ fun IxHomeChatsContent(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = if (showNavigationBar && !shouldShowIxSpaceNav) 88.dp else 6.dp)
+                    .padding(bottom = 20.dp)
                     .then(
                         if (useGlassTheme) {
                             Modifier

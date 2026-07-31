@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.element.android.emojibasebindings.EmojibaseStore
 import kotlinx.collections.immutable.ImmutableList
 
 /**
@@ -32,13 +31,10 @@ import kotlinx.collections.immutable.ImmutableList
  */
 @Composable
 fun IxEmojiKeyboardPanel(
-    emojibaseStore: EmojibaseStore,
     recentEmojis: ImmutableList<String>,
     panelHeight: Dp,
     onSelectEmoji: (String) -> Unit,
 ) {
-    // Keep signature stable for patch integration, even if upstream picker API moved.
-    val ignoredEmojibaseStore = emojibaseStore
     val fallbackEmojis = listOf("😀", "😂", "😍", "👍", "🙏", "🔥", "🎉", "❤️")
     val emojiItems = (recentEmojis.toList() + fallbackEmojis).distinct().take(40)
 
@@ -70,6 +66,4 @@ fun IxEmojiKeyboardPanel(
         }
     }
 
-    // Ensure parameter is considered used even when upstream picker integration is disabled.
-    ignoredEmojibaseStore
 }

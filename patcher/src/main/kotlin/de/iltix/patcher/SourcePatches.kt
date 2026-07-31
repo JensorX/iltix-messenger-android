@@ -24,15 +24,12 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
-        // Temporarily disabled: upstream drift in emoji composer integration causes release compile failures.
-        // Re-enable after adapting patches to current Element X messages API.
-        // patchMessagesView()
+        patchMessagesView()
         patchTypingNotificationPresenter()
-        // Temporarily disabled together with MessagesView emoji integration.
-        // patchMessageComposerEvent()
-        // patchMessageComposerState()
-        // patchMessageComposerStateProvider()
-        // patchMessageComposerPresenter()
+        patchMessageComposerEvent()
+        patchMessageComposerState()
+        patchMessageComposerStateProvider()
+        patchMessageComposerPresenter()
         patchMessageComposerView()
         patchTextComposer()
         // Temporarily disabled: upstream top bar signature changed and breaks dmUserStatus patch.
@@ -923,22 +920,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() }"""
         )
 
-        // Add isRoomEncrypted to MessagesViewTopBar call
-        engine.replaceText(
-            path,
-            """                        MessagesViewTopBar(
-                            roomName = state.roomName,
-                            roomAvatar = state.roomAvatar,
-                            isTombstoned = state.isTombstoned,
-                            heroes = state.heroes,""",
-            """                        MessagesViewTopBar(
-                            roomName = state.roomName,
-                            roomAvatar = state.roomAvatar,
-                            isTombstoned = state.isTombstoned,
-                            isRoomEncrypted = state.composerState.textEditorState.isRoomEncrypted,
-                            heroes = state.heroes,"""
-        )
-
         // Close ExpandableBottomSheetLayout and add IxEmojiKeyboardPanel + close Column
         engine.replaceText(
             path,
@@ -949,9 +930,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
     )
 
-    if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled && state.composerState.emojibaseStore != null) {
+    if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled) {
         IxEmojiKeyboardPanel(
-            emojibaseStore = state.composerState.emojibaseStore,
             recentEmojis = state.composerState.recentEmojis,
             panelHeight = emojiPanelState.panelHeight,
             onSelectEmoji = { emoji ->
@@ -1090,15 +1070,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
     private fun patchMessageComposerState() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerState.kt"
-        engine.addImport(path, "io.element.android.emojibasebindings.EmojibaseStore")
 
-        // Add emojibaseStore and recentEmojis fields
+        // Add recent emoji state without removed upstream emojibase APIs.
         engine.replaceText(
             path,
             """    val canShareLocation: Boolean,
     val suggestions: ImmutableList<ResolvedSuggestion>,""",
             """    val canShareLocation: Boolean,
-    val emojibaseStore: EmojibaseStore?,
     val recentEmojis: ImmutableList<String>,
     val suggestions: ImmutableList<ResolvedSuggestion>,"""
         )
@@ -1124,7 +1102,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             """    canShareLocation = canShareLocation,
     suggestions = suggestions,""",
             """    canShareLocation = canShareLocation,
-    emojibaseStore = null,
     recentEmojis = recentEmojis,
     suggestions = suggestions,"""
         )
@@ -1132,28 +1109,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
     private fun patchMessageComposerPresenter() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerPresenter.kt"
-        engine.addImport(path, "io.element.android.libraries.recentemojis.api.AddRecentEmoji")
-        engine.addImport(path, "io.element.android.libraries.recentemojis.api.EmojibaseProvider")
-        engine.addImport(path, "io.element.android.libraries.recentemojis.api.GetRecentEmojis")
-        engine.addImport(path, "kotlinx.collections.immutable.toPersistentList")
+        engine.addImport(path, "kotlinx.collections.immutable.ImmutableList")
 
-        // Add constructor params before slashCommandService
-        engine.replaceText(
-            path,
-            """    private val suggestionsProcessor: SuggestionsProcessor,
-    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
-    private val notificationConversationService: NotificationConversationService,
-    private val slashCommandService: SlashCommandService,""",
-            """    private val suggestionsProcessor: SuggestionsProcessor,
-    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
-    private val notificationConversationService: NotificationConversationService,
-    private val emojibaseProvider: EmojibaseProvider,
-    private val getRecentEmojis: GetRecentEmojis,
-    private val addRecentEmoji: AddRecentEmoji,
-    private val slashCommandService: SlashCommandService,"""
-        )
-
-        // Add recentEmojis state var + LaunchedEffect after sendTypingNotifications
+        // Add local recent emoji state after sendTypingNotifications.
         engine.replaceText(
             path,
             """        val sendTypingNotifications by remember {
@@ -1165,10 +1123,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             sessionPreferencesStore.isSendTypingNotificationsEnabled()
         }.collectAsState(initial = true)
 
-        var recentEmojis by remember { mutableStateOf(persistentListOf<String>()) }
-
-        LaunchedEffect(Unit) {
-            recentEmojis = getRecentEmojis().getOrNull()?.toPersistentList() ?: persistentListOf()
+        var recentEmojis by remember {
+            mutableStateOf<ImmutableList<String>>(persistentListOf())
         }
 
         LaunchedEffect(cameraPermissionState.permissionGranted) {"""
@@ -1182,20 +1138,18 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     localCoroutineScope.launch {
                         textEditorState.insertText(event.emoji)
                         textEditorState.requestFocus()
-                        addRecentEmoji(event.emoji)
-                        recentEmojis = (listOf(event.emoji) + recentEmojis).distinct().toPersistentList()
+                        recentEmojis = (listOf(event.emoji) + recentEmojis).distinct().toImmutableList()
                     }
                 }
                 MessageComposerEvent.SaveDraft -> {"""
         )
 
-        // Add emojibaseStore and recentEmojis to state return
+        // Add recentEmojis to state return
         engine.replaceText(
             path,
             """            canShareLocation = canShareLocation.value,
             suggestions = suggestions.toImmutableList(),""",
             """            canShareLocation = canShareLocation.value,
-            emojibaseStore = emojibaseProvider.emojibaseStore,
             recentEmojis = recentEmojis,
             suggestions = suggestions.toImmutableList(),"""
         )
