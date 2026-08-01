@@ -40,7 +40,6 @@ fun IxEmojiKeyboardPanel(
         }
         return
     }
-    }
     pickerRenderer.Render(
         state = pickerState,
         onSelectEmoji = { emoji -> onSelectEmoji(emoji.unicode) },
