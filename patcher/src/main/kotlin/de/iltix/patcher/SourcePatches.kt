@@ -930,14 +930,19 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
     )
 
-    if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled) {
-        IxEmojiKeyboardPanel(
-            recentEmojis = state.composerState.recentEmojis,
-            panelHeight = emojiPanelState.panelHeight,
-            onSelectEmoji = { emoji ->
-                state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji))
-            },
-        )
+    state.composerState.emojiPickerState?.let { pickerState ->
+        state.composerState.emojiPickerRenderer?.let { pickerRenderer ->
+            if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled) {
+                IxEmojiKeyboardPanel(
+                    pickerState = pickerState,
+                    pickerRenderer = pickerRenderer,
+                    panelHeight = emojiPanelState.panelHeight,
+                    onSelectEmoji = { emoji ->
+                        state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji))
+                    },
+                )
+            }
+        }
     }
 
     } // end Column
@@ -1070,67 +1075,68 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
     private fun patchMessageComposerState() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerState.kt"
+        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer")
+        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerState")
 
-        // Add recent emoji state without removed upstream emojibase APIs.
         engine.replaceText(
             path,
             """    val canShareLocation: Boolean,
     val suggestions: ImmutableList<ResolvedSuggestion>,""",
             """    val canShareLocation: Boolean,
-    val recentEmojis: ImmutableList<String>,
+    val emojiPickerState: EmojiPickerState?,
+    val emojiPickerRenderer: EmojiPickerRenderer?,
     val suggestions: ImmutableList<ResolvedSuggestion>,"""
         )
     }
 
     private fun patchMessageComposerStateProvider() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerStateProvider.kt"
-        engine.addImport(path, "kotlinx.collections.immutable.ImmutableList")
 
-        // Add default params to aMessageComposerState function
-        engine.replaceText(
-            path,
-            """    canShareLocation: Boolean = true,
-    suggestions: ImmutableList<ResolvedSuggestion> = persistentListOf(),""",
-            """    canShareLocation: Boolean = true,
-    recentEmojis: ImmutableList<String> = persistentListOf(),
-    suggestions: ImmutableList<ResolvedSuggestion> = persistentListOf(),"""
-        )
-
-        // Add fields to MessageComposerState constructor call
         engine.replaceText(
             path,
             """    canShareLocation = canShareLocation,
     suggestions = suggestions,""",
             """    canShareLocation = canShareLocation,
-    recentEmojis = recentEmojis,
+    emojiPickerState = null,
+    emojiPickerRenderer = null,
     suggestions = suggestions,"""
         )
     }
 
     private fun patchMessageComposerPresenter() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerPresenter.kt"
-        engine.addImport(path, "kotlinx.collections.immutable.ImmutableList")
+        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerPresenter")
+        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer")
+        engine.addImport(path, "io.element.android.libraries.emoji.api.recentemojis.AddRecentEmoji")
+        engine.addImport(path, "io.element.android.libraries.emoji.api.recentemojis.GetRecentEmojis")
 
-        // Add local recent emoji state after sendTypingNotifications.
         engine.replaceText(
             path,
-            """        val sendTypingNotifications by remember {
-            sessionPreferencesStore.isSendTypingNotificationsEnabled()
-        }.collectAsState(initial = true)
-
-        LaunchedEffect(cameraPermissionState.permissionGranted) {""",
-            """        val sendTypingNotifications by remember {
-            sessionPreferencesStore.isSendTypingNotificationsEnabled()
-        }.collectAsState(initial = true)
-
-        var recentEmojis by remember {
-            mutableStateOf<ImmutableList<String>>(persistentListOf())
-        }
-
-        LaunchedEffect(cameraPermissionState.permissionGranted) {"""
+            """    private val suggestionsProcessor: SuggestionsProcessor,
+    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val notificationConversationService: NotificationConversationService,
+    private val slashCommandService: SlashCommandService,""",
+            """    private val suggestionsProcessor: SuggestionsProcessor,
+    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val notificationConversationService: NotificationConversationService,
+    private val emojiPickerPresenterFactory: EmojiPickerPresenter.Factory,
+    private val getRecentEmojis: GetRecentEmojis,
+    private val addRecentEmoji: AddRecentEmoji,
+    private val emojiPickerRenderer: EmojiPickerRenderer,
+    private val slashCommandService: SlashCommandService,"""
         )
 
-        // Add InsertEmoji event handling before SaveDraft
+        engine.insertAfterLine(
+            path,
+            """val localCoroutineScope = rememberCoroutineScope\(\)""",
+            """
+        val emojiPickerPresenter = remember {
+            emojiPickerPresenterFactory.create(getRecentEmojis)
+        }
+        val emojiPickerState = emojiPickerPresenter.present()""",
+            "MessageComposerPresenter: initialize emoji picker"
+        )
+
         engine.replaceText(
             path,
             """                MessageComposerEvent.SaveDraft -> {""",
@@ -1138,19 +1144,19 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     localCoroutineScope.launch {
                         textEditorState.insertText(event.emoji)
                         textEditorState.requestFocus()
-                        recentEmojis = (listOf(event.emoji) + recentEmojis).distinct().toImmutableList()
+                        addRecentEmoji(event.emoji)
                     }
                 }
                 MessageComposerEvent.SaveDraft -> {"""
         )
 
-        // Add recentEmojis to state return
         engine.replaceText(
             path,
             """            canShareLocation = canShareLocation.value,
             suggestions = suggestions.toImmutableList(),""",
             """            canShareLocation = canShareLocation.value,
-            recentEmojis = recentEmojis,
+            emojiPickerState = emojiPickerState,
+            emojiPickerRenderer = emojiPickerRenderer,
             suggestions = suggestions.toImmutableList(),"""
         )
     }

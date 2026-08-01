@@ -332,6 +332,7 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         engine.addGradleDependency(path, "implementation(projects.iltix.components)")
         engine.addGradleDependency(path, "implementation(projects.iltix.lib)")
         engine.addGradleDependency(path, "implementation(projects.iltix.theme)")
+        engine.addGradleDependency(path, "implementation(projects.libraries.emoji.impl)")
     }
 
     private fun patchPreferencesImplBuildGradle() {
