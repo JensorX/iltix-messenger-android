@@ -43,6 +43,8 @@ class PatchEngineTest {
 ) {
     ListItem(
         content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Settings())),
+                onClick = onOpenAdvancedSettings,
     )
 }
 """
@@ -62,8 +64,33 @@ class PatchEngineTest {
     ListItem(""",
         )
 
+        engine.insertAfterLine(
+            TARGET_FILE,
+            """onClick = onOpenAdvancedSettings,""",
+            """    )
+
+    ListItem(
+        content = { Text(stringResource(id = IltixR.string.iltix_modules_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Resource(IltixR.drawable.ic_iltix)),
+        onClick = onOpenIltixModules,""",
+        )
+
         assertTrue(engine.failedResults().isEmpty())
-        assertTrue(file.readText().contains("onOpenIltixModules: () -> Unit"))
+        val patchedContent = file.readText()
+        assertTrue(patchedContent.contains("onOpenIltixModules: () -> Unit"))
+        assertTrue(
+            patchedContent.contains(
+                """        content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
+        leadingContent"""
+            )
+        )
+        assertEquals(
+            1,
+            patchedContent.lines().count {
+                it.trim() == "content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },"
+            },
+        )
+        assertEquals(2, patchedContent.lines().count { it.trimStart().startsWith("content =") })
     }
 
     @Test

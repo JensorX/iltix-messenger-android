@@ -2774,8 +2774,7 @@ internal fun ThreadTopBarPreview"""
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
 ) {
-    ListItem(
-        content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) }""",
+    ListItem(""",
         )
 
         // Add Iltix Modules ListItem after Advanced Settings
