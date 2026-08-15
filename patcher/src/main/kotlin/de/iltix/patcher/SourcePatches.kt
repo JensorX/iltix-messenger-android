@@ -2775,7 +2775,7 @@ internal fun ThreadTopBarPreview"""
     onDeactivateClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },""",
+        content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) }""",
         )
 
         // Add Iltix Modules ListItem after Advanced Settings
@@ -2785,7 +2785,7 @@ internal fun ThreadTopBarPreview"""
             """    )
 
     ListItem(
-        headlineContent = { Text(stringResource(id = IltixR.string.iltix_modules_title)) },
+        content = { Text(stringResource(id = IltixR.string.iltix_modules_title)) },
         leadingContent = ListItemContent.Icon(IconSource.Resource(IltixR.drawable.ic_iltix)),
         onClick = onOpenIltixModules,""",
             "PreferencesRootView: Iltix Modules menu item"

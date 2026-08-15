@@ -91,7 +91,7 @@ fun IxLocalNicknameAction(
 
     ListItem(
         modifier = modifier,
-        headlineContent = {
+        content = {
             Text(
                 stringResource(
                     id = if (existingNickname.isNullOrBlank()) {
