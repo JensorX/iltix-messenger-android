@@ -35,6 +35,38 @@ class PatchEngineTest {
     }
 
     @Test
+    fun `replaceText handles GeneralSection after ListItem content migration`() = withWorkspace(
+        """private fun ColumnScope.GeneralSection(
+    onOpenDeveloperSettings: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+) {
+    ListItem(
+        content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
+    )
+}
+"""
+    ) { file, engine ->
+        engine.replaceText(
+            TARGET_FILE,
+            """    onOpenDeveloperSettings: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+) {
+    ListItem(""",
+            """    onOpenDeveloperSettings: () -> Unit,
+    onOpenIltixModules: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
+) {
+    ListItem(""",
+        )
+
+        assertTrue(engine.failedResults().isEmpty())
+        assertTrue(file.readText().contains("onOpenIltixModules: () -> Unit"))
+    }
+
+    @Test
     fun `replaceText rejects semantic changes`() = withWorkspace(
         """fun content() {
     ExpandableBottomSheetLayout(

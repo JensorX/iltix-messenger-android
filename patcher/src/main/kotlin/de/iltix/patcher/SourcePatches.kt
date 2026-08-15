@@ -2768,8 +2768,7 @@ internal fun ThreadTopBarPreview"""
     onSignOutClick: () -> Unit,
     onDeactivateClick: () -> Unit,
 ) {
-    ListItem(
-        headlineContent = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },""",
+    ListItem(""",
             """    onOpenDeveloperSettings: () -> Unit,
     onOpenIltixModules: () -> Unit,
     onSignOutClick: () -> Unit,
