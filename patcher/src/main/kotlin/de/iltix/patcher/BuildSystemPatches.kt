@@ -118,7 +118,7 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         // Add Iltix constants after Element constants
         engine.insertAfterLine(
             path,
-            """const val GOOGLE_APP_ID_NIGHTLY""",
+            """const val APPLICATION_NAME = "Element X""",
             """
     // Iltix app values
     const val ILTIX_APPLICATION_ID = "de.iltix.messenger"

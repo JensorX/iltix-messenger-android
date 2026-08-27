@@ -1090,7 +1090,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     }
 
     private fun patchMessageComposerStateProvider() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerStateProvider.kt"
+        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerStatePreviewParam.kt"
 
         engine.replaceText(
             path,
@@ -1236,9 +1236,11 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             path,
             """    modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
+    isInThreadTimeline: Boolean = false,
 ) {""",
             """    modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
+    isInThreadTimeline: Boolean = false,
     showNotEncryptedBadge: Boolean = true,
     extraLeadingContent: (@Composable () -> Unit)? = null,
 ) {"""
@@ -1688,8 +1690,8 @@ internal fun ThreadTopBarPreview"""
     val pollKind: PollKind,"""
         )
 
-        // Also fix the provider
-        val providerPath = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/model/event/TimelineItemPollContentProvider.kt"
+        // Also fix the preview parameter factory, which supplies the model defaults.
+        val providerPath = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/model/event/TimelineItemPollContentPreviewParam.kt"
         engine.addImport(providerPath, "kotlinx.collections.immutable.persistentMapOf")
 
         engine.replaceText(
@@ -2200,21 +2202,21 @@ internal fun ThreadTopBarPreview"""
         // Add ranking timestamp
         engine.replaceText(
             path,
-            """        messagingStyle.addMessagesFromEvents(events, imageLoader)
+            """        messagingStyle.addMessagesFromEvents(newEvents, imageLoader)
         return builder
             .setCategory(category)
             .setNumber(events.size)
-            .setOnlyAlertOnce(roomInfo.isUpdated)
+            .setOnlyAlertOnce(roomInfo.isUpdated || newEvents.isEmpty())
             .setWhen(lastMessageTimestamp)""",
             """        val rankingTimestamp = resolveIxRankingTimestamp(
             baseTimestamp = lastMessageTimestamp,
             ixRoute = ixNotificationRoute,
         )
-        messagingStyle.addMessagesFromEvents(events, imageLoader)
+        messagingStyle.addMessagesFromEvents(newEvents, imageLoader)
         return builder
             .setCategory(category)
             .setNumber(events.size)
-            .setOnlyAlertOnce(if (ixNotificationRoute != null) false else roomInfo.isUpdated)
+            .setOnlyAlertOnce(if (ixNotificationRoute != null) false else roomInfo.isUpdated || newEvents.isEmpty())
             .setWhen(rankingTimestamp)"""
         )
 
@@ -2332,9 +2334,9 @@ internal fun ThreadTopBarPreview"""
         // Pass ixConversationHintsEnabled + roomIsDm to addMessagesFromEvents call
         engine.replaceText(
             path,
-            """        messagingStyle.addMessagesFromEvents(events, imageLoader)""",
+            """        messagingStyle.addMessagesFromEvents(newEvents, imageLoader)""",
             """        messagingStyle.addMessagesFromEvents(
-            events = events,
+            events = newEvents,
             imageLoader = imageLoader,
             ixConversationHintsEnabled = ixNotificationRoute != null,
             roomIsDm = roomInfo.isDm,
