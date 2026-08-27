@@ -538,9 +538,9 @@ class SourcePatches(private val engine: PatchEngine) {
 
         engine.replaceText(
             path,
-            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.isDm),
+            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.hasOnlyTwoMembers()),
             avatarData = avatarData,""",
-            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.isDm),
+            """            latestEvent = computeLatestEvent(roomSummary.latestEvent, roomInfo.hasOnlyTwoMembers()),
             latestEventSenderId = roomSummary.latestEvent.senderIdOrNull(),
             latestEventSenderDisplayName = roomSummary.latestEvent.senderDisplayNameOrNull(),
             avatarData = avatarData,"""
