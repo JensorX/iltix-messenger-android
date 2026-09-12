@@ -1697,9 +1697,11 @@ internal fun ThreadTopBarPreview"""
         engine.replaceText(
             providerPath,
             """        answerItems = answerItems,
+        maxSelections = maxSelections,
         isMine = isMine,""",
             """        answerItems = answerItems,
         votes = persistentMapOf(),
+        maxSelections = maxSelections,
         isMine = isMine,"""
         )
     }
@@ -1841,9 +1843,14 @@ internal fun ThreadTopBarPreview"""
         // Pass onViewVotes + viewVotesLabel to PollAnswers call
         engine.replaceText(
             path,
-            """        PollAnswers(answerItems = answerItems, onSelectAnswer = ::onSelectAnswer)""",
             """        PollAnswers(
             answerItems = answerItems,
+            isMultipleSelection = isMultipleSelection,
+            onSelectAnswer = ::onSelectAnswer,
+        )""",
+            """        PollAnswers(
+            answerItems = answerItems,
+            isMultipleSelection = isMultipleSelection,
             onSelectAnswer = ::onSelectAnswer,
             onViewVotes = onViewVotes,
             viewVotesLabel = viewVotesLabel,
@@ -1855,10 +1862,12 @@ internal fun ThreadTopBarPreview"""
             path,
             """private fun PollAnswers(
     answerItems: ImmutableList<PollAnswerItem>,
+    isMultipleSelection: Boolean,
     onSelectAnswer: (PollAnswer) -> Unit,
 ) {""",
             """private fun PollAnswers(
     answerItems: ImmutableList<PollAnswerItem>,
+    isMultipleSelection: Boolean,
     onSelectAnswer: (PollAnswer) -> Unit,
     onViewVotes: ((PollAnswerItem) -> Unit)? = null,
     viewVotesLabel: String? = null,
