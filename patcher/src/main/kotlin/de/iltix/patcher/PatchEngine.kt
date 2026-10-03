@@ -77,10 +77,10 @@ class PatchEngine(private val workspace: File) {
             return
         }
 
-        val matches = findIndentationInsensitiveMatches(content, oldText)
-        when (matches.size) {
+        val indentationMatches = findIndentationInsensitiveMatches(content, oldText)
+        when (indentationMatches.size) {
             1 -> {
-                file.writeText(content.replaceRange(matches.single().range, newText))
+                file.writeText(content.replaceRange(indentationMatches.single().range, newText))
                 results.add(PatchResult(
                     relativePath,
                     "replaceText(${oldText.take(40)}...)",
@@ -88,12 +88,32 @@ class PatchEngine(private val workspace: File) {
                     "Replaced 1 occurrence using indentation-insensitive fallback",
                 ))
             }
-            0 -> results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", false, "Pattern not found"))
+            0 -> {
+                val whitespaceMatches = findWhitespaceInsensitiveMatches(content, oldText)
+                when (whitespaceMatches.size) {
+                    1 -> {
+                        file.writeText(content.replaceRange(whitespaceMatches.single().range, newText))
+                        results.add(PatchResult(
+                            relativePath,
+                            "replaceText(${oldText.take(40)}...)",
+                            true,
+                            "Replaced 1 occurrence using whitespace-insensitive fallback",
+                        ))
+                    }
+                    0 -> results.add(PatchResult(relativePath, "replaceText(${oldText.take(40)}...)", false, "Pattern not found"))
+                    else -> results.add(PatchResult(
+                        relativePath,
+                        "replaceText(${oldText.take(40)}...)",
+                        false,
+                        "Whitespace-insensitive pattern is ambiguous (${whitespaceMatches.size} matches)",
+                    ))
+                }
+            }
             else -> results.add(PatchResult(
                 relativePath,
                 "replaceText(${oldText.take(40)}...)",
                 false,
-                "Indentation-insensitive pattern is ambiguous (${matches.size} matches)",
+                "Indentation-insensitive pattern is ambiguous (${indentationMatches.size} matches)",
             ))
         }
     }
@@ -117,10 +137,10 @@ class PatchEngine(private val workspace: File) {
             return
         }
 
-        val matches = findIndentationInsensitiveMatches(content, oldText)
-        when (matches.size) {
+        val indentationMatches = findIndentationInsensitiveMatches(content, oldText)
+        when (indentationMatches.size) {
             1 -> {
-                file.writeText(content.replaceRange(matches.single().range, newText))
+                file.writeText(content.replaceRange(indentationMatches.single().range, newText))
                 results.add(PatchResult(
                     relativePath,
                     "replaceTextIfPresent($description)",
@@ -128,12 +148,32 @@ class PatchEngine(private val workspace: File) {
                     "Replaced 1 occurrence using indentation-insensitive fallback",
                 ))
             }
-            0 -> results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Pattern not found, skipped"))
+            0 -> {
+                val whitespaceMatches = findWhitespaceInsensitiveMatches(content, oldText)
+                when (whitespaceMatches.size) {
+                    1 -> {
+                        file.writeText(content.replaceRange(whitespaceMatches.single().range, newText))
+                        results.add(PatchResult(
+                            relativePath,
+                            "replaceTextIfPresent($description)",
+                            true,
+                            "Replaced 1 occurrence using whitespace-insensitive fallback",
+                        ))
+                    }
+                    0 -> results.add(PatchResult(relativePath, "replaceTextIfPresent($description)", true, "Pattern not found, skipped"))
+                    else -> results.add(PatchResult(
+                        relativePath,
+                        "replaceTextIfPresent($description)",
+                        false,
+                        "Whitespace-insensitive pattern is ambiguous (${whitespaceMatches.size} matches)",
+                    ))
+                }
+            }
             else -> results.add(PatchResult(
                 relativePath,
                 "replaceTextIfPresent($description)",
                 false,
-                "Indentation-insensitive pattern is ambiguous (${matches.size} matches)",
+                "Indentation-insensitive pattern is ambiguous (${indentationMatches.size} matches)",
             ))
         }
     }
@@ -150,6 +190,50 @@ class PatchEngine(private val workspace: File) {
             }
         }
         return Regex(pattern, RegexOption.MULTILINE).findAll(content).toList()
+    }
+
+    private fun findWhitespaceInsensitiveMatches(content: String, text: String): List<MatchResult> {
+        val normalizedText = text.replace("\r\n", "\n").replace('\r', '\n')
+        if (!normalizedText.any { it.isWhitespace() }) return emptyList()
+
+        val pattern = buildString {
+            var index = 0
+            var quotedBy: Char? = null
+            var escaped = false
+
+            while (index < normalizedText.length) {
+                val character = normalizedText[index]
+                if (quotedBy != null) {
+                    append(Regex.escape(character.toString()))
+                    if (escaped) {
+                        escaped = false
+                    } else if (character == '\\') {
+                        escaped = true
+                    } else if (character == quotedBy) {
+                        quotedBy = null
+                    }
+                    index++
+                } else if (character == '"' || character == '\'' || character == '`') {
+                    quotedBy = character
+                    append(Regex.escape(character.toString()))
+                    index++
+                } else if (character.isWhitespace()) {
+                    val previous = normalizedText.take(index).lastOrNull { !it.isWhitespace() }
+                    val next = normalizedText.drop(index).firstOrNull { !it.isWhitespace() }
+                    append(if (previous?.isLetterOrDigit() == true && next?.isLetterOrDigit() == true) "\\s+" else "\\s*")
+                    while (index < normalizedText.length && normalizedText[index].isWhitespace()) {
+                        index++
+                    }
+                } else {
+                    append(Regex.escape(character.toString()))
+                    index++
+                }
+            }
+        }
+
+        return Regex(pattern, setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
+            .findAll(content)
+            .toList()
     }
 
     /**

@@ -39,6 +39,41 @@ jobs:
             echo "Already on latest: ${{ steps.current.outputs.tag }}"
           fi
 
+      - name: Set up JDK 17
+        if: steps.compare.outputs.new_version == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build patcher
+        if: steps.compare.outputs.new_version == 'true'
+        working-directory: patcher
+        run: ./gradlew jar --quiet
+
+      - name: Validate patches against new upstream
+        id: validate
+        if: steps.compare.outputs.new_version == 'true'
+        continue-on-error: true
+        run: |
+          set +e
+          java -jar patcher/build/libs/iltix-patcher-1.0.0.jar \
+            --root "$GITHUB_WORKSPACE" \
+            --upstream-tag "${{ steps.latest.outputs.tag }}" \
+            > upstream-patcher.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          cat upstream-patcher.log
+          exit "$status"
+
+      - name: Upload patch validation log
+        if: steps.validate.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-patcher-${{ steps.latest.outputs.tag }}
+          path: upstream-patcher.log
+          retention-days: 14
+
       - name: Create issue for new version
         if: steps.compare.outputs.new_version == 'true'
         uses: actions/github-script@v7
@@ -47,6 +82,11 @@ jobs:
             const current = '${{ steps.current.outputs.tag }}';
             const latest = '${{ steps.latest.outputs.tag }}';
             const repo = '${{ steps.current.outputs.repo }}';
+            const validationOutcome = '${{ steps.validate.outcome }}';
+            const validationExitCode = '${{ steps.validate.outputs.exit_code }}';
+            const validationSummary = validationOutcome === 'success'
+              ? 'Patcher validation: passed'
+              : `Patcher validation: ${validationOutcome} (exit code ${validationExitCode || 'n/a'})`;
 
             // Check if issue already exists
             const issues = await github.rest.issues.listForRepo({
@@ -71,6 +111,7 @@ jobs:
                 `- **Current:** \`${current}\``,
                 `- **Latest:** \`${latest}\``,
                 `- **Release:** https://github.com/${repo}/releases/tag/${latest}`,
+                `- **${validationSummary}**`,
                 ``,
                 `### Steps`,
                 `1. Update \`UPSTREAM_TAG=${latest}\` in \`iltix.upstream.properties\``,

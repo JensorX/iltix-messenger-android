@@ -28,7 +28,7 @@ cd ../workspace && ./gradlew :app:assembleGplayIxDebug
 ## CI
 
 - **Iltix Build** workflow: Runs on push to `main` or manual dispatch. Produces debug + release APKs.
-- **Upstream Watch** workflow: Daily check for new Element X tags, creates an issue when update is available.
+- **Upstream Watch** workflow: Daily check for new Element X tags, validates the patcher against a new release, and creates an issue with the result. Failed validations include the patcher log as a workflow artifact.
 
 ## Lizenzierung
 

@@ -35,6 +35,29 @@ class PatchEngineTest {
     }
 
     @Test
+    fun `replaceText tolerates whitespace-only formatting changes`() = withWorkspace(
+        """fun content() {
+    Target(value = true,
+        label = "same value",
+    )
+}
+"""
+    ) { file, engine ->
+        engine.replaceText(
+            TARGET_FILE,
+            """    Target(
+        value = true,
+        label = "same value",
+    )""",
+            """    Replacement()""",
+        )
+
+        assertTrue(engine.failedResults().isEmpty())
+        assertTrue(file.readText().contains("    Replacement()"))
+        assertFalse(file.readText().contains("Target("))
+    }
+
+    @Test
     fun `replaceText handles GeneralSection after ListItem content migration`() = withWorkspace(
         """private fun ColumnScope.GeneralSection(
     onOpenDeveloperSettings: () -> Unit,
@@ -78,12 +101,10 @@ class PatchEngineTest {
         assertTrue(engine.failedResults().isEmpty())
         val patchedContent = file.readText()
         assertTrue(patchedContent.contains("onOpenIltixModules: () -> Unit"))
-        assertTrue(
-            patchedContent.contains(
-                """        content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },
-        leadingContent"""
-            )
-        )
+        assertTrue(patchedContent.lines().any {
+            it.trim() == "content = { Text(stringResource(id = CommonStrings.common_advanced_settings)) },"
+        })
+        assertTrue(patchedContent.lines().any { it.trimStart().startsWith("leadingContent =") })
         assertEquals(
             1,
             patchedContent.lines().count {

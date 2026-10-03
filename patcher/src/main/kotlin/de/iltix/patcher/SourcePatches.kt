@@ -32,6 +32,7 @@ class SourcePatches(private val engine: PatchEngine) {
         patchMessageComposerPresenter()
         patchMessageComposerView()
         patchTextComposer()
+        patchEmojiItem()
         // Temporarily disabled: upstream top bar signature changed and breaks dmUserStatus patch.
         // patchMessagesViewTopBar()
         patchThreadTopBar()
@@ -1373,6 +1374,17 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             NotEncryptedBadge()
             Spacer(Modifier.height(8.dp))
         }"""
+        )
+    }
+
+    private fun patchEmojiItem() {
+        val path = "libraries/emoji/impl/src/main/kotlin/io/element/android/libraries/emoji/impl/picker/EmojiItem.kt"
+        engine.replaceText(
+            path,
+            """                            if (hasSkinTones) {
+                                onSelectEmoji(item)
+                            }""",
+            ""
         )
     }
 
@@ -2738,7 +2750,7 @@ internal fun ThreadTopBarPreview"""
         // Add navigateToIltixModules to Callback interface
         engine.insertAfterLine(
             path,
-            """fun navigateToBlockedUsers\(\)""",
+            """fun navigateTo(?:BlockedUsers|Labs)\(\)""",
             """        fun navigateToIltixModules()""",
             "PreferencesRootNode: navigateToIltixModules in Callback"
         )
@@ -2746,7 +2758,7 @@ internal fun ThreadTopBarPreview"""
         // Add onOpenIltixModules parameter to PreferencesRootView call
         engine.insertAfterLine(
             path,
-            """onOpenBlockedUsers = callback::navigateToBlockedUsers""",
+            """onOpen(?:BlockedUsers = callback::navigateToBlockedUsers|Labs = callback::navigateToLabs),""",
             """            onOpenIltixModules = callback::navigateToIltixModules,""",
             "PreferencesRootNode: onOpenIltixModules parameter"
         )
@@ -2759,7 +2771,7 @@ internal fun ThreadTopBarPreview"""
         // Add onOpenIltixModules parameter to PreferencesRootView function
         engine.insertAfterLine(
             path,
-            """onOpenBlockedUsers: \(\) -> Unit,""",
+            """onOpen(?:BlockedUsers|Labs): \(\) -> Unit,""",
             """    onOpenIltixModules: () -> Unit,""",
             "PreferencesRootView: onOpenIltixModules parameter"
         )
@@ -2767,31 +2779,24 @@ internal fun ThreadTopBarPreview"""
         // Pass onOpenIltixModules to GeneralSection
         engine.insertAfterLine(
             path,
-            """onOpenLabs = onOpenLabs,""",
+            """onOpen(?:Labs = onOpenLabs|BlockedUsers = onOpenBlockedUsers),""",
             """            onOpenIltixModules = onOpenIltixModules,""",
             "PreferencesRootView: pass onOpenIltixModules to GeneralSection"
         )
 
         // Add onOpenIltixModules parameter to GeneralSection function
-        engine.replaceText(
+        engine.replacePattern(
             path,
-            """    onOpenDeveloperSettings: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeactivateClick: () -> Unit,
-) {
-    ListItem(""",
-            """    onOpenDeveloperSettings: () -> Unit,
-    onOpenIltixModules: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeactivateClick: () -> Unit,
-) {
-    ListItem(""",
+            """(?s)(private fun ColumnScope\.GeneralSection\(.*?)(\n\s*onOpen(?:Labs|DeveloperSettings): \(\) -> Unit,)""",
+            """$1$2
+    onOpenIltixModules: () -> Unit,""",
+            "PreferencesRootView: onOpenIltixModules in GeneralSection signature"
         )
 
-        // Add Iltix Modules ListItem after Advanced Settings
+        // Add Iltix Modules ListItem after Advanced Settings or Labs
         engine.insertAfterLine(
             path,
-            """onClick = onOpenAdvancedSettings,""",
+            """onClick = onOpen(?:AdvancedSettings|Labs),""",
             """    )
 
     ListItem(
@@ -2804,7 +2809,7 @@ internal fun ThreadTopBarPreview"""
         // Add onOpenIltixModules = {} in ContentToPreview
         engine.insertAfterLine(
             path,
-            """onOpenBlockedUsers = \{\},""",
+            """onOpen(?:BlockedUsers|Labs) = \{\},""",
             """        onOpenIltixModules = {},""",
             "PreferencesRootView: onOpenIltixModules in preview"
         )
