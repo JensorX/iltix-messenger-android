@@ -64,6 +64,7 @@ class SourcePatches(private val engine: PatchEngine) {
         patchTextEditorState()
         patchTypographyTokens()
         patchElementThemeTypography()
+        patchInlineCodeSpanStyle()
 
         val results = engine.getResults()
         val failures = engine.failedResults()
@@ -3060,6 +3061,20 @@ internal val LocalCompoundTypography = staticCompositionLocalOf<TypographyTokens
         LocalCompoundColors provides currentCompoundColor,
         LocalCompoundTypography provides compoundTypographyTokens,
         LocalContentColor provides colorScheme.onSurface,"""
+        )
+    }
+
+    private fun patchInlineCodeSpanStyle() {
+        val path = "libraries/htmlrenderer/api/src/main/kotlin/io/element/android/libraries/htmlrenderer/api/spans/InlineCodeSpanStyle.kt"
+        engine.replaceText(
+            path,
+            "import io.element.android.compound.theme.ElementTheme",
+            "import io.element.android.compound.tokens.generated.TypographyTokens"
+        )
+        engine.replaceText(
+            path,
+            "ElementTheme.typography.fontBodySmRegular.fontSize",
+            "TypographyTokens.fontBodySmRegular.fontSize"
         )
     }
 }
