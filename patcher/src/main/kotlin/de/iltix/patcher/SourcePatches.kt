@@ -785,6 +785,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     private fun patchRoomListContentView() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomListContentView.kt"
         engine.addImport(path, "androidx.compose.runtime.collectAsState")
+        engine.addImport(path, "androidx.compose.runtime.getValue")
         engine.addImport(path, "androidx.compose.runtime.remember")
         engine.addImport(path, "de.iltix.components.roomlist.IxCardRoomWrapper")
 
