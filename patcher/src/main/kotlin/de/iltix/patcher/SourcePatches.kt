@@ -121,12 +121,11 @@ class SourcePatches(private val engine: PatchEngine) {
         // Add showStartChatInTopBar + onStartChatClick to HomeTopBar call
         engine.replaceText(
             path,
-            """                canReportBug = state.canReportBug,
-                modifier = Modifier.hazeEffect(""",
+            """                canReportBug = state.canReportBug,""",
             """                canReportBug = state.canReportBug,
                 showStartChatInTopBar = ixHomeUi.showStartChatInTopBar,
                 onStartChatClick = onStartChatClick,
-                modifier = Modifier.hazeEffect("""
+            """
         )
 
         // Wrap floatingActionButton content with ixSpaceNav/startChat checks
@@ -154,6 +153,7 @@ class SourcePatches(private val engine: PatchEngine) {
                         }
                     }
                 },
+                totalUnreadCount = state.totalUnreadCount,
             )
         },
         floatingActionButtonPosition = FabPosition.Center,""",
@@ -173,6 +173,7 @@ class SourcePatches(private val engine: PatchEngine) {
                         }
                     }
                 },
+                totalUnreadCount = state.totalUnreadCount,
             )
             } else {
                 if (!ixHomeUi.showStartChatInTopBar) {
@@ -208,14 +209,12 @@ class SourcePatches(private val engine: PatchEngine) {
                         modifier = Modifier
                             .padding(outerPadding)
                             .consumeWindowInsets(outerPadding)
-                            .hazeSource(state = hazeState)
                     )""",
             """IxHomeChatsContent(
                         roomListState = roomListState,
                         roomsLazyListState = roomsLazyListState,
                         outerPadding = padding,
                         contentPadding = contentPadding,
-                        hazeState = hazeState,
                         shouldShowIxSpaceNav = ixHomeUi.shouldShowIxSpaceNav,
                         useGlassTheme = ixHomeUi.useGlassTheme,
                         showNavigationBar = true,
@@ -382,10 +381,12 @@ class SourcePatches(private val engine: PatchEngine) {
         engine.replaceText(
             path,
             """    private val featureFlagService: FeatureFlagService,
-) : Presenter<RoomListState> {""",
+    private val sessionStore: SessionStore,
+    ) : Presenter<RoomListState> {""",
             """    private val featureFlagService: FeatureFlagService,
+    private val sessionStore: SessionStore,
     private val ixRoomPrefsSource: IxRoomPrefsSource,
-) : Presenter<RoomListState> {"""
+    ) : Presenter<RoomListState> {"""
         )
 
         // Collect pinFavorites state after collectAsState(false)
@@ -414,12 +415,16 @@ class SourcePatches(private val engine: PatchEngine) {
             """val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
+            showSwipeAvatarBanner,
             showUnreadCount,
+            showAllActivity,
         )""",
             """val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
+            showSwipeAvatarBanner,
             showUnreadCount,
+            showAllActivity,
             pinFavorites,
             showTypingInOverview,
         )"""
@@ -431,12 +436,16 @@ class SourcePatches(private val engine: PatchEngine) {
             """    private fun roomListContentState(
         securityBannerDismissed: Boolean,
         showNewNotificationSoundBanner: Boolean,
+        showSwipeAvatarBanner: Boolean,
         showUnreadCount: Boolean,
+        showAllActivity: Boolean,
     ): RoomListContentState {""",
             """    private fun roomListContentState(
         securityBannerDismissed: Boolean,
         showNewNotificationSoundBanner: Boolean,
+        showSwipeAvatarBanner: Boolean,
         showUnreadCount: Boolean,
+        showAllActivity: Boolean,
         pinFavorites: Boolean,
         showTypingInOverview: Boolean,
     ): RoomListContentState {"""
@@ -656,13 +665,13 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         // Pass isFavorite + localNicknameUserId to NameAndTimestampRow from first call site (JOINED/DM type)
         engine.replaceText(
             path,
-            """                    NameAndTimestampRow(
+                """                    NameAndTimestampRow(
                         name = room.name,
                         timestamp = room.timestamp,
                         isHighlighted = room.isHighlighted,
                         dmUserStatus = room.dmUserStatus,
                     )
-                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)""",
+                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount, showAllActivity = showAllActivity)""",
             """                    NameAndTimestampRow(
                         name = room.name,
                         localNicknameUserId = room.heroes.firstOrNull()?.id?.takeIf { room.isDm },
@@ -671,7 +680,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         isFavorite = room.isFavorite,
                         dmUserStatus = room.dmUserStatus,
                     )
-                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount)"""
+                    MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount, showAllActivity = showAllActivity)"""
         )
 
         // Replace the UnreadIndicatorAtom with conditional IxUnreadBadge
@@ -679,18 +688,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             path,
             """            if (room.hasNewContent) {
                 val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
-                val count = if (showUnreadCount) {
-                    if (room.userDefinedNotificationMode == RoomNotificationMode.MUTE) {
-                        room.numberOfUnreadMessages
-                    } else {
-                        room.numberOfUnreadNotifications
-                    }
-                } else {
-                    null
-                }
                 UnreadIndicatorAtom(
                     color = tint,
-                    count = count,
+                    count = room.unreadIndicatorCount(showUnreadCount = showUnreadCount, showAllActivity = showAllActivity),
                     contentDescription = contentDescription,
                 )
             }""",
@@ -704,18 +704,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         contentDescription = contentDescription,
                     )
                 } else {
-                    val count = if (showUnreadCount) {
-                        if (room.userDefinedNotificationMode == RoomNotificationMode.MUTE) {
-                            room.numberOfUnreadMessages
-                        } else {
-                            room.numberOfUnreadNotifications
-                        }
-                    } else {
-                        null
-                    }
                     UnreadIndicatorAtom(
                         color = tint,
-                        count = count,
+                        count = room.unreadIndicatorCount(showUnreadCount = showUnreadCount, showAllActivity = showAllActivity),
                         contentDescription = contentDescription,
                     )
                 }
@@ -802,7 +793,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             path,
             """    modifier: Modifier = Modifier,
 ) {
-    OnVisibleRangeChangeEffect""",
+    val banner = state.toRoomListBanner()""",
             """    modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
@@ -816,7 +807,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         .settingFlow(de.iltix.lib.preferences.IxPrefs.ILTIX_THEME_MODE)
         .collectAsState(initial = de.iltix.lib.preferences.IxPrefs.ILTIX_THEME_MODE.defaultValue)
 
-    OnVisibleRangeChangeEffect"""
+    val banner = state.toRoomListBanner()"""
         )
 
         // Wrap RoomSummaryRow in IxCardRoomWrapper and remove HorizontalDivider
@@ -829,6 +820,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                 isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
                     state.seenRoomInvites.contains(room.roomId),
                 showUnreadCount = state.showUnreadCount,
+                showAllActivity = state.showAllActivity,
                 onClick = onRoomClick,
                 eventSink = eventSink,
             )
@@ -843,6 +835,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                     isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
                         state.seenRoomInvites.contains(room.roomId),
                     showUnreadCount = state.showUnreadCount,
+                    showAllActivity = state.showAllActivity,
                     onClick = onRoomClick,
                     eventSink = eventSink,
                 )
@@ -1154,9 +1147,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
         engine.replaceText(
             path,
-            """            canShareLocation = canShareLocation.value,
+            """            canShareLocation = canShareLocation,
             suggestions = suggestions.toImmutableList(),""",
-            """            canShareLocation = canShareLocation.value,
+            """            canShareLocation = canShareLocation,
             emojiPickerState = emojiPickerState,
             emojiPickerRenderer = emojiPickerRenderer,
             suggestions = suggestions.toImmutableList(),"""

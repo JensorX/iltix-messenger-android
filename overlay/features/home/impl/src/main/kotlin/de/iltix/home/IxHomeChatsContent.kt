@@ -48,7 +48,6 @@ fun IxHomeChatsContent(
     roomsLazyListState: LazyListState,
     outerPadding: PaddingValues,
     contentPadding: PaddingValues,
-    hazeState: HazeState,
     shouldShowIxSpaceNav: Boolean,
     useGlassTheme: Boolean,
     showNavigationBar: Boolean,
@@ -58,6 +57,7 @@ fun IxHomeChatsContent(
     onOpenSpace: (RoomId) -> Unit,
     onCreateRoomClick: () -> Unit,
 ) {
+    val hazeState = remember { HazeState() }
     val ixSpaceNavShape = RoundedCornerShape(28.dp)
     var spaceNavHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
