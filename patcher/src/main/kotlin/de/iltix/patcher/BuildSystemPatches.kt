@@ -53,6 +53,13 @@ class BuildSystemPatches(private val engine: PatchEngine) {
             "libs.versions.toml: room version"
         )
 
+        engine.insertAfterLine(
+            path,
+            """^room = """,
+            """haze = "1.7.3"""",
+            "libs.versions.toml: haze version"
+        )
+
         // Add Room libraries after existing androidx entries
         engine.insertAfterLine(
             path,
@@ -61,6 +68,14 @@ class BuildSystemPatches(private val engine: PatchEngine) {
 androidx_room_ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx_room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }""",
             "libs.versions.toml: room libraries"
+        )
+
+        engine.insertAfterLine(
+            path,
+            """^androidx_room_compiler = """,
+            """haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }""",
+            "libs.versions.toml: haze libraries"
         )
 
         // Add coroutines.android after coroutines_core
