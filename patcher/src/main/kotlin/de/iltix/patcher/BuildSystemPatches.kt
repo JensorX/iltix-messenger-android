@@ -340,6 +340,8 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         val path = "features/home/impl/build.gradle.kts"
         engine.addGradleDependency(path, "implementation(projects.iltix.components)")
         engine.addGradleDependency(path, "implementation(projects.iltix.lib)")
+        engine.addGradleDependency(path, "implementation(libs.haze)")
+        engine.addGradleDependency(path, "implementation(libs.haze.materials)")
     }
 
     private fun patchMessagesImplBuildGradle() {
