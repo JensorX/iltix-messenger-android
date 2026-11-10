@@ -141,6 +141,7 @@ class SourcePatches(private val engine: PatchEngine) {
         )
 
         // Replace the FAB lambda inside HomeBottomBar to hide when showStartChatInTopBar
+        // Keep totalUnreadCount outside this replacement; upstream converts it to Int in v26.11.
         engine.replaceText(
             path,
             """                floatingActionButton = {
@@ -152,11 +153,7 @@ class SourcePatches(private val engine: PatchEngine) {
                             HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
                         }
                     }
-                },
-                totalUnreadCount = state.totalUnreadCount,
-            )
-        },
-        floatingActionButtonPosition = FabPosition.Center,""",
+                },""",
             """                floatingActionButton = when (state.currentHomeNavigationBarItem) {
                     HomeNavigationBarItem.Chats -> {
                         if (ixHomeUi.showStartChatInTopBar) {
@@ -172,16 +169,28 @@ class SourcePatches(private val engine: PatchEngine) {
                             HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
                         }
                     }
-                },
-                totalUnreadCount = state.totalUnreadCount,
-            )
+                },"""
+        )
+
+        engine.replaceText(
+            path,
+            """            )
+        },
+        floatingActionButtonPosition = FabPosition.Center,""",
+            """            )
             } else {
                 if (!ixHomeUi.showStartChatInTopBar) {
                     HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
                 }
             }
         },
-        floatingActionButtonPosition = if (!ixHomeUi.shouldShowIxSpaceNav) FabPosition.Center else FabPosition.End,"""
+        floatingActionButtonPosition = FabPosition.Center,"""
+        )
+
+        engine.replaceText(
+            path,
+            """        floatingActionButtonPosition = FabPosition.Center,""",
+            """        floatingActionButtonPosition = if (!ixHomeUi.shouldShowIxSpaceNav) FabPosition.Center else FabPosition.End,"""
         )
 
         // Replace contentPadding bottom value with Iltix-aware value
@@ -2837,21 +2846,21 @@ internal fun ThreadTopBarPreview"""
         engine.addImport(path, "de.iltix.theme.LocalIxBubbleStyle")
         engine.addImport(path, "androidx.compose.ui.unit.Dp")
 
-        // Add bubbleStyle read + pass to backgroundBubbleColor and shape
+        // Read the style at function entry because upstream moved bubbleShape before
+        // clickableModifier in v26.11.
         engine.replaceText(
             path,
-            """    val cutTopStart = state.cutTopStart
-    // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine))
-    val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }""",
-            """    val cutTopStart = state.cutTopStart
-    val bubbleStyle = LocalIxBubbleStyle.current
-    // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor = customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(
-        isMine = state.isMine,
-        bubbleStyle = bubbleStyle,
-    )
-    val bubbleShape = remember(state, bubbleStyle.cornerRadius) {
+            """    content: @Composable BoxScope.() -> Unit = {},
+) {""",
+            """    content: @Composable BoxScope.() -> Unit = {},
+) {
+    val bubbleStyle = LocalIxBubbleStyle.current"""
+        )
+
+        engine.replaceText(
+            path,
+            """    val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }""",
+            """    val bubbleShape = remember(state, bubbleStyle.cornerRadius) {
         MessageEventBubbleDefaults.shape(
             cutTopStart = state.cutTopStart,
             groupPosition = state.groupPosition,
@@ -2859,6 +2868,15 @@ internal fun ThreadTopBarPreview"""
             bubbleRadius = bubbleStyle.cornerRadius,
         )
     }"""
+        )
+
+        engine.replaceText(
+            path,
+            """    val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine))""",
+            """    val backgroundBubbleColor = customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(
+        isMine = state.isMine,
+        bubbleStyle = bubbleStyle,
+    )"""
         )
 
         // Update shape function to accept bubbleRadius parameter
