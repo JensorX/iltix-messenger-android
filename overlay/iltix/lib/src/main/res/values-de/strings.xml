@@ -14,9 +14,9 @@
     <string name="iltix_modules_category_general_title">Allgemein</string>
     <string name="iltix_modules_category_general_subtitle">Lokale Namen, automatischer Download</string>
     <string name="iltix_modules_category_overview_title">Übersicht</string>
-    <string name="iltix_modules_category_overview_subtitle">Space-Navigation, Badges, Favoriten</string>
+    <string name="iltix_modules_category_overview_subtitle">Space-Navigation, Favoriten</string>
     <string name="iltix_modules_category_chat_title">Chat</string>
-    <string name="iltix_modules_category_chat_subtitle">Emoji, Umfragen, Benachrichtigungen</string>
+    <string name="iltix_modules_category_chat_subtitle">Umfragen, Benachrichtigungen</string>
     <string name="iltix_modules_category_theme_title">Design</string>
     <string name="iltix_modules_category_theme_subtitle">Farben, Sprechblasen, Schriftart</string>
     <string name="iltix_modules_general_settings_title">Allgemeine Einstellungen</string>
@@ -43,9 +43,6 @@
     <string name="iltix_space_nav_mode_none">Aus</string>
     <string name="iltix_space_nav_mode_filter">Tippen zum Filtern, lange drücken zum Öffnen</string>
     <string name="iltix_space_nav_mode_full">Tippen zum Filtern, lange drücken zum Öffnen</string>
-    
-    <string name="iltix_number_badge_title">Zahlen-Badge</string>
-    <string name="iltix_number_badge_subtitle">Ungelesene Nachrichtenanzahl in Badges anzeigen</string>
     
     <string name="iltix_start_button_toolbar_title">Start-Button in der Toolbar</string>
     <string name="iltix_start_button_toolbar_subtitle">Button für neuen Chat in die obere Toolbar verschieben</string>
@@ -83,9 +80,6 @@
     <string name="iltix_font_option_system">System</string>
     
     <!-- Chat View Features -->
-    <string name="iltix_emoji_picker_title">Emoji-Auswahl</string>
-    <string name="iltix_emoji_picker_subtitle">Systemähnliche Emoji-Tastatur</string>
-    
     <string name="iltix_poll_vote_viewer_title">Umfrage-Stimmenanzeige</string>
     <string name="iltix_poll_vote_viewer_subtitle">Anzeigen, wer für welche Option abgestimmt hat</string>
     <string name="iltix_poll_view_votes_button">Stimmen anzeigen</string>

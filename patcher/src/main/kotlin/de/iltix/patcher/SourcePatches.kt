@@ -24,15 +24,9 @@ class SourcePatches(private val engine: PatchEngine) {
         patchRoomListPresenter()
         patchRoomSummaryRow()
         patchRoomListContentView()
-        patchMessagesView()
         patchTypingNotificationPresenter()
-        patchMessageComposerEvent()
-        patchMessageComposerState()
-        patchMessageComposerStateProvider()
-        patchMessageComposerPresenter()
         patchMessageComposerView()
         patchTextComposer()
-        patchEmojiItem()
         // Temporarily disabled: upstream top bar signature changed and breaks dmUserStatus patch.
         // patchMessagesViewTopBar()
         patchThreadTopBar()
@@ -60,8 +54,6 @@ class SourcePatches(private val engine: PatchEngine) {
         patchPreferencesFlowNode()
         patchPreferencesRootNode()
         patchPreferencesRootView()
-        patchMarkdownTextEditorState()
-        patchTextEditorState()
         patchTypographyTokens()
         patchElementThemeTypography()
         patchInlineCodeSpanStyle()
@@ -602,7 +594,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
     private fun patchRoomSummaryRow() {
         val path = "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt"
-        engine.addImport(path, "de.iltix.components.badges.IxUnreadBadge")
         engine.addImport(path, "de.iltix.components.nicknames.rememberIxResolvedDisplayName")
         engine.addImport(path, "de.iltix.components.roomlist.IxFavoriteStarIcon")
         engine.addImport(path, "de.iltix.home.rememberIxRoomSummaryConfig")
@@ -690,36 +681,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
                         dmUserStatus = room.dmUserStatus,
                     )
                     MessagePreviewAndIndicatorRow(room = room, showUnreadCount = showUnreadCount, showAllActivity = showAllActivity)"""
-        )
-
-        // Replace the UnreadIndicatorAtom with conditional IxUnreadBadge
-        engine.replaceText(
-            path,
-            """            if (room.hasNewContent) {
-                val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
-                UnreadIndicatorAtom(
-                    color = tint,
-                    count = room.unreadIndicatorCount(showUnreadCount = showUnreadCount, showAllActivity = showAllActivity),
-                    contentDescription = contentDescription,
-                )
-            }""",
-            """            if (room.hasNewContent) {
-                val contentDescription = stringResource(CommonStrings.a11y_notifications_new_messages)
-                val roomSummaryConfig = rememberIxRoomSummaryConfig()
-                if (roomSummaryConfig.showUnreadCountBadge && room.numberOfUnreadMessages > 0) {
-                    IxUnreadBadge(
-                        count = room.numberOfUnreadMessages,
-                        backgroundColor = tint,
-                        contentDescription = contentDescription,
-                    )
-                } else {
-                    UnreadIndicatorAtom(
-                        color = tint,
-                        count = room.unreadIndicatorCount(showUnreadCount = showUnreadCount, showAllActivity = showAllActivity),
-                        contentDescription = contentDescription,
-                    )
-                }
-            }"""
         )
 
         engine.replaceText(
@@ -870,150 +831,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
 
     // ===== Messages hooks =====
 
-    private fun patchMessagesView() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesView.kt"
-        engine.addImport(path, "androidx.activity.compose.BackHandler")
-        engine.addImport(path, "androidx.compose.foundation.layout.Column")
-        engine.addImport(path, "androidx.compose.foundation.layout.fillMaxWidth")
-        engine.addImport(path, "androidx.compose.ui.Modifier")
-        engine.addImport(path, "de.iltix.messages.IxEmojiKeyboardPanel")
-        engine.addImport(path, "de.iltix.messages.rememberIxEmojiPanelState")
-        engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
-
-        // Insert emoji panel state after maxComposerHeightPx
-        engine.insertAfterLine(
-            path,
-            """var maxComposerHeightPx by remember \{ mutableIntStateOf\(120\) \}""",
-            """
-    val isIltixBuild = LocalBuildMeta.current.applicationId.contains("iltix")
-    val emojiPanelState = rememberIxEmojiPanelState(
-        composerState = state.composerState,
-        isIltixBuild = isIltixBuild,
-    )""",
-            "MessagesView: emoji panel state init"
-        )
-
-        // Insert BackHandler before expandableState
-        engine.insertBeforeLine(
-            path,
-            """val expandableState = rememberExpandableBottomSheetLayoutState\(\)""",
-            """    BackHandler(enabled = emojiPanelState.showEmojiPanel) {
-        emojiPanelState.hideEmojiPanel()
-    }
-
-""",
-            "MessagesView: BackHandler for emoji panel"
-        )
-
-        // Wrap ExpandableBottomSheetLayout in Column and modify imePadding
-        engine.replaceText(
-            path,
-            """    ExpandableBottomSheetLayout(
-        modifier = modifier
-                .fillMaxSize()
-                .imePadding()
-                .systemBarsPadding()""",
-            """    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-    ) {
-    ExpandableBottomSheetLayout(
-        modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth()
-            .let { base -> if (emojiPanelState.showEmojiPanel) base else base.imePadding() }"""
-        )
-
-        // Close ExpandableBottomSheetLayout and add IxEmojiKeyboardPanel + close Column
-        engine.replaceText(
-            path,
-            """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
-    )
-
-    var endPollConfirmingEvent""",
-            """        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
-    )
-
-    state.composerState.emojiPickerState?.let { pickerState ->
-        state.composerState.emojiPickerRenderer?.let { pickerRenderer ->
-            if (emojiPanelState.showEmojiPanel && emojiPanelState.emojiPickerEnabled) {
-                IxEmojiKeyboardPanel(
-                    pickerState = pickerState,
-                    pickerRenderer = pickerRenderer,
-                    panelHeight = emojiPanelState.panelHeight,
-                    onSelectEmoji = { emoji ->
-                        state.composerState.eventSink(MessageComposerEvent.InsertEmoji(emoji))
-                    },
-                )
-            }
-        }
-    }
-
-    } // end Column
-
-    var endPollConfirmingEvent"""
-        )
-
-        // Add showEmojiButton/showEmojiPanel/onToggleEmojiPanel to MessageComposerView call (inside MessagesViewComposerBottomSheetContents)
-        engine.replaceText(
-            path,
-            """                    MessageComposerView(
-                        state = state.composerState,
-                        voiceMessageState = state.voiceMessageComposerState,
-                        modifier = Modifier.fillMaxWidth(),
-                    )""",
-            """                    MessageComposerView(
-                        state = state.composerState,
-                        voiceMessageState = state.voiceMessageComposerState,
-                        showEmojiButton = showEmojiButton,
-                        showEmojiPanel = showEmojiPanel,
-                        onToggleEmojiPanel = onToggleEmojiPanel,
-                        modifier = Modifier.fillMaxWidth(),
-                    )"""
-        )
-
-        // Add emoji params to MessagesViewComposerBottomSheetContents signature
-        engine.replaceText(
-            path,
-            """private fun MessagesViewComposerBottomSheetContents(
-    state: MessagesState,
-    onRoomSuccessorClick: (RoomId) -> Unit,
-    onLinkClick: (String, Boolean) -> Unit,
-)""",
-            """private fun MessagesViewComposerBottomSheetContents(
-    state: MessagesState,
-    onRoomSuccessorClick: (RoomId) -> Unit,
-    onLinkClick: (String, Boolean) -> Unit,
-    showEmojiButton: Boolean = false,
-    showEmojiPanel: Boolean = false,
-    onToggleEmojiPanel: () -> Unit = {},
-)"""
-        )
-
-        // Pass emoji params from MessagesViewComposerBottomSheetContents call site
-        engine.replaceText(
-            path,
-            """            MessagesViewComposerBottomSheetContents(
-                state = state,
-                onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
-                onRoomSuccessorClick = { roomId ->
-                    state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
-                },
-            )""",
-            """            MessagesViewComposerBottomSheetContents(
-                state = state,
-                onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
-                onRoomSuccessorClick = { roomId ->
-                    state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
-                },
-                showEmojiButton = emojiPanelState.showEmojiButton,
-                showEmojiPanel = emojiPanelState.showEmojiPanel,
-                onToggleEmojiPanel = emojiPanelState.onToggleEmojiPanel,
-            )"""
-        )
-    }
-
     private fun patchTypingNotificationPresenter() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/typing/TypingNotificationPresenter.kt"
         engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
@@ -1065,110 +882,8 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         )
     }
 
-    private fun patchMessageComposerEvent() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerEvent.kt"
-        // Add InsertEmoji event
-        engine.replaceText(
-            path,
-            """    data object SaveDraft : MessageComposerEvent
-    data object ClearSlashError : MessageComposerEvent""",
-            """    data class InsertEmoji(val emoji: String) : MessageComposerEvent
-    data object SaveDraft : MessageComposerEvent
-    data object ClearSlashError : MessageComposerEvent"""
-        )
-    }
-
-    private fun patchMessageComposerState() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerState.kt"
-        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer")
-        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerState")
-
-        engine.replaceText(
-            path,
-            """    val canShareLocation: Boolean,
-    val suggestions: ImmutableList<ResolvedSuggestion>,""",
-            """    val canShareLocation: Boolean,
-    val emojiPickerState: EmojiPickerState?,
-    val emojiPickerRenderer: EmojiPickerRenderer?,
-    val suggestions: ImmutableList<ResolvedSuggestion>,"""
-        )
-    }
-
-    private fun patchMessageComposerStateProvider() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerStatePreviewParam.kt"
-
-        engine.replaceText(
-            path,
-            """    canShareLocation = canShareLocation,
-    suggestions = suggestions,""",
-            """    canShareLocation = canShareLocation,
-    emojiPickerState = null,
-    emojiPickerRenderer = null,
-    suggestions = suggestions,"""
-        )
-    }
-
-    private fun patchMessageComposerPresenter() {
-        val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerPresenter.kt"
-        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerPresenter")
-        engine.addImport(path, "io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer")
-        engine.addImport(path, "io.element.android.libraries.emoji.api.recentemojis.AddRecentEmoji")
-        engine.addImport(path, "io.element.android.libraries.emoji.api.recentemojis.GetRecentEmojis")
-
-        engine.replaceText(
-            path,
-            """    private val suggestionsProcessor: SuggestionsProcessor,
-    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
-    private val notificationConversationService: NotificationConversationService,
-    private val slashCommandService: SlashCommandService,""",
-            """    private val suggestionsProcessor: SuggestionsProcessor,
-    private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
-    private val notificationConversationService: NotificationConversationService,
-    private val emojiPickerPresenterFactory: EmojiPickerPresenter.Factory,
-    private val getRecentEmojis: GetRecentEmojis,
-    private val addRecentEmoji: AddRecentEmoji,
-    private val emojiPickerRenderer: EmojiPickerRenderer,
-    private val slashCommandService: SlashCommandService,"""
-        )
-
-        engine.insertAfterLine(
-            path,
-            """val localCoroutineScope = rememberCoroutineScope\(\)""",
-            """
-        val emojiPickerPresenter = remember {
-            emojiPickerPresenterFactory.create(getRecentEmojis)
-        }
-        val emojiPickerState = emojiPickerPresenter.present()""",
-            "MessageComposerPresenter: initialize emoji picker"
-        )
-
-        engine.replaceText(
-            path,
-            """                MessageComposerEvent.SaveDraft -> {""",
-            """                is MessageComposerEvent.InsertEmoji -> {
-                    localCoroutineScope.launch {
-                        textEditorState.insertText(event.emoji)
-                        textEditorState.requestFocus()
-                        addRecentEmoji(event.emoji)
-                    }
-                }
-                MessageComposerEvent.SaveDraft -> {"""
-        )
-
-        engine.replaceText(
-            path,
-            """            canShareLocation = canShareLocation,
-            suggestions = suggestions.toImmutableList(),""",
-            """            canShareLocation = canShareLocation,
-            emojiPickerState = emojiPickerState,
-            emojiPickerRenderer = emojiPickerRenderer,
-            suggestions = suggestions.toImmutableList(),"""
-        )
-    }
-
     private fun patchMessageComposerView() {
         val path = "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/messagecomposer/MessageComposerView.kt"
-        engine.addImport(path, "androidx.compose.foundation.layout.size")
         engine.addImport(path, "androidx.compose.runtime.collectAsState")
         engine.addImport(path, "androidx.compose.runtime.getValue")
         engine.addImport(path, "androidx.compose.runtime.mutableStateOf")
@@ -1176,12 +891,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         engine.addImport(path, "androidx.compose.ui.platform.LocalContext")
         engine.addImport(path, "de.iltix.lib.preferences.IxPreferencesStore")
         engine.addImport(path, "de.iltix.lib.preferences.IxPrefs")
-        engine.addImport(path, "io.element.android.compound.tokens.generated.CompoundIcons")
         engine.addImport(path, "io.element.android.libraries.designsystem.theme.LocalBuildMeta")
-        engine.addImport(path, "io.element.android.libraries.designsystem.theme.components.Icon")
-        engine.addImport(path, "io.element.android.libraries.designsystem.theme.components.IconButton")
 
-        // Add emoji + unencrypted params to MessageComposerView signature
+        // Add unencrypted-indicator preference to MessageComposerView
         engine.replaceText(
             path,
             """internal fun MessageComposerView(
@@ -1193,9 +905,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             """internal fun MessageComposerView(
     state: MessageComposerState,
     voiceMessageState: VoiceMessageComposerState,
-    showEmojiButton: Boolean = false,
-    showEmojiPanel: Boolean = false,
-    onToggleEmojiPanel: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
@@ -1212,23 +921,15 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     }"""
         )
 
-        // Add showNotEncryptedBadge + extraLeadingContent to TextComposer call
+        // Pass the unencrypted-indicator preference to TextComposer
         engine.replaceText(
             path,
             """        onSelectRichContent = ::sendUri,
+        onAddEmoji = onToggleEmojiPicker,
     )""",
             """        onSelectRichContent = ::sendUri,
+        onAddEmoji = onToggleEmojiPicker,
         showNotEncryptedBadge = !moveUnencryptedIndicatorToTopBar,
-        extraLeadingContent = if (showEmojiButton) {
-            {
-                IconButton(modifier = Modifier.size(48.dp), onClick = onToggleEmojiPanel) {
-                    Icon(
-                        imageVector = if (showEmojiPanel) CompoundIcons.Keyboard() else CompoundIcons.ReactionAdd(),
-                        contentDescription = null,
-                    )
-                }
-            }
-        } else { null },
     )"""
         )
     }
@@ -1236,18 +937,19 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     private fun patchTextComposer() {
         val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/TextComposer.kt"
 
-        // Add showNotEncryptedBadge and extraLeadingContent params to TextComposer signature
+        // Add showNotEncryptedBadge to TextComposer signature
         engine.replaceText(
             path,
             """    modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
     isInThreadTimeline: Boolean = false,
+    onAddEmoji: (() -> Unit)? = null,
 ) {""",
             """    modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
     isInThreadTimeline: Boolean = false,
+    onAddEmoji: (() -> Unit)? = null,
     showNotEncryptedBadge: Boolean = true,
-    extraLeadingContent: (@Composable () -> Unit)? = null,
 ) {"""
         )
 
@@ -1279,24 +981,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             modifier = layoutModifier,"""
         )
 
-        // Pass extraLeadingContent to StandardLayout (after onResetComposerMode line)
-        engine.replaceText(
-            path,
-            """            onVoiceRecorderEvent = onVoiceRecorderEvent,
-            onResetComposerMode = onResetComposerMode,
-        )
-    }
-
-    SoftKeyboardEffect""",
-            """            onVoiceRecorderEvent = onVoiceRecorderEvent,
-            onResetComposerMode = onResetComposerMode,
-            extraLeadingContent = extraLeadingContent,
-        )
-    }
-
-    SoftKeyboardEffect"""
-        )
-
         // Add showNotEncryptedBadge param to StandardLayout signature
         engine.replaceText(
             path,
@@ -1313,7 +997,7 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
     textInput: @Composable () -> Unit,"""
         )
 
-        // Add extraLeadingContent param to StandardLayout signature (after onResetComposerMode)
+        // Modify the unencrypted indicator condition in StandardLayout
         engine.replaceText(
             path,
             """    onResetComposerMode: () -> Unit,
@@ -1323,34 +1007,9 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
         if (isRoomEncrypted == false) {""",
             """    onResetComposerMode: () -> Unit,
     modifier: Modifier = Modifier,
-    extraLeadingContent: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier) {
         if (showNotEncryptedBadge && isRoomEncrypted == false) {"""
-        )
-
-        // Add extraLeadingContent rendering after the attachment/voice button block
-        engine.replaceText(
-            path,
-            """                    }
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 8.dp, top = 8.dp)""",
-            """                    }
-                }
-            }
-            if (extraLeadingContent != null && voiceMessageState is VoiceMessageState.Idle) {
-                Box(
-                    modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
-                ) {
-                    extraLeadingContent()
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 8.dp, top = 8.dp)"""
         )
 
         // Add showNotEncryptedBadge to TextFormattingLayout signature
@@ -1378,17 +1037,6 @@ private fun LatestEventValue.senderDisplayNameOrNull(): String? {
             NotEncryptedBadge()
             Spacer(Modifier.height(8.dp))
         }"""
-        )
-    }
-
-    private fun patchEmojiItem() {
-        val path = "libraries/emoji/impl/src/main/kotlin/io/element/android/libraries/emoji/impl/picker/EmojiItem.kt"
-        engine.replaceText(
-            path,
-            """                            if (hasSkinTones) {
-                                onSelectEmoji(item)
-                            }""",
-            ""
         )
     }
 
@@ -2957,51 +2605,6 @@ internal fun ThreadTopBarPreview"""
             bubbleStyle.otherBackgroundColor
         }
     }"""
-        )
-    }
-
-    // ===== TextEditor insertText support =====
-
-    private fun patchMarkdownTextEditorState() {
-        val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/model/MarkdownTextEditorState.kt"
-        engine.addImport(path, "android.text.SpannableStringBuilder")
-
-        // Add insertText method before getMessageMarkdown
-        engine.insertBeforeLine(
-            path,
-            """fun getMessageMarkdown\(permalinkBuilder: PermalinkBuilder\): String \{""",
-            """    fun insertText(insertedText: String) {
-        val currentText = SpannableStringBuilder(text.value())
-        val start = selection.first.coerceAtLeast(0)
-        val end = selection.last.coerceAtLeast(start)
-        currentText.replace(start, end, insertedText)
-        text.update(currentText, true)
-        val cursor = start + insertedText.length
-        selection = cursor..cursor
-    }
-
-""",
-            "Add insertText method for emoji insertion"
-        )
-    }
-
-    private fun patchTextEditorState() {
-        val path = "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/model/TextEditorState.kt"
-
-        // Add insertText method before reset
-        engine.insertBeforeLine(
-            path,
-            """suspend fun reset\(\) \{""",
-            """    suspend fun insertText(text: String) {
-        when (this) {
-            is Markdown -> state.insertText(text)
-            is Rich -> richTextEditorState.setMarkdown(richTextEditorState.messageMarkdown + text)
-        }
-        requestFocus()
-    }
-
-""",
-            "Add insertText method for emoji insertion"
         )
     }
 

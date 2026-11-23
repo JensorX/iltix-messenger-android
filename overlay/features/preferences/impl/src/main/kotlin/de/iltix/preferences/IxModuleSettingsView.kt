@@ -299,17 +299,6 @@ private fun IxModuleSettingsOverviewView(
             )
         }
 
-        IxPrefs.NUMBER_BADGE.titleRes?.let { titleRes ->
-            PreferenceSwitch(
-                title = stringResource(id = titleRes),
-                subtitle = IxPrefs.NUMBER_BADGE.summaryRes?.let { stringResource(id = it) },
-                isChecked = state.preferencesValues["NUMBER_BADGE"] ?: IxPrefs.NUMBER_BADGE.defaultValue,
-                onCheckedChange = { enabled ->
-                    state.eventSink(IxModuleSettingsEvents.ToggleModule("NUMBER_BADGE", enabled))
-                },
-            )
-        }
-
         IxPrefs.START_BUTTON_IN_TOOLBAR.titleRes?.let { titleRes ->
             PreferenceSwitch(
                 title = stringResource(id = titleRes),
@@ -355,17 +344,6 @@ private fun IxModuleSettingsChatView(
         onBackClick = { state.eventSink(IxModuleSettingsEvents.NavigateToView(IxSettingsView.Main)) },
         modifier = modifier,
     ) {
-        IxPrefs.EMOJI_PICKER.titleRes?.let { titleRes ->
-            PreferenceSwitch(
-                title = stringResource(id = titleRes),
-                subtitle = IxPrefs.EMOJI_PICKER.summaryRes?.let { stringResource(id = it) },
-                isChecked = state.preferencesValues["EMOJI_PICKER"] ?: IxPrefs.EMOJI_PICKER.defaultValue,
-                onCheckedChange = { enabled ->
-                    state.eventSink(IxModuleSettingsEvents.ToggleModule("EMOJI_PICKER", enabled))
-                },
-            )
-        }
-
         IxPrefs.POLL_VOTE_VIEWER.titleRes?.let { titleRes ->
             PreferenceSwitch(
                 title = stringResource(id = titleRes),

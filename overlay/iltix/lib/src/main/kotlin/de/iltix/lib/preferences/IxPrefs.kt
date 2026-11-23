@@ -56,15 +56,6 @@ object IxPrefs {
         entryValues = listOf("none", "combined"),
     )
 
-    val NUMBER_BADGE = IxBoolPref(
-        key = "ILTIX_NUMBER_BADGE",
-        defaultValue = true,
-        titleRes = R.string.iltix_number_badge_title,
-        summaryRes = R.string.iltix_number_badge_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
     val START_BUTTON_IN_TOOLBAR = IxBoolPref(
         key = "ILTIX_START_BUTTON_TOOLBAR",
         defaultValue = true,
@@ -145,15 +136,6 @@ object IxPrefs {
     )
 
     // ===== Chat View Features =====
-    val EMOJI_PICKER = IxBoolPref(
-        key = "ILTIX_EMOJI_PICKER",
-        defaultValue = true,
-        titleRes = R.string.iltix_emoji_picker_title,
-        summaryRes = R.string.iltix_emoji_picker_subtitle,
-        authorsChoice = true,
-        upstreamChoice = false,
-    )
-
     val POLL_VOTE_VIEWER = IxBoolPref(
         key = "ILTIX_POLL_VOTE_VIEWER",
         defaultValue = true,
@@ -226,7 +208,6 @@ object IxPrefs {
         LOCAL_USERNAMES,
         LIVE_NOTIFICATIONS,
         SPACE_NAV_MODE,
-        NUMBER_BADGE,
         START_BUTTON_IN_TOOLBAR,
         PIN_FAVORITES,
         SHOW_TYPING_IN_OVERVIEW,
@@ -235,7 +216,6 @@ object IxPrefs {
         ROUNDED_BUBBLES,
         CARD_ROOM_ROWS,
         ILTIX_FONT,
-        EMOJI_PICKER,
         POLL_VOTE_VIEWER,
         PRIORITY_NOTIFICATION,
         UNENCRYPTED_TOPBAR_ICON,

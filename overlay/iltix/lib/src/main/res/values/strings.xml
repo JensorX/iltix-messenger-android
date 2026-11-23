@@ -14,9 +14,9 @@
     <string name="iltix_modules_category_general_title">General</string>
     <string name="iltix_modules_category_general_subtitle">Local names, auto-download</string>
     <string name="iltix_modules_category_overview_title">Overview</string>
-    <string name="iltix_modules_category_overview_subtitle">Space nav, badges, favorites</string>
+    <string name="iltix_modules_category_overview_subtitle">Space nav, favorites</string>
     <string name="iltix_modules_category_chat_title">Chat</string>
-    <string name="iltix_modules_category_chat_subtitle">Emoji, polls, notifications</string>
+    <string name="iltix_modules_category_chat_subtitle">Polls, notifications</string>
     <string name="iltix_modules_category_theme_title">Theme</string>
     <string name="iltix_modules_category_theme_subtitle">Colors, bubbles, font</string>
     <string name="iltix_modules_general_settings_title">General Settings</string>
@@ -43,9 +43,6 @@
     <string name="iltix_space_nav_mode_none">Off</string>
     <string name="iltix_space_nav_mode_filter">Tap to Filter, Long-Press to Open</string>
     <string name="iltix_space_nav_mode_full">Tap to Filter, Long-Press to Open</string>
-    
-    <string name="iltix_number_badge_title">Number Badge</string>
-    <string name="iltix_number_badge_subtitle">Show unread message counts in badges</string>
     
     <string name="iltix_start_button_toolbar_title">Start Button in Toolbar</string>
     <string name="iltix_start_button_toolbar_subtitle">Move new chat button to top toolbar</string>
@@ -83,9 +80,6 @@
     <string name="iltix_font_option_system">System</string>
     
     <!-- Chat View Features -->
-    <string name="iltix_emoji_picker_title">Emoji Picker</string>
-    <string name="iltix_emoji_picker_subtitle">System-like emoji keyboard</string>
-    
     <string name="iltix_poll_vote_viewer_title">Poll Vote Viewer</string>
     <string name="iltix_poll_vote_viewer_subtitle">Show who voted for what option</string>
     <string name="iltix_poll_view_votes_button">Show votes</string>

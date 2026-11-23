@@ -69,11 +69,6 @@ class PatchVerifier(private val workspace: File) {
         ))
         add(Expectation(
             "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
-            "import de.iltix.components.badges.IxUnreadBadge",
-            "RoomSummaryRow: IxUnreadBadge import"
-        ))
-        add(Expectation(
-            "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
             "import de.iltix.components.nicknames.rememberIxResolvedDisplayName",
             "RoomSummaryRow: rememberIxResolvedDisplayName import"
         ))

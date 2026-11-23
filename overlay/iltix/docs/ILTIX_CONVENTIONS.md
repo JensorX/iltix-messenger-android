@@ -14,7 +14,7 @@ Iltix is a modular fork of Element X focused on minimal upstream merge conflicts
 2. **`iltix/components/` module** - Reusable Compose UI components.
    - Package: `de.iltix.components.*`
    - Dependencies: Iltix.lib, Element's `libraries/designsystem`, `libraries/compound`.
-   - Use for: Custom UI components (badges, pickers, bubble shapes, etc.).
+   - Use for: Custom UI components (pickers, bubble shapes, etc.).
 
 3. **`iltix/theme/` module** - Theme and dynamic color system.
    - Package: `de.iltix.theme.*`
@@ -23,7 +23,6 @@ Iltix is a modular fork of Element X focused on minimal upstream merge conflicts
 
 4. **Feature-specific Iltix code in `features/*/impl/src/main/kotlin/de/iltix/`** - Integration points.
    - Keep feature integrations small and gated by `IxPrefs` checks.
-   - Example: `features/home/impl/src/main/kotlin/de/iltix/components/IxUnreadBadge.kt`.
 
 ## Build Flavor Strategy
 
@@ -62,16 +61,7 @@ Iltix is a modular fork of Element X focused on minimal upstream merge conflicts
 
 When Iltix features require changes to Element's code, keep changes minimal:
 
-1. **Add conditional checks**:
-   ```kotlin
-   if (IxPrefs.NUMBER_BADGE.defaultValue) {
-       IxUnreadBadge(count = summary.numberOfUnreadMessages)
-   } else {
-       UnreadIndicatorAtom()  // upstream
-   }
-   ```
-
-2. **Add callback parameters** (not new properties):
+1. **Add callback parameters** (not new properties):
    ```kotlin
    // Add to function signature:
    onOpenIltixModules: () -> Unit = {},
@@ -79,7 +69,7 @@ When Iltix features require changes to Element's code, keep changes minimal:
    onOpenIltixModules()
    ```
 
-3. **Use DI** to provide Iltix services:
+2. **Use DI** to provide Iltix services:
    ```kotlin
    @Inject private val preferencesStore: IxPreferencesStore
    ```
@@ -93,11 +83,11 @@ When Iltix features require changes to Element's code, keep changes minimal:
 
 ## Naming Conventions
 
-- **Iltix classes**: Prefix with `Ix` (e.g., `IxUnreadBadge`, `IxSpaceNavBar`, `IxEmojiKeyboard`).
+- **Iltix classes**: Prefix with `Ix` (e.g., `IxSpaceNavBar`).
 - **Iltix packages**: `de.iltix.*` for all Kotlin code.
 - **Feature names** in logs/comments: "Iltix Modules" or "Iltix <Feature>" (e.g., "Iltix Space Navigation").
 
 ## Testing
 
 - **No Iltix-specific test conventions yet** - Follow Element's Turbine + Presenter patterns.
-- **Future**: Add preview providers for all Iltix UI components (`IxBadgeStateProvider`, etc.).
+- **Future**: Add preview providers for all Iltix UI components.

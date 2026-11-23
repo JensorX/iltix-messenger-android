@@ -48,10 +48,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
             .collectAsState(initial = IxPrefs.SPACE_NAV_MODE.defaultValue)
         stringValuesMap["SPACE_NAV_MODE"] = spaceNavMode
 
-        val numberBadge by preferencesStore.settingFlow(IxPrefs.NUMBER_BADGE)
-            .collectAsState(initial = IxPrefs.NUMBER_BADGE.defaultValue)
-        preferencesMap["NUMBER_BADGE"] = numberBadge
-
         val startButtonInToolbar by preferencesStore.settingFlow(IxPrefs.START_BUTTON_IN_TOOLBAR)
             .collectAsState(initial = IxPrefs.START_BUTTON_IN_TOOLBAR.defaultValue)
         preferencesMap["START_BUTTON_IN_TOOLBAR"] = startButtonInToolbar
@@ -83,10 +79,6 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
         val iltixFont by preferencesStore.settingFlow(IxPrefs.ILTIX_FONT)
             .collectAsState(initial = IxPrefs.ILTIX_FONT.defaultValue)
         stringValuesMap["ILTIX_FONT"] = iltixFont
-
-        val emojiPicker by preferencesStore.settingFlow(IxPrefs.EMOJI_PICKER)
-            .collectAsState(initial = IxPrefs.EMOJI_PICKER.defaultValue)
-        preferencesMap["EMOJI_PICKER"] = emojiPicker
 
         val pollVoteViewer by preferencesStore.settingFlow(IxPrefs.POLL_VOTE_VIEWER)
             .collectAsState(initial = IxPrefs.POLL_VOTE_VIEWER.defaultValue)
@@ -123,13 +115,11 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         val pref = when (event.moduleKey) {
                             "LOCAL_USERNAMES" -> IxPrefs.LOCAL_USERNAMES
                             "LIVE_NOTIFICATIONS" -> IxPrefs.LIVE_NOTIFICATIONS
-                            "NUMBER_BADGE" -> IxPrefs.NUMBER_BADGE
                             "START_BUTTON_IN_TOOLBAR" -> IxPrefs.START_BUTTON_IN_TOOLBAR
                             "PIN_FAVORITES" -> IxPrefs.PIN_FAVORITES
                             "SHOW_TYPING_IN_OVERVIEW" -> IxPrefs.SHOW_TYPING_IN_OVERVIEW
                             "MATERIAL_YOU_THEME" -> IxPrefs.MATERIAL_YOU_THEME
                             "ROUNDED_BUBBLES" -> IxPrefs.ROUNDED_BUBBLES
-                            "EMOJI_PICKER" -> IxPrefs.EMOJI_PICKER
                             "POLL_VOTE_VIEWER" -> IxPrefs.POLL_VOTE_VIEWER
                             "PRIORITY_NOTIFICATION" -> IxPrefs.PRIORITY_NOTIFICATION
                             "UNENCRYPTED_TOPBAR_ICON" -> IxPrefs.UNENCRYPTED_TOPBAR_ICON
@@ -174,11 +164,9 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                         preferencesStore.setSetting(IxPrefs.LIVE_NOTIFICATIONS, false)
                         cancelAllIxLiveNotifications(context)
                         preferencesStore.setSetting(IxPrefs.SPACE_NAV_MODE, "none")
-                        preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, false)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, false)
                         preferencesStore.setSetting(IxPrefs.PIN_FAVORITES, false)
                         preferencesStore.setSetting(IxPrefs.SHOW_TYPING_IN_OVERVIEW, false)
-                        preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, false)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, false)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, false)
                         preferencesStore.setSetting(IxPrefs.UNENCRYPTED_TOPBAR_ICON, false)
@@ -198,11 +186,9 @@ class IxModuleSettingsPresenter : Presenter<IxModuleSettingsState> {
                             cancelAllIxLiveNotifications(context)
                         }
                         preferencesStore.setSetting(IxPrefs.SPACE_NAV_MODE, IxPrefs.SPACE_NAV_MODE.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.NUMBER_BADGE, IxPrefs.NUMBER_BADGE.defaultValue)
                         preferencesStore.setSetting(IxPrefs.START_BUTTON_IN_TOOLBAR, IxPrefs.START_BUTTON_IN_TOOLBAR.defaultValue)
                         preferencesStore.setSetting(IxPrefs.PIN_FAVORITES, IxPrefs.PIN_FAVORITES.defaultValue)
                         preferencesStore.setSetting(IxPrefs.SHOW_TYPING_IN_OVERVIEW, IxPrefs.SHOW_TYPING_IN_OVERVIEW.defaultValue)
-                        preferencesStore.setSetting(IxPrefs.EMOJI_PICKER, IxPrefs.EMOJI_PICKER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.POLL_VOTE_VIEWER, IxPrefs.POLL_VOTE_VIEWER.defaultValue)
                         preferencesStore.setSetting(IxPrefs.PRIORITY_NOTIFICATION, IxPrefs.PRIORITY_NOTIFICATION.defaultValue)
                         preferencesStore.setSetting(IxPrefs.UNENCRYPTED_TOPBAR_ICON, IxPrefs.UNENCRYPTED_TOPBAR_ICON.defaultValue)

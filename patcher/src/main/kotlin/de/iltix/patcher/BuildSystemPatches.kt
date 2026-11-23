@@ -114,16 +114,19 @@ haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = 
     private fun patchEnterprise() {
         val path = "plugins/src/main/kotlin/Enterprise.kt"
 
-        // Add isIltixBuild flag after isEnterpriseBuild
-        engine.insertAfterLine(
+        // Add isIltixBuild project property after isEnterpriseBuild.
+        engine.replaceText(
             path,
-            """val isEnterpriseBuild = File\("enterprise/README.md"\)\.exists\(\)""",
-            """
+            """val Project.isEnterpriseBuild: Boolean
+    get() = gradle.extra["isEnterpriseBuild"] as Boolean""",
+            """val Project.isEnterpriseBuild: Boolean
+    get() = gradle.extra["isEnterpriseBuild"] as Boolean
+
 /**
- * Are we building the Iltix variant?
+ * Are the Iltix overlay modules present?
  */
-val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
-            "Enterprise.kt: isIltixBuild flag"
+val Project.isIltixBuild: Boolean
+    get() = rootProject.file("iltix/lib/build.gradle.kts").exists()"""
         )
     }
 
@@ -148,16 +151,22 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
     private fun patchModulesConfig() {
         val path = "plugins/src/main/kotlin/ModulesConfig.kt"
 
-        // Insert Iltix analytics check before the enterprise check
-        // Upstream: `val analyticsConfig: AnalyticsConfig = if (isEnterpriseBuild) {`
-        // Target:   `val analyticsConfig: AnalyticsConfig = if (isIltixBuild) { ... } else if (isEnterpriseBuild) {`
+        // Disable analytics for Iltix before applying enterprise analytics rules.
         engine.replaceText(
             path,
-            "val analyticsConfig: AnalyticsConfig = if (isEnterpriseBuild) {",
-            """val analyticsConfig: AnalyticsConfig = if (isIltixBuild) {
+            "fun analyticsConfig(isEnterpriseBuild: Boolean): AnalyticsConfig = if (isEnterpriseBuild) {",
+            """fun analyticsConfig(isEnterpriseBuild: Boolean, isIltixBuild: Boolean): AnalyticsConfig = if (isIltixBuild) {
         println("Analytics disabled (Iltix build)")
         AnalyticsConfig.Disabled
     } else if (isEnterpriseBuild) {"""
+        )
+
+        val dependencyHandlePath = "plugins/src/main/kotlin/extension/DependencyHandleScope.kt"
+        engine.addImport(dependencyHandlePath, "isIltixBuild")
+        engine.replaceText(
+            dependencyHandlePath,
+            "ModulesConfig.analyticsConfig(project.isEnterpriseBuild)",
+            "ModulesConfig.analyticsConfig(project.isEnterpriseBuild, project.isIltixBuild)"
         )
     }
 
@@ -349,7 +358,6 @@ val isIltixBuild = File("iltix/lib/build.gradle.kts").exists()""",
         engine.addGradleDependency(path, "implementation(projects.iltix.components)")
         engine.addGradleDependency(path, "implementation(projects.iltix.lib)")
         engine.addGradleDependency(path, "implementation(projects.iltix.theme)")
-        engine.addGradleDependency(path, "implementation(projects.libraries.emoji.impl)")
     }
 
     private fun patchPreferencesImplBuildGradle() {
